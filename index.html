@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="ja" data-theme="dark">
+<html lang="en" data-theme="dark">
 	<head>
 		<meta charset="UTF-8" />
-		<title>Share</title>
+		<title>CharShare - Decentralized AI Characters</title>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 		<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
@@ -24,14 +24,11 @@
 			body {
 				font-family: system-ui, sans-serif;
 			}
-			.work-card {
+			.card-hover {
 				transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 			}
-			.work-card:hover {
+			.card-hover:hover {
 				transform: translateY(-4px);
-			}
-			.image-container {
-				aspect-ratio: 16/10;
 			}
 		</style>
 	</head>
@@ -45,7 +42,10 @@
 					href="#home"
 					@click="navigate('home')"
 					class="text-3xl font-bold tracking-tight cursor-pointer hover:text-primary"
-					>Share</a
+					>CharShare</a
+				>
+				<span class="text-sm opacity-60"
+					>Decentralized • Uncensored • No accounts</span
 				>
 
 				<div class="flex items-center gap-4">
@@ -53,10 +53,10 @@
 						@click="navigate('publish')"
 						class="btn btn-primary"
 					>
-						Publish
+						Share Character
 					</button>
 					<button @click="navigate('browse')" class="btn btn-ghost">
-						Browse
+						Browse Characters
 					</button>
 				</div>
 			</header>
@@ -64,62 +64,39 @@
 			<!-- HOME -->
 			<template x-if="currentPage === 'home'">
 				<div class="text-center py-20">
-					<h2 class="text-5xl font-bold mb-4">Own your images.</h2>
-					<p class="text-lg text-base-content/70">
-						Decentralized • No middleman • No censorship
+					<h2 class="text-5xl font-bold mb-4">
+						Share AI Characters Freely
+					</h2>
+					<p class="text-xl text-base-content/70 max-w-2xl mx-auto">
+						A decentralized, uncensored platform for AI character
+						cards.<br />
+						No accounts. No moderation. Everything stored on the P2P
+						network.
 					</p>
-					<button
-						@click="navigate('publish')"
-						class="mt-10 btn btn-primary btn-lg"
-					>
-						Publish your first work
-					</button>
+					<div class="mt-10">
+						<button
+							@click="navigate('publish')"
+							class="btn btn-primary btn-lg"
+						>
+							Share a new character
+						</button>
+					</div>
 				</div>
 			</template>
 
 			<!-- PUBLISH PAGE -->
 			<template x-if="currentPage === 'publish'">
-				<div class="max-w-xl mx-auto">
+				<div class="max-w-2xl mx-auto">
 					<h2 class="text-3xl font-semibold mb-8">
-						Publish New Work
+						Share New AI Character
 					</h2>
 
-					<div class="space-y-6">
+					<div class="space-y-8">
+						<!-- Image -->
 						<div>
 							<label class="label"
 								><span class="label-text"
-									>Title (optional)</span
-								></label
-							>
-							<input
-								x-model="newWork.title"
-								type="text"
-								placeholder="My beautiful artwork"
-								class="input input-bordered w-full"
-							/>
-						</div>
-
-						<div>
-							<label class="label"
-								><span class="label-text"
-									>Tags
-									<span class="text-red-500">*</span> (comma
-									separated, a-z0-9_ only)</span
-								></label
-							>
-							<input
-								x-model="newWork.tags"
-								type="text"
-								placeholder="landscape, sunset, nature"
-								class="input input-bordered w-full"
-							/>
-						</div>
-
-						<!-- File Upload with Preview -->
-						<div>
-							<label class="label"
-								><span class="label-text"
-									>Choose Image
+									>Character Image
 									<span class="text-red-500">*</span></span
 								></label
 							>
@@ -129,71 +106,130 @@
 								@change="handleFileSelect($event)"
 								class="file-input file-input-bordered w-full"
 							/>
-
-							<div
-								x-show="previewUrl"
-								class="mt-4 border border-base-300 rounded-xl p-4 bg-base-200"
-							>
-								<p class="text-sm opacity-70 mb-2">Preview:</p>
+							<div x-show="previewUrl" class="mt-4">
 								<img
 									:src="previewUrl"
-									class="max-h-80 mx-auto rounded-lg"
+									class="max-h-80 mx-auto rounded-2xl border border-base-300"
 								/>
 							</div>
 						</div>
 
-						<div class="divider">
-							OR manual URL / IPFS CID (fallback)
-						</div>
-
+						<!-- Name -->
 						<div>
 							<label class="label"
 								><span class="label-text"
-									>Image URL or IPFS CID</span
+									>Character Name
+									<span class="text-red-500">*</span></span
 								></label
 							>
 							<input
-								x-model="newWork.imageRef"
+								x-model="newCharacter.name"
+								maxlength="80"
 								type="text"
-								placeholder="https://... or Qm..."
+								placeholder="Akeno Himejima"
 								class="input input-bordered w-full"
 							/>
 						</div>
 
+						<!-- Description -->
 						<div>
 							<label class="label"
 								><span class="label-text"
-									>Author Name (optional)</span
+									>Description (optional)</span
+								></label
+							>
+							<textarea
+								x-model="newCharacter.description"
+								rows="3"
+								placeholder="A powerful and elegant devil from the Occult Research Club..."
+								class="textarea textarea-bordered w-full"
+							></textarea>
+						</div>
+
+						<!-- System Prompt -->
+						<div>
+							<label class="label"
+								><span class="label-text"
+									>System Prompt (Initial Prompt)</span
+								></label
+							>
+							<textarea
+								x-model="newCharacter.systemPrompt"
+								rows="5"
+								placeholder="You are Akeno Himejima... Speak in a calm, teasing tone. Use * for actions."
+								class="textarea textarea-bordered w-full"
+							></textarea>
+						</div>
+
+						<!-- First Message -->
+						<div>
+							<label class="label"
+								><span class="label-text"
+									>First Message
+									<span class="text-red-500">*</span></span
 								></label
 							>
 							<input
-								x-model="newWork.author"
+								x-model="newCharacter.firstMessage"
 								type="text"
-								placeholder="Your name or circle"
+								placeholder="Ara ara~ Hello there. What brings you to me today?"
 								class="input input-bordered w-full"
 							/>
 						</div>
 
+						<!-- Tags -->
 						<div>
 							<label class="label"
 								><span class="label-text"
-									>Author URL (optional)</span
+									>Tags
+									<span class="text-red-500">*</span> (comma
+									separated)</span
 								></label
 							>
 							<input
-								x-model="newWork.authorUrl"
+								x-model="newCharacter.tags"
 								type="text"
-								placeholder="https://twitter.com/yourname"
+								placeholder="anime, devil, teasing, big breasts"
 								class="input input-bordered w-full"
 							/>
+						</div>
+
+						<!-- Author -->
+						<div class="grid grid-cols-2 gap-4">
+							<div>
+								<label class="label"
+									><span class="label-text"
+										>Author Name (optional)</span
+									></label
+								>
+								<input
+									x-model="newCharacter.author"
+									type="text"
+									placeholder="Your name"
+									class="input input-bordered w-full"
+								/>
+							</div>
+							<div>
+								<label class="label"
+									><span class="label-text"
+										>Author URL (optional)</span
+									></label
+								>
+								<input
+									x-model="newCharacter.authorUrl"
+									type="text"
+									placeholder="https://..."
+									class="input input-bordered w-full"
+								/>
+							</div>
 						</div>
 
 						<button
-							@click="publishWork()"
-							:disabled="!newWork.tags || (!newWork.imageRef && !previewUrl)"
+							@click="publishCharacter()"
+							:disabled="!newCharacter.name || !newCharacter.tags || !newCharacter.firstMessage || !newCharacter.imageRef"
 							class="btn btn-primary w-full py-3 text-lg"
 						>
-							Publish to the Network
+							Publish Character Card
 						</button>
 
 						<div
@@ -216,7 +252,7 @@
 								x-model="searchTerm"
 								@keyup.enter="performSearch()"
 								type="text"
-								placeholder="Search by title or tags..."
+								placeholder="Search characters..."
 								class="input input-bordered w-full text-lg py-6 pl-5 pr-20"
 							/>
 							<button
@@ -228,188 +264,127 @@
 						</div>
 					</div>
 
-					<div class="flex gap-8">
-						<div class="w-64 hidden lg:block">
-							<h3 class="font-semibold mb-4">Popular tags</h3>
-							<div class="space-y-1" x-show="searchTerm">
-								<template
-									x-for="tag in popularTags"
-									:key="tag.name"
-								>
-									<button
-										@click="searchByTag(tag.name)"
-										class="w-full text-left px-4 py-2.5 hover:bg-base-200 rounded-lg flex justify-between items-center text-sm"
-									>
-										<span x-text="tag.name"></span>
-										<span
-											class="text-xs opacity-60"
-											x-text="tag.count"
-										></span>
-									</button>
-								</template>
-							</div>
-						</div>
-
-						<div class="flex-1">
-							<div class="flex justify-between items-center mb-6">
-								<h2
-									class="text-3xl font-semibold"
-									x-text="pageTitle"
-								></h2>
-								<button
-									@click="refreshWorks()"
-									class="btn btn-ghost btn-sm"
-								>
-									Refresh
-								</button>
-							</div>
-
+					<div
+						class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+					>
+						<template
+							x-for="char in paginatedCharacters"
+							:key="char.id"
+						>
 							<div
-								class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+								@click="viewCharacter(char)"
+								class="card-hover card bg-base-200 border border-base-300 overflow-hidden cursor-pointer"
 							>
-								<template
-									x-for="work in paginatedWorks"
-									:key="work.id"
-								>
-									<div
-										@click="viewWork(work)"
-										class="work-card card bg-base-200 border border-base-300 overflow-hidden cursor-pointer"
-									>
-										<div
-											class="image-container bg-base-300 flex items-center justify-center overflow-hidden"
+								<figure class="image-container bg-base-300">
+									<img
+										:src="char.imageRef"
+										class="w-full h-full object-cover"
+									/>
+								</figure>
+								<div class="p-5">
+									<h3
+										class="font-semibold text-lg mb-1"
+										x-text="char.name"
+									></h3>
+									<p
+										class="text-sm opacity-70 line-clamp-2 mb-4"
+										x-text="char.description || 'No description'"
+									></p>
+									<div class="flex flex-wrap gap-2">
+										<template
+											x-for="tag in getTagsArray(char)"
+											:key="tag"
 										>
-											<img
-												:src="getImageSrc(work)"
-												class="max-h-full max-w-full object-contain"
-												onerror="
-													this.src =
-														'https://placehold.co/600x400/222/aaa?text=Image+Unavailable'
-												"
-											/>
-										</div>
-										<div class="p-5">
-											<h3
-												class="font-medium line-clamp-2 mb-3"
-												x-text="work.title || 'Untitled'"
-											></h3>
-											<div class="flex flex-wrap gap-2">
-												<template
-													x-for="tag in getTagsArray(work)"
-													:key="tag"
-												>
-													<span
-														class="badge badge-sm badge-neutral text-xs truncate max-w-[110px]"
-														x-text="tag"
-													></span>
-												</template>
-											</div>
-											<div
-												class="mt-5 text-xs opacity-60 flex justify-between font-mono"
-											>
-												<span
-													x-text="formatTime(work.timestamp)"
-												></span>
-												<span
-													x-text="work.author || 'anonymous'"
-												></span>
-											</div>
-										</div>
+											<span
+												class="badge badge-sm badge-neutral"
+												x-text="tag"
+											></span>
+										</template>
 									</div>
-								</template>
+								</div>
 							</div>
-						</div>
+						</template>
 					</div>
 				</div>
 			</template>
 
-			<!-- SINGLE POST VIEW -->
-			<template x-if="currentPage === 'view' && selectedWork">
-				<div class="max-w-5xl mx-auto">
-					<button @click="backToBrowse()" class="btn btn-ghost mb-6">
-						← Back
-					</button>
+			<!-- CHARACTER VIEW -->
+			<template x-if="currentPage === 'view' && selectedCharacter">
+				<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+					<!-- Left: Character Info -->
+					<div class="lg:col-span-5">
+						<img
+							:src="selectedCharacter.imageRef"
+							class="w-full rounded-3xl shadow-2xl"
+							alt="character image"
+						/>
 
-					<div class="mb-8 max-w-2xl">
-						<div class="relative">
-							<input
-								x-model="searchTerm"
-								@keyup.enter="performSearch()"
-								type="text"
-								placeholder="Search other works..."
-								class="input input-bordered w-full py-6 pl-5 pr-20"
-							/>
-							<button
-								@click="performSearch()"
-								class="absolute right-2 top-1/2 -translate-y-1/2 btn btn-primary btn-sm px-6"
+						<div class="mt-6">
+							<h1
+								class="text-4xl font-bold"
+								x-text="selectedCharacter.name"
+							></h1>
+							<p
+								class="text-base-content/70 mt-2"
+								x-text="selectedCharacter.description || 'No description provided'"
+							></p>
+						</div>
+
+						<div class="mt-8 flex flex-wrap gap-2">
+							<template
+								x-for="tag in getTagsArray(selectedCharacter)"
+								:key="tag"
 							>
-								Search
+								<span
+									class="badge badge-lg badge-neutral"
+									x-text="tag"
+								></span>
+							</template>
+						</div>
+
+						<div class="mt-10 grid grid-cols-2 gap-4 text-sm">
+							<div>
+								<div class="opacity-60">Author</div>
+								<span
+									x-text="selectedCharacter.author || 'Anonymous'"
+								></span>
+							</div>
+							<div>
+								<div class="opacity-60">Created</div>
+								<span
+									x-text="formatTime(selectedCharacter.timestamp)"
+								></span>
+							</div>
+						</div>
+
+						<div class="mt-8">
+							<button
+								@click="startNewChat()"
+								class="btn btn-primary btn-lg w-full"
+							>
+								Start New Chat
 							</button>
 						</div>
 					</div>
 
-					<div class="bg-base-200 rounded-3xl overflow-hidden">
-						<div class="p-8 bg-base-300 flex justify-center">
-							<img
-								:src="getImageSrc(selectedWork)"
-								class="max-h-[80vh] max-w-full object-contain rounded-2xl"
-								onerror="
-									this.src =
-										'https://placehold.co/1200x800/222/aaa?text=Image+Unavailable'
-								"
-							/>
+					<!-- Right: Comments + Chats -->
+					<div class="lg:col-span-7">
+						<h3 class="text-xl font-semibold mb-4">Comments</h3>
+						<div class="text-base-content/60">
+							Comments coming soon (will be stored under
+							app/characters/{id}/comments)
 						</div>
 
-						<div class="p-8">
-							<h1
-								class="text-4xl font-semibold mb-4"
-								x-text="selectedWork.title || 'Untitled'"
-							></h1>
-
-							<div class="flex flex-wrap gap-3 mb-8">
-								<template
-									x-for="tag in getTagsArray(selectedWork)"
-									:key="tag"
-								>
-									<button
-										@click="searchByTag(tag)"
-										class="badge badge-lg badge-neutral hover:badge-primary"
-										x-text="tag"
-									></button>
-								</template>
-							</div>
-
-							<div
-								class="grid grid-cols-1 md:grid-cols-3 gap-8 text-sm"
+						<div class="mt-12">
+							<h3 class="text-xl font-semibold mb-4">
+								Your Chats with this character
+							</h3>
+							<button
+								@click="showMyChats = true"
+								class="btn btn-outline"
 							>
-								<div>
-									<div class="opacity-60 text-xs mb-1">
-										UPLOAD DATE
-									</div>
-									<div
-										x-text="formatTime(selectedWork.timestamp)"
-										class="font-medium"
-									></div>
-								</div>
-								<div>
-									<div class="opacity-60 text-xs mb-1">
-										AUTHOR
-									</div>
-									<a
-										:href="selectedWork.authorUrl || '#'"
-										target="_blank"
-										class="link link-primary font-medium"
-										x-text="selectedWork.author || 'anonymous'"
-									></a>
-								</div>
-								<div>
-									<button
-										@click="downloadImage()"
-										class="btn btn-primary w-full"
-									>
-										Download Image
-									</button>
-								</div>
-							</div>
+								View my chats with this character
+							</button>
 						</div>
 					</div>
 				</div>
@@ -421,22 +396,26 @@
 				return {
 					currentPage: "home",
 					gun: null,
-					works: [],
+					characters: [],
 					status: "",
 					searchTerm: "",
 					currentPageNum: 1,
-					selectedWork: null,
+					selectedCharacter: null,
 					previewUrl: null,
 
-					newWork: {
-						title: "",
+					newCharacter: {
+						name: "",
+						description: "",
+						systemPrompt:
+							"You are a helpful and immersive AI character. Use * for actions like *smiles gently*.",
+						firstMessage: "Hello! Nice to meet you.",
 						tags: "",
-						imageRef: "",
 						author: "",
 						authorUrl: "",
+						imageRef: "",
 					},
 
-					APP_ID: "share-platform-v1",
+					APP_ID: "charshare-v1",
 
 					init() {
 						this.gun = Gun({
@@ -445,13 +424,11 @@
 								"https://relay.peer.ooo/gun",
 							],
 							localStorage: true,
-							radisk: true,
 						});
-						this.loadWorks();
+						this.loadCharacters();
 						this.handleHashRouting();
 					},
 
-					// File → Base64
 					handleFileSelect(e) {
 						const file = e.target.files[0];
 						if (!file) return;
@@ -459,178 +436,132 @@
 						const reader = new FileReader();
 						reader.onload = (ev) => {
 							this.previewUrl = ev.target.result;
-							this.newWork.imageRef = ev.target.result; // store full base64
+							this.newCharacter.imageRef = ev.target.result;
 						};
 						reader.readAsDataURL(file);
 					},
 
-					getImageSrc(work) {
-						if (!work?.imageRef) return "";
-						return work.imageRef; // base64 or external URL
+					async publishCharacter() {
+						if (
+							!this.newCharacter.name ||
+							!this.newCharacter.tags ||
+							!this.newCharacter.firstMessage ||
+							!this.newCharacter.imageRef
+						) {
+							this.status =
+								"Name, tags, first message and image are required";
+							return;
+						}
+
+						try {
+							const pair = await SEA.pair();
+							const charId = "char-" + Date.now();
+
+							const characterData = {
+								id: charId,
+								name: this.newCharacter.name.trim(),
+								description:
+									this.newCharacter.description.trim(),
+								systemPrompt:
+									this.newCharacter.systemPrompt.trim(),
+								firstMessage:
+									this.newCharacter.firstMessage.trim(),
+								tags: this.newCharacter.tags.trim(),
+								author: this.newCharacter.author.trim(),
+								authorUrl: this.newCharacter.authorUrl.trim(),
+								imageRef: this.newCharacter.imageRef,
+								timestamp: Date.now(),
+								authorPub: pair.pub,
+							};
+
+							const signature = await SEA.sign(
+								characterData,
+								pair,
+							);
+
+							this.gun
+								.get(this.APP_ID)
+								.get("characters")
+								.get(charId)
+								.put({
+									...characterData,
+									signature,
+								});
+
+							this.status = "✓ Character published successfully!";
+
+							setTimeout(() => {
+								this.viewCharacter(characterData);
+								this.resetNewCharacter();
+							}, 1000);
+						} catch (e) {
+							this.status = "Error publishing: " + e.message;
+						}
 					},
 
-					formatTime(ts) {
-						return ts
-							? new Date(ts).toLocaleString("ja-JP", {
-									month: "short",
-									day: "numeric",
-									hour: "2-digit",
-									minute: "2-digit",
-								})
-							: "";
+					resetNewCharacter() {
+						this.newCharacter = {
+							name: "",
+							description: "",
+							systemPrompt:
+								"You are a helpful and immersive AI character. Use * for actions.",
+							firstMessage: "Hello! Nice to meet you.",
+							tags: "",
+							author: "",
+							authorUrl: "",
+							imageRef: "",
+						};
+						this.previewUrl = null;
 					},
 
-					getTagsArray(work) {
-						return work?.tags
-							? work.tags
+					loadCharacters() {
+						this.characters = [];
+						this.gun
+							.get(this.APP_ID)
+							.get("characters")
+							.map()
+							.on((data) => {
+								if (data && data.name && data.imageRef) {
+									if (
+										!this.characters.some(
+											(c) => c.id === data.id,
+										)
+									) {
+										this.characters.unshift(data);
+									}
+								}
+							});
+					},
+
+					getTagsArray(char) {
+						return char?.tags
+							? char.tags
 									.split(",")
 									.map((t) => t.trim())
 									.filter(Boolean)
 							: [];
 					},
 
-					validateTags(tagsStr) {
-						if (!tagsStr) return false;
-						return tagsStr
-							.split(",")
-							.map((t) => t.trim())
-							.filter(Boolean)
-							.every((tag) => /^[a-zA-Z0-9_]+$/.test(tag));
+					// Navigation & Routing
+					navigate(page) {
+						this.currentPage = page;
+						window.location.hash = "#" + page;
 					},
 
-					async publishWork() {
-						this.status = "";
-
-						if (!this.newWork.tags) {
-							this.status = "Tags are required";
-							return;
-						}
-
-						if (!this.newWork.imageRef) {
-							this.status = "Please select an image file";
-							return;
-						}
-
-						try {
-							const pair = await SEA.pair();
-							const sanitized = {
-								title: (
-									this.newWork.title || "Untitled"
-								).trim(),
-								tags: this.newWork.tags.trim(),
-								imageRef: this.newWork.imageRef, // base64 data URL
-								author: (this.newWork.author || "").trim(),
-								authorUrl: this.newWork.authorUrl || "",
-								timestamp: Date.now(),
-								id: "work-" + Date.now(),
-							};
-
-							const signature = await SEA.sign(sanitized, pair);
-
-							this.gun
-								.get(this.APP_ID)
-								.get("works")
-								.get(sanitized.id)
-								.put({
-									...sanitized,
-									signature,
-									authorPub: pair.pub,
-								});
-
-							this.status =
-								"✓ Published successfully! Redirecting to your post...";
-
-							setTimeout(() => {
-								this.viewWork(sanitized);
-								this.newWork = {
-									title: "",
-									tags: "",
-									imageRef: "",
-									author: "",
-									authorUrl: "",
-								};
-								this.previewUrl = null;
-							}, 800);
-						} catch (e) {
-							this.status = "Error: " + e.message;
-						}
+					viewCharacter(char) {
+						this.selectedCharacter = char;
+						this.currentPage = "view";
+						window.location.hash = `#view:${char.id}`;
 					},
 
-					loadWorks() {
-						this.works = [];
-						this.gun
-							.get(this.APP_ID)
-							.get("works")
-							.map()
-							.on((raw) => {
-								if (raw && raw.imageRef && raw.tags) {
-									if (
-										!this.works.some((w) => w.id === raw.id)
-									) {
-										this.works.unshift(raw);
-									}
-								}
-							});
-					},
-
-					refreshWorks() {
-						this.works = [];
-						this.loadWorks();
-					},
-
-					get filteredWorks() {
-						if (!this.searchTerm) return this.works;
-						const term = this.searchTerm.toLowerCase();
-						return this.works.filter(
-							(w) =>
-								(w.title &&
-									w.title.toLowerCase().includes(term)) ||
-								(w.tags && w.tags.toLowerCase().includes(term)),
+					// Placeholder functions
+					startNewChat() {
+						alert(
+							"Chat feature coming next. This will open the full chat screen.",
 						);
-					},
-
-					get paginatedWorks() {
-						const start = (this.currentPageNum - 1) * 12;
-						return this.filteredWorks.slice(start, start + 12);
-					},
-
-					get totalPages() {
-						return Math.max(
-							1,
-							Math.ceil(this.filteredWorks.length / 12),
-						);
-					},
-					nextPage() {
-						if (this.currentPageNum < this.totalPages)
-							this.currentPageNum++;
-					},
-					prevPage() {
-						if (this.currentPageNum > 1) this.currentPageNum--;
-					},
-
-					get pageTitle() {
-						return this.searchTerm
-							? `Results for "${this.searchTerm}"`
-							: "Latest Works";
-					},
-
-					get popularTags() {
-						if (!this.searchTerm) return [];
-						const countMap = {};
-						this.filteredWorks.forEach((w) => {
-							this.getTagsArray(w).forEach(
-								(tag) =>
-									(countMap[tag] = (countMap[tag] || 0) + 1),
-							);
-						});
-						return Object.entries(countMap)
-							.map(([name, count]) => ({ name, count }))
-							.sort((a, b) => b.count - a.count)
-							.slice(0, 12);
 					},
 
 					performSearch() {
-						this.currentPageNum = 1;
 						window.location.hash = `#browse?q=${encodeURIComponent(this.searchTerm)}`;
 					},
 
@@ -639,45 +570,15 @@
 						this.performSearch();
 					},
 
-					viewWork(work) {
-						this.selectedWork = work;
-						this.currentPage = "view";
-						window.location.hash = `#view:${work.id}`;
-					},
-
-					backToBrowse() {
-						this.selectedWork = null;
-						this.currentPage = "browse";
-						window.location.hash = this.searchTerm
-							? `#browse?q=${encodeURIComponent(this.searchTerm)}`
-							: "#browse";
-					},
-
-					downloadImage() {
-						if (!this.selectedWork) return;
-						const link = document.createElement("a");
-						link.href = this.getImageSrc(this.selectedWork);
-						link.download =
-							(this.selectedWork.title || "image").replace(
-								/[^a-z0-9]/gi,
-								"_",
-							) + ".jpg";
-						link.click();
-					},
-
-					navigate(page) {
-						this.currentPage = page;
-						if (page === "browse") this.currentPageNum = 1;
-						window.location.hash = "#" + page;
-					},
-
 					handleHashRouting() {
 						const hash = window.location.hash || "#home";
 						if (hash.startsWith("#view:")) {
 							const id = hash.slice(6);
-							const work = this.works.find((w) => w.id === id);
-							if (work) {
-								this.selectedWork = work;
+							const char = this.characters.find(
+								(c) => c.id === id,
+							);
+							if (char) {
+								this.selectedCharacter = char;
 								this.currentPage = "view";
 							}
 						} else if (hash.startsWith("#browse?q=")) {
@@ -685,8 +586,12 @@
 								hash.slice(10),
 							);
 							this.currentPage = "browse";
-						} else if (hash === "#browse") {
-							this.currentPage = "browse";
+						} else if (
+							hash === "#browse" ||
+							hash === "#publish" ||
+							hash === "#home"
+						) {
+							this.currentPage = hash.slice(1);
 						} else {
 							this.currentPage = "home";
 						}
