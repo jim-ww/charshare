@@ -30,10 +30,14 @@
 			.work-card:hover {
 				transform: translateY(-4px);
 			}
+			.image-container {
+				aspect-ratio: 16/11;
+			}
 		</style>
 	</head>
 	<body class="bg-base-100 text-base-content min-h-screen">
-		<div x-data="app()" class="max-w-5xl mx-auto p-6">
+		<div x-data="app()" class="max-w-7xl mx-auto p-6">
+			<!-- NAV -->
 			<nav
 				class="flex items-center justify-between mb-10 border-b border-base-300 pb-6"
 			>
@@ -46,19 +50,19 @@
 
 				<div class="flex gap-2">
 					<button
-						@click="currentPage = 'home'"
+						@click="navigate('home')"
 						:class="{ 'btn btn-primary': currentPage === 'home', 'btn btn-ghost': currentPage !== 'home' }"
 					>
 						Home
 					</button>
 					<button
-						@click="currentPage = 'publish'"
+						@click="navigate('publish')"
 						:class="{ 'btn btn-primary': currentPage === 'publish', 'btn btn-ghost': currentPage !== 'publish' }"
 					>
 						Publish
 					</button>
 					<button
-						@click="currentPage = 'browse'"
+						@click="navigate('browse')"
 						:class="{ 'btn btn-primary': currentPage === 'browse', 'btn btn-ghost': currentPage !== 'browse' }"
 					>
 						Browse
@@ -74,7 +78,7 @@
 						Decentralized • No middleman
 					</p>
 					<button
-						@click="currentPage = 'publish'"
+						@click="navigate('publish')"
 						class="mt-10 btn btn-primary btn-lg"
 					>
 						Publish a work
@@ -150,69 +154,195 @@
 
 			<!-- BROWSE -->
 			<template x-if="currentPage === 'browse'">
-				<div>
-					<div class="flex justify-between mb-8">
-						<h2 class="text-3xl font-semibold">Latest Works</h2>
-						<button
-							@click="refreshWorks()"
-							class="btn btn-sm btn-ghost"
-						>
-							Refresh
-						</button>
+				<div class="flex gap-8">
+					<!-- SIDEBAR -->
+					<div class="w-72 hidden lg:flex flex-col gap-6">
+						<h3 class="font-semibold text-lg">Filters</h3>
+
+						<div>
+							<input
+								x-model="searchTerm"
+								type="text"
+								placeholder="Search title or tags..."
+								class="input input-bordered w-full"
+								@input="currentPageNum = 1"
+							/>
+						</div>
+
+						<div>
+							<h4 class="text-sm font-medium mb-2">Date</h4>
+							<div class="flex flex-col gap-1">
+								<button
+									@click="dateFilter = 'all'; currentPageNum = 1"
+									:class="{ 'btn btn-neutral': dateFilter === 'all', 'btn btn-ghost': dateFilter !== 'all' }"
+								>
+									All time
+								</button>
+								<button
+									@click="dateFilter = 'today'; currentPageNum = 1"
+									:class="{ 'btn btn-neutral': dateFilter === 'today', 'btn btn-ghost': dateFilter !== 'today' }"
+								>
+									Today
+								</button>
+								<button
+									@click="dateFilter = 'week'; currentPageNum = 1"
+									:class="{ 'btn btn-neutral': dateFilter === 'week', 'btn btn-ghost': dateFilter !== 'week' }"
+								>
+									Last 7 days
+								</button>
+							</div>
+						</div>
 					</div>
 
-					<div
-						class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-					>
-						<template x-for="work in works" :key="work.id">
-							<div
-								class="work-card card bg-base-200 border border-base-300 overflow-hidden"
+					<!-- MAIN CONTENT -->
+					<div class="flex-1">
+						<div class="flex justify-between items-center mb-6">
+							<h2
+								class="text-3xl font-semibold"
+								x-text="pageTitle"
+							></h2>
+							<button
+								@click="refreshWorks()"
+								class="btn btn-sm btn-ghost"
 							>
-								<figure class="aspect-video bg-base-300">
-									<img
-										:src="getImageSrc(work)"
-										class="w-full h-full object-cover"
-										onerror="
-											this.src =
-												'https://picsum.photos/id/237/600/400'
-										"
-									/>
-								</figure>
-								<div class="p-5">
-									<h3
-										class="font-medium line-clamp-2 mb-3"
-										x-text="work.title"
-									></h3>
+								Refresh
+							</button>
+						</div>
 
-									<div class="flex flex-wrap gap-2">
-										<span
-											x-for="tag in (work.tags ? work.tags.split(' ') : [])"
-											:key="tag"
-											class="badge badge-sm badge-neutral"
-											x-text="tag"
-										></span>
-									</div>
-
+						<div
+							class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+						>
+							<template
+								x-for="work in paginatedWorks"
+								:key="work.id"
+							>
+								<div
+									@click="viewWork(work)"
+									class="work-card card bg-base-200 border border-base-300 overflow-hidden cursor-pointer"
+								>
 									<div
-										class="mt-6 text-xs opacity-60 flex justify-between font-mono"
+										class="image-container bg-base-300 flex items-center justify-center overflow-hidden"
 									>
-										<span
-											x-text="formatTime(work.timestamp)"
-										></span>
-										<span
-											x-text="work.authorPub ? work.authorPub.substring(0,10)+'...' : ''"
-										></span>
+										<img
+											:src="getImageSrc(work)"
+											class="max-h-full max-w-full object-contain"
+											onerror="
+												this.src =
+													'https://picsum.photos/id/237/600/400'
+											"
+										/>
+									</div>
+									<div class="p-5">
+										<h3
+											class="font-medium line-clamp-2 mb-3"
+											x-text="work.title"
+										></h3>
+										<div class="flex flex-wrap gap-2">
+											<span
+												x-for="tag in (work.tags ? work.tags.split(' ') : [])"
+												:key="tag"
+												class="badge badge-sm badge-neutral"
+												x-text="tag"
+											></span>
+										</div>
+										<div
+											class="mt-6 text-xs opacity-60 flex justify-between font-mono"
+										>
+											<span
+												x-text="formatTime(work.timestamp)"
+											></span>
+											<span
+												x-text="work.authorPub ? work.authorPub.substring(0,10)+'...' : ''"
+											></span>
+										</div>
 									</div>
 								</div>
-							</div>
-						</template>
-					</div>
+							</template>
+						</div>
 
-					<div
-						x-show="works.length === 0"
-						class="text-center py-20 opacity-50"
+						<!-- PAGINATION -->
+						<div
+							x-show="totalPages > 1"
+							class="flex justify-center gap-2 mt-10"
+						>
+							<button
+								@click="prevPage()"
+								:disabled="currentPageNum === 1"
+								class="btn btn-sm"
+							>
+								Previous
+							</button>
+							<span class="px-4 py-2"
+								>Page <span x-text="currentPageNum"></span> of
+								<span x-text="totalPages"></span
+							></span>
+							<button
+								@click="nextPage()"
+								:disabled="currentPageNum === totalPages"
+								class="btn btn-sm"
+							>
+								Next
+							</button>
+						</div>
+
+						<div
+							x-show="filteredWorks.length === 0"
+							class="text-center py-20 opacity-50"
+						>
+							No works match your filter.
+						</div>
+					</div>
+				</div>
+			</template>
+
+			<!-- SINGLE WORK VIEW -->
+			<template x-if="currentPage === 'view' && selectedWork">
+				<div class="max-w-4xl mx-auto">
+					<button
+						@click="navigate('browse')"
+						class="btn btn-ghost mb-6"
 					>
-						No works yet.<br />Publish something and click Refresh.
+						← Back to Browse
+					</button>
+
+					<div class="bg-base-200 rounded-3xl overflow-hidden">
+						<div class="flex justify-center bg-base-300 p-8">
+							<img
+								:src="getImageSrc(selectedWork)"
+								class="max-h-[70vh] max-w-full object-contain rounded-2xl"
+								onerror="
+									this.src =
+										'https://picsum.photos/id/237/1200/800'
+								"
+							/>
+						</div>
+
+						<div class="p-8">
+							<h1
+								class="text-4xl font-semibold mb-4"
+								x-text="selectedWork.title"
+							></h1>
+
+							<div class="flex flex-wrap gap-2 mb-8">
+								<span
+									x-for="tag in (selectedWork.tags ? selectedWork.tags.split(' ') : [])"
+									:key="tag"
+									class="badge badge-lg badge-neutral"
+									x-text="tag"
+								></span>
+							</div>
+
+							<div
+								class="flex justify-between text-sm opacity-70 font-mono"
+							>
+								<span
+									x-text="formatTime(selectedWork.timestamp)"
+								></span>
+								<span
+									x-text="selectedWork.authorPub ? selectedWork.authorPub.substring(0,12)+'...' : ''"
+								></span>
+							</div>
+						</div>
 					</div>
 				</div>
 			</template>
@@ -225,6 +355,10 @@
 					gun: null,
 					works: [],
 					status: "",
+					searchTerm: "",
+					dateFilter: "all",
+					currentPageNum: 1,
+					selectedWork: null,
 
 					newWork: { title: "", tags: "", imageRef: "" },
 
@@ -239,8 +373,36 @@
 							localStorage: true,
 							radisk: true,
 						});
-
 						this.loadWorks();
+					},
+
+					// ───── VALIDATION & SANITIZATION ─────
+					validateAndSanitizeWork(data) {
+						if (!data || typeof data !== "object") return null;
+						if (
+							!data.title ||
+							typeof data.title !== "string" ||
+							data.title.trim() === ""
+						)
+							return null;
+						if (!data.imageRef || typeof data.imageRef !== "string")
+							return null;
+
+						const sanitized = {
+							title: data.title.trim().replace(/[<>"'&]/g, ""),
+							tags:
+								typeof data.tags === "string"
+									? data.tags.trim().replace(/[<>"'&]/g, "")
+									: "",
+							imageRef: data.imageRef.trim(),
+							authorPub: data.authorPub || "",
+							timestamp:
+								typeof data.timestamp === "number"
+									? data.timestamp
+									: Date.now(),
+							id: data.id || "",
+						};
+						return sanitized;
 					},
 
 					getImageSrc(work) {
@@ -262,28 +424,29 @@
 							: "";
 					},
 
+					// ───── PUBLISH ─────
 					async publishWork() {
 						if (!this.newWork.title || !this.newWork.imageRef)
 							return;
 
+						const sanitized = this.validateAndSanitizeWork({
+							title: this.newWork.title,
+							tags: this.newWork.tags,
+							imageRef: this.newWork.imageRef,
+						});
+
+						if (!sanitized) {
+							this.status = "Invalid input";
+							return;
+						}
+
 						try {
 							const pair = await SEA.pair();
-							const tagsStr = this.newWork.tags
-								? this.newWork.tags
-										.split(",")
-										.map((t) => t.trim())
-										.filter(Boolean)
-										.join(" ")
-								: "";
-
 							const metadata = {
-								title: this.newWork.title.trim(),
-								tags: tagsStr, // ← Fixed: string instead of array
-								imageRef: this.newWork.imageRef.trim(),
+								...sanitized,
 								authorPub: pair.pub,
 								timestamp: Date.now(),
 							};
-
 							const signature = await SEA.sign(metadata, pair);
 							const workId = "work-" + Date.now();
 
@@ -297,40 +460,37 @@
 									id: workId,
 								});
 
-							this.status =
-								"✓ Published! Go to Browse and click Refresh.";
-
+							this.status = "✓ Published successfully!";
 							this.newWork = {
 								title: "",
 								tags: "",
 								imageRef: "",
 							};
 
-							// Auto refresh browse after publish
 							setTimeout(() => {
+								this.status = "";
 								if (this.currentPage === "browse")
 									this.refreshWorks();
-							}, 800);
+							}, 2500);
 						} catch (e) {
-							this.status = "Error publishing: " + e.message;
-							console.error(e);
+							this.status = "Error: " + e.message;
 						}
 					},
 
+					// ───── LOADING & FILTERING ─────
 					loadWorks() {
 						this.works = [];
 						this.gun
 							.get(this.APP_ID)
 							.get("works")
 							.map()
-							.on((data) => {
-								if (
-									data &&
-									data.title &&
-									!this.works.some((w) => w.id === data.id)
-								) {
+							.on((rawData) => {
+								const data =
+									this.validateAndSanitizeWork(rawData);
+								if (!data || !data.title) return;
+								if (!this.works.some((w) => w.id === data.id)) {
 									this.works.unshift(data);
-									if (this.works.length > 30)
+									if (this.works.length > 60)
 										this.works.pop();
 								}
 							});
@@ -339,6 +499,73 @@
 					refreshWorks() {
 						this.works = [];
 						this.loadWorks();
+					},
+
+					get filteredWorks() {
+						let filtered = this.works;
+
+						// Search
+						if (this.searchTerm) {
+							const term = this.searchTerm.toLowerCase();
+							filtered = filtered.filter(
+								(w) =>
+									(w.title &&
+										w.title.toLowerCase().includes(term)) ||
+									(w.tags &&
+										w.tags.toLowerCase().includes(term)),
+							);
+						}
+
+						// Date filter
+						const now = Date.now();
+						if (this.dateFilter === "today") {
+							filtered = filtered.filter(
+								(w) => now - w.timestamp < 86400000,
+							);
+						} else if (this.dateFilter === "week") {
+							filtered = filtered.filter(
+								(w) => now - w.timestamp < 604800000,
+							);
+						}
+
+						return filtered;
+					},
+
+					get paginatedWorks() {
+						const start = (this.currentPageNum - 1) * 12;
+						return this.filteredWorks.slice(start, start + 12);
+					},
+
+					get totalPages() {
+						return Math.max(
+							1,
+							Math.ceil(this.filteredWorks.length / 12),
+						);
+					},
+
+					nextPage() {
+						if (this.currentPageNum < this.totalPages)
+							this.currentPageNum++;
+					},
+					prevPage() {
+						if (this.currentPageNum > 1) this.currentPageNum--;
+					},
+
+					get pageTitle() {
+						if (this.searchTerm)
+							return `Search results for "${this.searchTerm}"`;
+						return "Latest Works";
+					},
+
+					// ───── NAVIGATION & SINGLE VIEW ─────
+					navigate(page) {
+						this.currentPage = page;
+						if (page === "browse") this.currentPageNum = 1;
+					},
+
+					viewWork(work) {
+						this.selectedWork = work;
+						this.currentPage = "view";
 					},
 				};
 			}
