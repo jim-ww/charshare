@@ -26,6 +26,8 @@
 		"vite-plugin-devtools-json": "^1.0.0"
 	},
 	"dependencies": {
-		"gun": "^0.2020.1241"
+		"@noble/ed25519": "^3.1.0",
+		"gun": "^0.2020.1241",
+		"idb-keyval": "^6.2.6"
 	}
 }
