@@ -12,6 +12,7 @@
 	import NetworkTab from "./settings/NetworkTab.svelte";
 	import AiTab from "./settings/AiTab.svelte";
 	import ContentTab from "./settings/ContentTab.svelte";
+	import DataTab from "./settings/DataTab.svelte";
 
 	const tabs: { id: SettingsTab; label: string }[] = [
 		{ id: "account", label: "Account" },
@@ -20,6 +21,7 @@
 		{ id: "network", label: "Network" },
 		{ id: "ai", label: "AI" },
 		{ id: "content", label: "Content" },
+		{ id: "data", label: "Data" },
 	];
 
 	let dialogEl: HTMLDialogElement | undefined;
@@ -66,6 +68,8 @@
 				<AiTab />
 			{:else if activeTab === "content"}
 				<ContentTab />
+			{:else if activeTab === "data"}
+				<DataTab />
 			{/if}
 		</div>
 	</div>
