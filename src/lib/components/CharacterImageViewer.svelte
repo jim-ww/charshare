@@ -8,6 +8,8 @@
 		onImageClick?: () => void;
 		/** Listen for arrow key presses to switch images (used by the expanded/modal view). */
 		keyboardNav?: boolean;
+		/** Bindable current image index, so multiple viewers of the same images can stay in sync. */
+		index?: number;
 	}
 
 	let {
@@ -16,10 +18,9 @@
 		class: className = '',
 		aspectSquare = false,
 		onImageClick,
-		keyboardNav = false
+		keyboardNav = false,
+		index = $bindable(0)
 	}: Props = $props();
-
-	let index = $state(0);
 	let loaded = $state(false);
 	let failed = $state(false);
 

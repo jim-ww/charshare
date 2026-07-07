@@ -8,6 +8,7 @@
 
 	let { character }: Props = $props();
 	let expanded = $state(false);
+	let index = $state(0);
 </script>
 
 <div class="aspect-square w-28 shrink-0 sm:w-56">
@@ -17,6 +18,7 @@
 		class="rounded-xl shadow-lg ring-2 ring-base-100"
 		aspectSquare
 		onImageClick={() => (expanded = true)}
+		bind:index
 	/>
 </div>
 
@@ -40,6 +42,7 @@
 				aspectSquare
 				onImageClick={() => (expanded = false)}
 				keyboardNav
+				bind:index
 			/>
 		</div>
 	</div>
