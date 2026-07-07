@@ -45,6 +45,7 @@ export interface Preferences {
   gunRelays: string[]; // includes the default, user can add/remove
   theme: ThemeMode;
   blockedTags: string[];
+  hiddenCharacterIds: string[]; // other users' characters hidden locally, not deleted
   provider: ProviderConfig; // the currently active provider's config
   providerConfigs: ProviderConfigMap; // last-saved config per provider
 }

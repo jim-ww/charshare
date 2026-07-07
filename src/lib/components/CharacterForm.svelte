@@ -30,6 +30,7 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 	let imageUrls = $state<string[]>([
 		...((initial ?? draft)?.image_urls ?? []),
 	]);
+	let viewerIndex = $state(0);
 
 	function addImageUrl() {
 		imageUrls.push("");
@@ -37,6 +38,15 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 
 	function removeImageUrl(index: number) {
 		imageUrls.splice(index, 1);
+	}
+
+	// The viewer only shows non-empty, trimmed urls, so a row's position in
+	// `imageUrls` doesn't line up with its position there if blank entries
+	// sit before it — count how many non-empty urls precede it instead.
+	function showInViewer(index: number) {
+		const url = imageUrls[index]?.trim();
+		if (!url) return;
+		viewerIndex = imageUrls.slice(0, index).filter((u) => u.trim()).length;
 	}
 
 	let draggedImageIndex = $state<number | null>(null);
@@ -159,6 +169,7 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 						.map((u) => u.trim())
 						.filter(Boolean)}
 					name={name || "?"}
+					bind:index={viewerIndex}
 				/>
 			</div>
 			<label class="form-control">
@@ -311,12 +322,18 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 									>
 										⠿
 									</button>
-									<span
-										class="text-sm opacity-60 tabular-nums"
+									<button
+										type="button"
+										class="btn btn-ghost btn-sm w-10 tabular-nums"
+										aria-label={`Preview image ${i + 1}`}
+										onclick={() =>
+											showInViewer(
+												i,
+											)}
 									>
 										{i +
 											1}
-									</span>
+									</button>
 									<input
 										class="input input-bordered w-full"
 										bind:value={

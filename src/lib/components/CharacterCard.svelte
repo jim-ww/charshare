@@ -1,6 +1,12 @@
 <script lang="ts">
 	import type { Character } from "$lib/types";
 	import { isCharacterLocalOnly } from "$lib/state/characters.svelte";
+	import { getCurrentUser } from "$lib/state/auth.svelte";
+	import {
+		hideCharacter,
+		isCharacterHidden,
+		unhideCharacter,
+	} from "$lib/state/preferences.svelte";
 
 	interface Props {
 		character: Character;
@@ -9,13 +15,35 @@
 	let { character }: Props = $props();
 	const localOnly = $derived(isCharacterLocalOnly(character.id));
 	const imageUrl = $derived(character.image_urls[0]);
+	const isMine = $derived(character.author === getCurrentUser());
+	const hidden = $derived(isCharacterHidden(character.id));
+
+	function toggleHidden(event: MouseEvent) {
+		event.preventDefault();
+		event.stopPropagation();
+		if (hidden) {
+			unhideCharacter(character.id);
+		} else {
+			hideCharacter(character.id);
+		}
+	}
 </script>
 
 <a
 	href={`/characters/${character.id}`}
-	class="card bg-base-200 shadow-sm transition-shadow hover:shadow-md"
-	class:opacity-60={character.deleted}
+	class="card relative bg-base-200 shadow-sm transition-shadow hover:shadow-md"
+	class:opacity-60={character.deleted || hidden}
 >
+	{#if !isMine}
+		<button
+			type="button"
+			class="btn btn-xs btn-circle absolute right-2 top-2 z-10"
+			title={hidden ? "Unhide character" : "Hide character"}
+			onclick={toggleHidden}
+		>
+			{hidden ? "🙈" : "👁"}
+		</button>
+	{/if}
 	<figure class="aspect-[3/4] w-full overflow-hidden bg-base-300">
 		{#if imageUrl}
 			<img src={imageUrl} alt={character.name} class="h-full w-full object-cover" />

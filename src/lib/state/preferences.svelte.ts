@@ -62,6 +62,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
 	gunRelays: DEFAULT_GUN_RELAYS,
 	theme: "dark",
 	blockedTags: [],
+	hiddenCharacterIds: [],
 	provider: DEFAULT_HUGGINGFACE_CONFIG,
 	providerConfigs: {
 		openrouter: DEFAULT_OPENROUTER_CONFIG,
@@ -108,6 +109,7 @@ export function initPreferences(): Promise<void> {
 				// providers) existed, backfilling anything missing with defaults.
 				preferences = {
 					...preferences,
+					hiddenCharacterIds: preferences.hiddenCharacterIds ?? [],
 					providerConfigs: {
 						...DEFAULT_PREFERENCES.providerConfigs,
 						...preferences.providerConfigs,
@@ -152,6 +154,25 @@ export async function switchProvider(
 ): Promise<void> {
 	if (next === preferences.provider.provider) return;
 	await updatePreferences({ provider: preferences.providerConfigs[next] });
+}
+
+export function isCharacterHidden(characterId: string): boolean {
+	return preferences.hiddenCharacterIds.includes(characterId);
+}
+
+export async function hideCharacter(characterId: string): Promise<void> {
+	if (preferences.hiddenCharacterIds.includes(characterId)) return;
+	await updatePreferences({
+		hiddenCharacterIds: [...preferences.hiddenCharacterIds, characterId],
+	});
+}
+
+export async function unhideCharacter(characterId: string): Promise<void> {
+	await updatePreferences({
+		hiddenCharacterIds: preferences.hiddenCharacterIds.filter(
+			(id) => id !== characterId,
+		),
+	});
 }
 
 /** Resets only the nerdy/advanced fields of the active provider back to

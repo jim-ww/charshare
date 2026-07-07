@@ -8,8 +8,10 @@
 	import { getCurrentUser } from "$lib/state/auth.svelte";
 	import { browseByTag, browseNetwork } from "$lib/gun/browse";
 	import CharacterCard from "$lib/components/CharacterCard.svelte";
+	import { isCharacterHidden } from "$lib/state/preferences.svelte";
 
 	let mineOnly = $state(false);
+	let showHidden = $state(false);
 	let query = $state("");
 	let remoteResults = $state<Character[]>([]);
 	let networkResults = $state<Character[]>([]);
@@ -74,6 +76,9 @@
 
 		let list = [...combined.values()];
 		if (mineOnly) list = list.filter((c) => c.author === me);
+		if (!showHidden) {
+			list = list.filter((c) => c.author === me || !isCharacterHidden(c.id));
+		}
 		return list;
 	});
 </script>
@@ -104,6 +109,14 @@
 				bind:checked={mineOnly}
 			/>
 			<span class="label-text">Mine only</span>
+		</label>
+		<label class="label cursor-pointer gap-2">
+			<input
+				type="checkbox"
+				class="checkbox"
+				bind:checked={showHidden}
+			/>
+			<span class="label-text">Show hidden</span>
 		</label>
 	</div>
 
