@@ -26,7 +26,7 @@
 </script>
 
 {#if siblings.length > 1}
-	<div class="flex items-center gap-2 border-b border-base-300 p-2 text-sm">
+	<div class="flex items-center gap-2 text-sm">
 		<button class="btn btn-xs" type="button" disabled={index <= 0} onclick={() => go(-1)}>
 			‹
 		</button>

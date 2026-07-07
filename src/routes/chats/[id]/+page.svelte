@@ -36,15 +36,19 @@
 {:else}
 	<div class="flex h-full flex-col">
 		<ChatThreadSwitcher {chat} />
-		<div class="flex-1 overflow-y-auto p-4">
+		<div class="relative flex-1 overflow-hidden">
+			<div class="h-full overflow-y-auto p-4">
+				{#each chat.messages as message (message.id)}
+					{#if character}
+						<ChatBubble {chatId} {message} {character} />
+					{/if}
+				{/each}
+			</div>
 			{#if character}
-				<ChatCharacterImage {character} />
+				<div class="absolute bottom-3 left-3 z-20">
+					<ChatCharacterImage {character} />
+				</div>
 			{/if}
-			{#each chat.messages as message (message.id)}
-				{#if character}
-					<ChatBubble {chatId} {message} {character} />
-				{/if}
-			{/each}
 		</div>
 		{#if character}
 			<ChatComposer {chat} {character} />

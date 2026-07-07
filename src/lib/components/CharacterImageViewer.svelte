@@ -3,11 +3,12 @@
 		images: string[];
 		name: string;
 		class?: string;
+		aspectSquare?: boolean;
 		/** If provided, the image itself becomes clickable (used by chat's expand/collapse toggle). */
 		onImageClick?: () => void;
 	}
 
-	let { images, name, class: className = '', onImageClick }: Props = $props();
+	let { images, name, class: className = '', aspectSquare = false, onImageClick }: Props = $props();
 
 	let index = $state(0);
 	let loaded = $state(false);
@@ -32,7 +33,11 @@
 	}
 </script>
 
-<figure class="relative aspect-[3/4] w-full overflow-hidden rounded-box bg-base-300 {className}">
+<figure
+	class="relative {aspectSquare
+		? 'aspect-square'
+		: 'aspect-[3/4]'} w-full overflow-hidden rounded-box bg-base-300 {className}"
+>
 	{#if images.length}
 		{#if onImageClick}
 			<button
