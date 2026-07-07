@@ -7,12 +7,14 @@
 	import ChatBubble from '$lib/components/ChatBubble.svelte';
 	import ChatComposer from '$lib/components/ChatComposer.svelte';
 	import ChatCharacterImage from '$lib/components/ChatCharacterImage.svelte';
+	import ChatSettingsSidebar from '$lib/components/ChatSettingsSidebar.svelte';
 
 	const chatId = $derived(page.params.id as string);
 	const chat = $derived(getChat(chatId));
 	const activeMessages = $derived(chat ? getActivePath(chat) : []);
 
 	let scrollContainer = $state<HTMLDivElement | undefined>();
+	let sidebarOpen = $state(false);
 
 	$effect(() => {
 		if (chat) ensureCharacterLoaded(chat.character_id);
@@ -46,26 +48,43 @@
 {#if !chat}
 	<div class="flex h-full items-center justify-center text-sm opacity-70">Chat not found.</div>
 {:else}
-	<div class="flex h-full flex-col">
-		<ChatThreadSwitcher {chat} />
-		<div class="relative flex-1 overflow-hidden">
-			<div class="h-full overflow-y-auto p-4" bind:this={scrollContainer}>
-				{#each activeMessages as message (message.id)}
-					{#if character}
-						<ChatBubble {chat} {message} {character} />
-					{/if}
-				{/each}
+	<div class="flex h-full">
+		<div class="flex h-full min-w-0 flex-1 flex-col">
+			<div class="flex items-center justify-between">
+				<ChatThreadSwitcher {chat} />
+				<button
+					class="btn btn-sm m-2 ml-auto gap-2"
+					type="button"
+					onclick={() => (sidebarOpen = !sidebarOpen)}
+				>
+					⚙ Chat settings
+				</button>
+			</div>
+			<div
+				class="relative flex-1 overflow-hidden bg-cover bg-center"
+				style={chat.active_background ? `background-image: url('${chat.active_background}')` : ''}
+			>
+				<div class="h-full overflow-y-auto p-4" bind:this={scrollContainer}>
+					{#each activeMessages as message (message.id)}
+						{#if character}
+							<ChatBubble {chat} {message} {character} />
+						{/if}
+					{/each}
+				</div>
+				{#if character}
+					<div class="fixed bottom-3 left-3 z-20">
+						<ChatCharacterImage {chat} {character} />
+					</div>
+				{/if}
 			</div>
 			{#if character}
-				<div class="fixed bottom-3 left-3 z-20">
-					<ChatCharacterImage {chat} {character} />
-				</div>
+				<ChatComposer {chat} {character} />
+			{:else}
+				<p class="p-3 text-sm opacity-70">Loading character…</p>
 			{/if}
 		</div>
-		{#if character}
-			<ChatComposer {chat} {character} />
-		{:else}
-			<p class="p-3 text-sm opacity-70">Loading character…</p>
+		{#if sidebarOpen}
+			<ChatSettingsSidebar {chat} onclose={() => (sidebarOpen = false)} />
 		{/if}
 	</div>
 {/if}

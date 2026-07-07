@@ -48,4 +48,11 @@ export interface Chat {
   // navigating away and back. Clamp against the current image count when
   // reading — the character's images can change after this was saved.
   image_index: number;
+  // Image URLs the user has added as selectable chat backgrounds. Just URLs
+  // for now, not uploaded/stored blobs.
+  backgrounds: string[];
+  // Currently-applied background, or null for none. Not necessarily a
+  // member of `backgrounds` at read time if it was since deleted — callers
+  // should fall back to null in that case.
+  active_background: string | null;
 }

@@ -1,3 +1,4 @@
+- always display sticky Navbar at top?
 - chat view: improve message editing textareas
 - improve browse search: by char name, author name with @ or public key? or tags
 - create landing page

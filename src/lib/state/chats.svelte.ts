@@ -24,11 +24,13 @@ export function initChats(): Promise<void> {
 	if (!initPromise) {
 		initPromise = (async () => {
 			const loaded = await loadChats();
-			// migrate chats saved before `draft`/`image_index` existed
+			// migrate chats saved before `draft`/`image_index`/backgrounds existed
 			for (const chat of Object.values(loaded)) {
 				if (chat.draft === undefined) chat.draft = '';
 				if (chat.image_index === undefined) chat.image_index = 0;
 				if (chat.persona_id === undefined) chat.persona_id = null;
+				if (chat.backgrounds === undefined) chat.backgrounds = [];
+				if (chat.active_background === undefined) chat.active_background = null;
 			}
 			chats = loaded;
 			ready = true;
@@ -59,7 +61,9 @@ export async function createChat(
 		active_child: {},
 		created_at: Date.now(),
 		draft: '',
-		image_index: 0
+		image_index: 0,
+		backgrounds: [],
+		active_background: null
 	};
 	chats = { ...chats, [chat.id]: chat };
 	await persist();
@@ -105,6 +109,38 @@ export function setChatImageIndex(id: ChatId, imageIndex: number): void {
 		draftPersistTimer = null;
 		void persist();
 	}, 400);
+}
+
+export async function addChatBackground(id: ChatId, url: string): Promise<void> {
+	const chat = chats[id];
+	if (!chat) throw new Error('Chat not found.');
+	const trimmed = url.trim();
+	if (!trimmed || chat.backgrounds.includes(trimmed)) return;
+	chats = { ...chats, [id]: { ...chat, backgrounds: [...chat.backgrounds, trimmed] } };
+	await persist();
+}
+
+/** Removes a background from the list; if it was the active one, clears the
+ *  active selection too so the chat doesn't reference a deleted url. */
+export async function removeChatBackground(id: ChatId, url: string): Promise<void> {
+	const chat = chats[id];
+	if (!chat) throw new Error('Chat not found.');
+	chats = {
+		...chats,
+		[id]: {
+			...chat,
+			backgrounds: chat.backgrounds.filter((b) => b !== url),
+			active_background: chat.active_background === url ? null : chat.active_background
+		}
+	};
+	await persist();
+}
+
+export async function setChatActiveBackground(id: ChatId, url: string | null): Promise<void> {
+	const chat = chats[id];
+	if (!chat || chat.active_background === url) return;
+	chats = { ...chats, [id]: { ...chat, active_background: url } };
+	await persist();
 }
 
 export async function deleteChat(id: ChatId): Promise<void> {
@@ -154,7 +190,9 @@ export async function importChat(
 		active_child: source.active_child ?? {},
 		created_at: Date.now(),
 		draft: '',
-		image_index: 0
+		image_index: 0,
+		backgrounds: [],
+		active_background: null
 	};
 	chats = { ...chats, [chat.id]: chat };
 	await persist();

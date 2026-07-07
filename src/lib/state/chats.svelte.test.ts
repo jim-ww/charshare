@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
 	__setChatsForTests,
+	addChatBackground,
 	addMessage,
 	createChat,
 	deleteChat,
@@ -12,7 +13,9 @@ import {
 	getChats,
 	getSiblings,
 	importChat,
+	removeChatBackground,
 	renameChat,
+	setChatActiveBackground,
 	switchBranch
 } from './chats.svelte';
 
@@ -37,6 +40,29 @@ describe('createChat / deleteChat', () => {
 		const chat = await createChat('char-1', 'Test chat');
 		await renameChat(chat.id, 'New name');
 		expect(getChat(chat.id)!.name).toBe('New name');
+	});
+});
+
+describe('chat backgrounds', () => {
+	it('adds, selects, and removes a background', async () => {
+		const chat = await createChat('char-1', 'Test chat');
+		await addChatBackground(chat.id, 'https://example.com/bg.png');
+		expect(getChat(chat.id)!.backgrounds).toEqual(['https://example.com/bg.png']);
+
+		await setChatActiveBackground(chat.id, 'https://example.com/bg.png');
+		expect(getChat(chat.id)!.active_background).toBe('https://example.com/bg.png');
+
+		await removeChatBackground(chat.id, 'https://example.com/bg.png');
+		expect(getChat(chat.id)!.backgrounds).toEqual([]);
+		expect(getChat(chat.id)!.active_background).toBeNull();
+	});
+
+	it('ignores duplicate and blank background urls', async () => {
+		const chat = await createChat('char-1', 'Test chat');
+		await addChatBackground(chat.id, 'https://example.com/bg.png');
+		await addChatBackground(chat.id, 'https://example.com/bg.png');
+		await addChatBackground(chat.id, '   ');
+		expect(getChat(chat.id)!.backgrounds).toEqual(['https://example.com/bg.png']);
 	});
 });
 
