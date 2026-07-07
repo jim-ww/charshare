@@ -27,9 +27,9 @@ Never state or assume what {{user}} does, thinks, or feels unless {{user}} has e
 Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 
 	let name = $state(initial?.name ?? draft?.name ?? "");
-	let imageUrls = $state<string[]>(
-		[...((initial ?? draft)?.image_urls ?? [])],
-	);
+	let imageUrls = $state<string[]>([
+		...((initial ?? draft)?.image_urls ?? []),
+	]);
 
 	function addImageUrl() {
 		imageUrls.push("");
@@ -88,7 +88,9 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 			await onsubmit({
 				id: initial?.id,
 				name,
-				image_urls: imageUrls.map((u) => u.trim()).filter(Boolean),
+				image_urls: imageUrls
+					.map((u) => u.trim())
+					.filter(Boolean),
 				description,
 				personality,
 				scenario,
@@ -124,13 +126,17 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 			<div class="form-control">
 				<span class="label-text">Image</span>
 				<CharacterImageViewer
-					images={imageUrls.map((u) => u.trim()).filter(Boolean)}
+					images={imageUrls
+						.map((u) => u.trim())
+						.filter(Boolean)}
 					name={name || "?"}
 				/>
 			</div>
 			<div class="form-control gap-2">
 				<div class="flex items-center justify-between">
-					<span class="label-text">Image URLs</span>
+					<span class="label-text"
+						>Image URLs</span
+					>
 					<button
 						type="button"
 						class="btn btn-ghost btn-sm"
@@ -143,14 +149,19 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 					<div class="flex gap-2">
 						<input
 							class="input input-bordered w-full"
-							bind:value={imageUrls[i]}
+							bind:value={
+								imageUrls[i]
+							}
 							placeholder="https://…"
 						/>
 						<button
 							type="button"
 							class="btn btn-ghost btn-sm"
 							aria-label="Remove image"
-							onclick={() => removeImageUrl(i)}
+							onclick={() =>
+								removeImageUrl(
+									i,
+								)}
 						>
 							✕
 						</button>
@@ -221,122 +232,174 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 		<div
 			class="order-1 flex flex-col gap-4 lg:order-2 lg:col-span-2"
 		>
-			<div
-				class="collapse-arrow bg-base-200 border-base-300 collapse border"
-			>
-				<input type="checkbox" checked />
-				<div class="collapse-title label-text font-medium">
-					Description
+			<div class="join join-vertical w-full">
+				<div
+					class="collapse-arrow bg-base-200 border-base-300 join-item collapse border"
+				>
+					<input
+						type="radio"
+						name="character-form-accordion"
+						checked
+					/>
+					<div
+						class="collapse-title label-text font-medium"
+					>
+						Description
+					</div>
+					<div class="collapse-content">
+						<textarea
+							class="textarea textarea-bordered field-sizing-content min-h-24 w-full"
+							bind:value={description}
+							placeholder="Who is this character? Appearance, background, notable traits…"
+						></textarea>
+					</div>
 				</div>
-				<div class="collapse-content">
-					<textarea
-						class="textarea textarea-bordered field-sizing-content min-h-24 w-full"
-						bind:value={description}
-						placeholder="Who is this character? Appearance, background, notable traits…"
-					></textarea>
+				<div
+					class="collapse-arrow bg-base-200 border-base-300 join-item collapse border"
+				>
+					<input
+						type="radio"
+						name="character-form-accordion"
+					/>
+					<div
+						class="collapse-title label-text font-medium"
+					>
+						Personality
+					</div>
+					<div class="collapse-content">
+						<textarea
+							class="textarea textarea-bordered field-sizing-content min-h-24 w-full"
+							bind:value={personality}
+							placeholder="How do they act, speak, and think? e.g. blunt, secretly caring, quick to anger…"
+						></textarea>
+					</div>
 				</div>
-			</div>
-			<div
-				class="collapse-arrow bg-base-200 border-base-300 collapse border"
-			>
-				<input type="checkbox" checked />
-				<div class="collapse-title label-text font-medium">
-					Personality
+				<div
+					class="collapse-arrow bg-base-200 border-base-300 join-item collapse border"
+				>
+					<input
+						type="radio"
+						name="character-form-accordion"
+					/>
+					<div
+						class="collapse-title label-text font-medium"
+					>
+						Scenario
+					</div>
+					<div class="collapse-content">
+						<textarea
+							class="textarea textarea-bordered field-sizing-content min-h-24 w-full"
+							bind:value={scenario}
+							placeholder="The setting or situation the chat starts in…"
+						></textarea>
+					</div>
 				</div>
-				<div class="collapse-content">
-					<textarea
-						class="textarea textarea-bordered field-sizing-content min-h-24 w-full"
-						bind:value={personality}
-						placeholder="How do they act, speak, and think? e.g. blunt, secretly caring, quick to anger…"
-					></textarea>
+				<div
+					class="collapse-arrow bg-base-200 border-base-300 join-item collapse border"
+				>
+					<input
+						type="radio"
+						name="character-form-accordion"
+					/>
+					<div
+						class="collapse-title label-text font-medium"
+					>
+						System prompt
+					</div>
+					<div class="collapse-content">
+						<textarea
+							class="textarea textarea-bordered field-sizing-content min-h-32 w-full"
+							bind:value={
+								systemPrompt
+							}
+							placeholder="Instructions sent to the AI describing how to roleplay this character…"
+						></textarea>
+					</div>
 				</div>
-			</div>
-			<div
-				class="collapse-arrow bg-base-200 border-base-300 collapse border"
-			>
-				<input type="checkbox" checked />
-				<div class="collapse-title label-text font-medium">
-					Scenario
+				<div
+					class="collapse-arrow bg-base-200 border-base-300 join-item collapse border"
+				>
+					<input
+						type="radio"
+						name="character-form-accordion"
+					/>
+					<div
+						class="collapse-title label-text font-medium"
+					>
+						First message
+					</div>
+					<div class="collapse-content">
+						<textarea
+							class="textarea textarea-bordered field-sizing-content min-h-24 w-full"
+							bind:value={
+								firstMessage
+							}
+							placeholder="The message {'{{char}}'} sends to open the conversation…"
+						></textarea>
+					</div>
 				</div>
-				<div class="collapse-content">
-					<textarea
-						class="textarea textarea-bordered field-sizing-content min-h-24 w-full"
-						bind:value={scenario}
-						placeholder="The setting or situation the chat starts in…"
-					></textarea>
-				</div>
-			</div>
-			<label class="form-control">
-				<span class="label-text">System prompt</span>
-				<textarea
-					class="textarea textarea-bordered field-sizing-content min-h-32 w-full"
-					bind:value={systemPrompt}
-					placeholder="Instructions sent to the AI describing how to roleplay this character…"
-				></textarea>
-			</label>
-			<div
-				class="collapse-arrow bg-base-200 border-base-300 collapse border"
-			>
-				<input type="checkbox" checked />
-				<div class="collapse-title label-text font-medium">
-					First message
-				</div>
-				<div class="collapse-content">
-					<textarea
-						class="textarea textarea-bordered field-sizing-content min-h-24 w-full"
-						bind:value={firstMessage}
-						placeholder="The message {'{{char}}'} sends to open the conversation…"
-					></textarea>
-				</div>
-			</div>
 
-			<div
-				class="collapse-arrow bg-base-200 border-base-300 collapse border"
-			>
-				<input type="checkbox" />
-				<div class="collapse-title label-text font-medium">
-					Alternate greetings{alternateGreetings.length
-						? ` (${alternateGreetings.length})`
-						: ""}
-				</div>
-				<div class="collapse-content">
-					<div class="form-control gap-2">
-						<div class="flex items-center justify-between">
-							<span class="label-text"
-								>Alternate greetings</span
+				<div
+					class="collapse-arrow bg-base-200 border-base-300 join-item collapse border"
+				>
+					<input
+						type="radio"
+						name="character-form-accordion"
+					/>
+					<div
+						class="collapse-title label-text font-medium"
+					>
+						Alternate greetings{alternateGreetings.length
+							? ` (${alternateGreetings.length})`
+							: ""}
+					</div>
+					<div class="collapse-content">
+						<div class="form-control gap-2">
+							<div
+								class="flex items-center justify-between"
 							>
-							<button
-								type="button"
-								class="btn btn-ghost btn-sm"
-								onclick={addGreeting}
-							>
-								+ Add greeting
-							</button>
-						</div>
-						{#each alternateGreetings as _, i}
-							<div class="flex gap-2">
-								<textarea
-									class="textarea textarea-bordered field-sizing-content min-h-16 w-full"
-									bind:value={
-										alternateGreetings[
-											i
-										]
-									}
-									placeholder="An alternate opening message…"
-								></textarea>
+								<span
+									class="label-text"
+									>Alternate
+									greetings</span
+								>
 								<button
 									type="button"
 									class="btn btn-ghost btn-sm"
-									aria-label="Remove greeting"
-									onclick={() =>
-										removeGreeting(
-											i,
-										)}
+									onclick={addGreeting}
 								>
-									✕
+									+ Add
+									greeting
 								</button>
 							</div>
-						{/each}
+							{#each alternateGreetings as _, i}
+								<div
+									class="flex gap-2"
+								>
+									<textarea
+										class="textarea textarea-bordered field-sizing-content min-h-16 w-full"
+										bind:value={
+											alternateGreetings[
+												i
+											]
+										}
+										placeholder="An alternate opening message…"
+
+									></textarea>
+									<button
+										type="button"
+										class="btn btn-ghost btn-sm"
+										aria-label="Remove greeting"
+										onclick={() =>
+											removeGreeting(
+												i,
+											)}
+									>
+										✕
+									</button>
+								</div>
+							{/each}
+						</div>
 					</div>
 				</div>
 			</div>
@@ -344,11 +407,15 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 	</div>
 
 	<div class="flex items-center gap-4">
-		<button class="btn btn-primary" type="submit" disabled={saving}>
-			{saving ? "Saving…" : submitLabel}
-		</button>
-		{#if error}
-			<p class="text-error text-sm">{error}</p>
-		{/if}
-	</div>
+		<button
+				class="btn btn-primary"
+				type="submit"
+				disabled={saving}
+			>
+				{saving ? "Saving…" : submitLabel}
+			</button>
+			{#if error}
+				<p class="text-error text-sm">{error}</p>
+			{/if}
+		</div>
 </form>
