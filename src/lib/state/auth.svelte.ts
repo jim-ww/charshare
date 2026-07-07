@@ -18,6 +18,13 @@ export function isAuthReady(): boolean {
 	return ready;
 }
 
+/** Test-only escape hatch: sets the keyring directly, bypassing IndexedDB
+ *  (unavailable under plain Node/vitest). */
+export function __setKeyringForTests(k: Keyring | null): void {
+	keyring = k;
+	ready = k !== null;
+}
+
 /** Loads the identity from IndexedDB, or generates and persists a new one on
  *  first run (see spec: no key recovery — this is the only copy). Safe to
  *  call multiple times; the underlying load/generate only happens once. */

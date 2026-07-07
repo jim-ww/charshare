@@ -2,10 +2,20 @@
 	import { onMount } from 'svelte';
 	import { getCurrentUser, initAuth, isAuthReady } from '$lib/state/auth.svelte';
 	import { getMyProfile, initProfile, isProfileReady, saveProfile } from '$lib/state/profile.svelte';
+	import {
+		createOrEditCharacter,
+		deleteMyCharacter,
+		forkCharacter,
+		getMyCharacters,
+		initCharacters,
+		isCharactersReady
+	} from '$lib/state/characters.svelte';
+	import type { CharacterId } from '$lib/types';
 
 	onMount(() => {
 		initAuth();
 		initProfile();
+		initCharacters();
 	});
 
 	const ready = $derived(isAuthReady());
@@ -40,6 +50,64 @@
 		} finally {
 			saving = false;
 		}
+	}
+
+	const charactersReady = $derived(isCharactersReady());
+	const characters = $derived(getMyCharacters());
+
+	let characterName = $state('');
+	let characterSaving = $state(false);
+	let characterError = $state<string | null>(null);
+	let editingId = $state<CharacterId | null>(null);
+
+	function startEdit(id: CharacterId, name: string) {
+		editingId = id;
+		characterName = name;
+	}
+
+	function cancelEdit() {
+		editingId = null;
+		characterName = '';
+	}
+
+	const emptyDraftFields = {
+		image_url: '',
+		description: '',
+		personality: '',
+		scenario: '',
+		tags: [],
+		nsfw: false,
+		language: '',
+		system_prompt: '',
+		first_message: '',
+		alternate_greetings: [],
+		comments_enabled: true
+	};
+
+	async function handleCharacterSubmit(event: SubmitEvent) {
+		event.preventDefault();
+		characterSaving = true;
+		characterError = null;
+		try {
+			await createOrEditCharacter({
+				...emptyDraftFields,
+				id: editingId ?? undefined,
+				name: characterName
+			});
+			cancelEdit();
+		} catch (err) {
+			characterError = err instanceof Error ? err.message : String(err);
+		} finally {
+			characterSaving = false;
+		}
+	}
+
+	async function handleDelete(id: CharacterId) {
+		await deleteMyCharacter(id);
+	}
+
+	async function handleFork(id: CharacterId) {
+		await forkCharacter(id);
 	}
 </script>
 
@@ -76,6 +144,44 @@
 				</button>
 				{#if saveError}
 					<p class="text-error text-sm">{saveError}</p>
+				{/if}
+			</form>
+		{/if}
+	</div>
+
+	<div class="mt-6 max-w-md">
+		<h2 class="text-lg font-semibold">Characters</h2>
+		{#if !charactersReady}
+			<p>Loading characters…</p>
+		{:else}
+			<ul class="mt-2 flex flex-col gap-2">
+				{#each characters as character (character.id)}
+					<li class="flex items-center justify-between gap-2 rounded border p-2">
+						<span class:line-through={character.deleted}>{character.name} (v{character.version})</span>
+						<div class="flex gap-1">
+							<button class="btn btn-xs" onclick={() => startEdit(character.id, character.name)}>Edit</button>
+							<button class="btn btn-xs" onclick={() => handleFork(character.id)}>Fork</button>
+							<button class="btn btn-xs btn-error" onclick={() => handleDelete(character.id)}>Delete</button>
+						</div>
+					</li>
+				{/each}
+			</ul>
+
+			<form class="mt-3 flex flex-col gap-3" onsubmit={handleCharacterSubmit}>
+				<label class="form-control">
+					<span class="label-text">{editingId ? 'Edit character name' : 'New character name'}</span>
+					<input class="input input-bordered w-full" bind:value={characterName} />
+				</label>
+				<div class="flex gap-2">
+					<button class="btn btn-primary" type="submit" disabled={characterSaving}>
+						{characterSaving ? 'Saving…' : editingId ? 'Save changes' : 'Create character'}
+					</button>
+					{#if editingId}
+						<button class="btn" type="button" onclick={cancelEdit}>Cancel</button>
+					{/if}
+				</div>
+				{#if characterError}
+					<p class="text-error text-sm">{characterError}</p>
 				{/if}
 			</form>
 		{/if}
