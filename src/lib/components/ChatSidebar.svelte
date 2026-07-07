@@ -5,6 +5,8 @@
 	import { getChats, deleteChat, renameChat, exportChat } from '$lib/state/chats.svelte';
 	import { resolveCharacter, ensureCharacterLoaded } from '$lib/state/characterCache.svelte';
 	import Avatar from './Avatar.svelte';
+	import ConfirmDialog from './ConfirmDialog.svelte';
+	import PromptDialog from './PromptDialog.svelte';
 
 	const chats = $derived(getChats());
 
@@ -38,15 +40,30 @@
 
 	const activeId = $derived(page.params.id);
 
-	async function handleDelete(chat: Chat) {
-		if (!confirm(`Delete conversation "${chat.name}"? This cannot be undone.`)) return;
+	let deleteTarget = $state<Chat | null>(null);
+	let renameTarget = $state<Chat | null>(null);
+
+	function handleDelete(chat: Chat) {
+		deleteTarget = chat;
+	}
+
+	async function confirmDelete() {
+		if (!deleteTarget) return;
+		const chat = deleteTarget;
+		deleteTarget = null;
 		if (activeId === chat.id) await goto('/chats');
 		await deleteChat(chat.id);
 	}
 
-	async function handleRename(chat: Chat) {
-		const name = prompt('Rename conversation', chat.name)?.trim();
-		if (!name || name === chat.name) return;
+	function handleRename(chat: Chat) {
+		renameTarget = chat;
+	}
+
+	async function confirmRename(name: string) {
+		if (!renameTarget) return;
+		const chat = renameTarget;
+		renameTarget = null;
+		if (name === chat.name) return;
 		await renameChat(chat.id, name);
 	}
 
@@ -138,3 +155,22 @@
 		<p class="p-3 text-center text-sm opacity-60">No conversations yet.</p>
 	{/each}
 </aside>
+
+<ConfirmDialog
+	open={deleteTarget !== null}
+	title="Delete conversation"
+	message={`Delete conversation "${deleteTarget?.name ?? ''}"? This cannot be undone.`}
+	confirmLabel="Delete"
+	danger
+	onconfirm={confirmDelete}
+	oncancel={() => (deleteTarget = null)}
+/>
+
+<PromptDialog
+	open={renameTarget !== null}
+	title="Rename conversation"
+	initialValue={renameTarget?.name ?? ''}
+	confirmLabel="Save"
+	onconfirm={confirmRename}
+	oncancel={() => (renameTarget = null)}
+/>
