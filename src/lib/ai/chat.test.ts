@@ -27,14 +27,30 @@ const character: Character = {
 	updated_at: 0
 };
 
+/** Builds a fetch Response streaming OpenRouter-style SSE chunks, one
+ *  `data:` event per delta, ending with `data: [DONE]`. */
+function sseResponse(deltas: string[], finishReason: string): Response {
+	const encoder = new TextEncoder();
+	const stream = new ReadableStream({
+		start(controller) {
+			for (const delta of deltas) {
+				const chunk = { choices: [{ delta: { content: delta } }] };
+				controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`));
+			}
+			const final = { choices: [{ delta: {}, finish_reason: finishReason }] };
+			controller.enqueue(encoder.encode(`data: ${JSON.stringify(final)}\n\n`));
+			controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+			controller.close();
+		}
+	});
+	return { ok: true, body: stream } as unknown as Response;
+}
+
 beforeEach(() => {
 	__setChatsForTests({});
 	vi.stubGlobal(
 		'fetch',
-		vi.fn(async () => ({
-			ok: true,
-			json: async () => ({ choices: [{ message: { content: 'a reply' } }] })
-		}))
+		vi.fn(async () => sseResponse(['a reply'], 'stop'))
 	);
 });
 
@@ -48,6 +64,46 @@ describe('sendMessage', () => {
 		expect(stored.messages[0].role).toBe('user');
 		expect(stored.messages[1].role).toBe('character');
 		expect(stored.messages[1].versions[0].content).toBe('a reply');
+	});
+
+	it('cancels mid-stream and keeps whatever was generated so far', async () => {
+		const encoder = new TextEncoder();
+		const abortController = new AbortController();
+		let fetchStarted!: () => void;
+		const fetchStartedPromise = new Promise<void>((resolve) => (fetchStarted = resolve));
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async (_url, init: RequestInit) => {
+				let streamController: ReadableStreamDefaultController<Uint8Array>;
+				const stream = new ReadableStream<Uint8Array>({
+					start(c) {
+						streamController = c;
+						c.enqueue(
+							encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: 'Her thumb pauses' } }] })}\n\n`)
+						);
+					}
+				});
+				// real fetch rejects the next reader.read() once the signal aborts —
+				// simulate that so the stream doesn't hang forever in the test.
+				init.signal?.addEventListener('abort', () => {
+					streamController.error(new DOMException('Aborted', 'AbortError'));
+				});
+				fetchStarted();
+				return { ok: true, body: stream } as unknown as Response;
+			})
+		);
+
+		const chat: Chat = await createChat(character.id, 'Test chat');
+		const sendPromise = sendMessage(chat, character, 'hi there', { signal: abortController.signal });
+		await fetchStartedPromise;
+		// let the reader loop consume the already-queued first chunk before we
+		// abort, so the abort only cuts off what comes *after* it
+		await new Promise((resolve) => setTimeout(resolve, 0));
+		abortController.abort();
+		await sendPromise;
+
+		const stored = getChat(chat.id)!;
+		expect(stored.messages[1].versions[0].content).toBe('Her thumb pauses');
 	});
 });
 
@@ -69,18 +125,8 @@ describe('truncated replies', () => {
 			vi.fn(async () => {
 				call++;
 				return call === 1
-					? {
-							ok: true,
-							json: async () => ({
-								choices: [{ message: { content: 'Her thumb pauses mid-sc' }, finish_reason: 'length' }]
-							})
-						}
-					: {
-							ok: true,
-							json: async () => ({
-								choices: [{ message: { content: 'roll, hovering over send.' }, finish_reason: 'stop' }]
-							})
-						};
+					? sseResponse(['Her thumb pauses mid-sc'], 'length')
+					: sseResponse(['roll, hovering over send.'], 'stop');
 			})
 		);
 
@@ -95,10 +141,7 @@ describe('truncated replies', () => {
 	it('gives up after MAX_CONTINUATIONS rounds instead of looping forever', async () => {
 		vi.stubGlobal(
 			'fetch',
-			vi.fn(async () => ({
-				ok: true,
-				json: async () => ({ choices: [{ message: { content: 'x' }, finish_reason: 'length' }] })
-			}))
+			vi.fn(async () => sseResponse(['x'], 'length'))
 		);
 
 		const chat: Chat = await createChat(character.id, 'Test chat');

@@ -1,11 +1,16 @@
-import type { Character, Chat } from '$lib/types';
+import type { Character, Chat, ProviderConfig } from '$lib/types';
 import { activeContent } from '$lib/types';
 import { getPreferences, initPreferences } from '$lib/state/preferences.svelte';
-import { addMessage } from '$lib/state/chats.svelte';
+import { addMessage, deleteMessage, updateMessageContent } from '$lib/state/chats.svelte';
 import { requestCompletion, type CompletionMessage } from './index';
-import type { ProviderConfig } from '$lib/types';
 
 const MAX_CONTINUATIONS = 3;
+
+interface CompleteOptions {
+	signal?: AbortSignal;
+	/** Called with the accumulated reply so far, across all continuation rounds. */
+	onChunk?: (contentSoFar: string) => void;
+}
 
 /** requestCompletion() can come back cut off mid-sentence — either the
  *  reply hit max_tokens, or (common with free-tier OpenRouter models) the
@@ -15,13 +20,18 @@ const MAX_CONTINUATIONS = 3;
  *  pieces together. */
 async function completeWithContinuation(
 	config: ProviderConfig,
-	messages: CompletionMessage[]
+	messages: CompletionMessage[],
+	options: CompleteOptions = {}
 ): Promise<string> {
 	let full = '';
 	let pending = messages;
 	for (let i = 0; i <= MAX_CONTINUATIONS; i++) {
-		const { content, finishReason } = await requestCompletion(config, pending);
-		full += content;
+		const roundStart = full;
+		const { content, finishReason } = await requestCompletion(config, pending, {
+			signal: options.signal,
+			onChunk: (soFar) => options.onChunk?.(roundStart + soFar)
+		});
+		full = roundStart + content;
 		if (finishReason !== 'length') break;
 		pending = [
 			...pending,
@@ -63,8 +73,17 @@ function systemPrompt(character: Character): string {
 /** Sends the user's message, then asks the AI to respond in character (see
  *  spec: Chat with Characters). Builds the request from the chat snapshot
  *  passed in plus the new content, rather than re-reading state after
- *  addMessage — avoids a state-timing dependency. */
-export async function sendMessage(chat: Chat, character: Character, content: string): Promise<void> {
+ *  addMessage — avoids a state-timing dependency.
+ *
+ *  Streams the reply into the message as it arrives. Pass `signal` to allow
+ *  cancelling mid-stream (e.g. a "stop" button) — whatever was generated up
+ *  to that point is kept rather than discarded. */
+export async function sendMessage(
+	chat: Chat,
+	character: Character,
+	content: string,
+	options: { signal?: AbortSignal } = {}
+): Promise<void> {
 	await ensurePreferencesReady();
 	await addMessage(chat.id, 'user', content);
 
@@ -73,8 +92,27 @@ export async function sendMessage(chat: Chat, character: Character, content: str
 		...historyToMessages(chat),
 		{ role: 'user', content }
 	];
-	const reply = await completeWithContinuation(getPreferences().provider, messages);
-	await addMessage(chat.id, 'character', reply);
+
+	const message = await addMessage(chat.id, 'character', '');
+	let latest = '';
+	try {
+		latest = await completeWithContinuation(getPreferences().provider, messages, {
+			signal: options.signal,
+			onChunk: (soFar) => {
+				latest = soFar;
+				void updateMessageContent(chat.id, message.id, soFar);
+			}
+		});
+	} catch (err) {
+		if (!latest) {
+			await deleteMessage(chat.id, message.id);
+			throw err;
+		}
+		// stopped mid-stream (user hit "stop", or the connection dropped) —
+		// keep whatever was generated instead of losing it
+	} finally {
+		if (latest) await updateMessageContent(chat.id, message.id, latest, { persist: true });
+	}
 }
 
 /** "Generate response for me" — the same completion call as sendMessage,

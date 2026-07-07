@@ -124,6 +124,31 @@ export async function addMessage(chatId: ChatId, role: MessageRole, content: str
 	return message;
 }
 
+/** Rewrites the content of a message's *active* version in place, without
+ *  adding a new version — used while a streamed reply is still arriving.
+ *  Persistence is skipped by default since this fires on every chunk;
+ *  pass persist: true for the final write once the stream ends. */
+export async function updateMessageContent(
+	chatId: ChatId,
+	messageId: MessageId,
+	content: string,
+	opts: { persist?: boolean } = {}
+): Promise<void> {
+	updateChat(chatId, (chat) => ({
+		...chat,
+		messages: chat.messages.map((m) =>
+			m.id === messageId
+				? {
+						...m,
+						versions: m.versions.map((v, i) => (i === m.active_version_index ? { ...v, content } : v)),
+						updated_at: Date.now()
+					}
+				: m
+		)
+	}));
+	if (opts.persist) await persist();
+}
+
 /** Edits a message by appending a new version and marking it active — never
  *  mutates or discards prior versions (see spec: Message versioning). */
 export async function addMessageVersion(chatId: ChatId, messageId: MessageId, content: string): Promise<void> {
