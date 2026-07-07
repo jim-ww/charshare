@@ -61,6 +61,45 @@ export async function deleteChat(id: ChatId): Promise<void> {
 	await persist();
 }
 
+/** Serializes a chat for the "Export" action — plain JSON so it round-trips
+ *  through importChat (see below). */
+export function exportChat(id: ChatId): string {
+	const chat = chats[id];
+	if (!chat) throw new Error('Chat not found.');
+	return JSON.stringify(chat, null, 2);
+}
+
+/** Imports a previously-exported chat JSON for a given character, assigning a
+ *  fresh id/created_at rather than reusing the export's (avoids collisions
+ *  and lets the same export be imported more than once). */
+export async function importChat(characterId: CharacterId, json: string): Promise<Chat> {
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(json);
+	} catch {
+		throw new Error('Not valid JSON.');
+	}
+	if (
+		typeof parsed !== 'object' ||
+		parsed === null ||
+		!Array.isArray((parsed as Chat).messages) ||
+		typeof (parsed as Chat).name !== 'string'
+	) {
+		throw new Error('Not a valid chat export.');
+	}
+	const source = parsed as Chat;
+	const chat: Chat = {
+		id: crypto.randomUUID(),
+		character_id: characterId,
+		name: source.name,
+		messages: source.messages,
+		created_at: Date.now()
+	};
+	chats = { ...chats, [chat.id]: chat };
+	await persist();
+	return chat;
+}
+
 function updateChat(id: ChatId, update: (chat: Chat) => Chat): void {
 	const chat = chats[id];
 	if (!chat) throw new Error('Chat not found.');

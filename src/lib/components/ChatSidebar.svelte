@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 	import type { Chat, CharacterId } from '$lib/types';
-	import { getChats } from '$lib/state/chats.svelte';
+	import { getChats, deleteChat, renameChat, exportChat } from '$lib/state/chats.svelte';
 	import { resolveCharacter, ensureCharacterLoaded } from '$lib/state/characterCache.svelte';
 
 	const chats = $derived(getChats());
@@ -35,7 +36,54 @@
 	}
 
 	const activeId = $derived(page.params.id);
+
+	async function handleDelete(chat: Chat) {
+		if (!confirm(`Delete conversation "${chat.name}"? This cannot be undone.`)) return;
+		if (activeId === chat.id) await goto('/chats');
+		await deleteChat(chat.id);
+	}
+
+	async function handleRename(chat: Chat) {
+		const name = prompt('Rename conversation', chat.name)?.trim();
+		if (!name || name === chat.name) return;
+		await renameChat(chat.id, name);
+	}
+
+	function handleExport(chat: Chat) {
+		const blob = new Blob([exportChat(chat.id)], { type: 'application/json' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = `${chat.name.replace(/[^a-z0-9_-]+/gi, '_') || 'chat'}.json`;
+		a.click();
+		URL.revokeObjectURL(url);
+	}
 </script>
+
+{#snippet chatActions(chat: Chat)}
+	<div class="dropdown dropdown-end">
+		<button
+			tabindex="0"
+			class="btn btn-ghost btn-xs px-1"
+			type="button"
+			aria-label="More options"
+		>
+			⋮
+		</button>
+		<ul class="menu dropdown-content menu-sm z-10 w-32 rounded-box bg-base-200 p-1 shadow">
+			<li><button type="button" onclick={() => handleExport(chat)}>Export</button></li>
+			<li><button type="button" onclick={() => handleRename(chat)}>Rename</button></li>
+		</ul>
+	</div>
+	<button
+		class="btn btn-ghost btn-xs px-1"
+		type="button"
+		aria-label="Delete conversation"
+		onclick={() => handleDelete(chat)}
+	>
+		✕
+	</button>
+{/snippet}
 
 <aside class="flex w-64 shrink-0 flex-col gap-1 border-r border-base-300 p-2">
 	{#each groups as [characterId, characterChats] (characterId)}
@@ -60,18 +108,22 @@
 						{characterChats.length} {expanded[characterId] ? '▴' : '▾'}
 					</button>
 				{/if}
+				{@render chatActions(latest)}
 			</div>
 			{#if expanded[characterId]}
 				<ul class="ml-2 flex flex-col gap-1">
 					{#each characterChats as chat (chat.id)}
 						<li>
-							<a
-								class="btn btn-xs btn-ghost w-full justify-start"
-								class:btn-active={activeId === chat.id}
-								href={`/chats/${chat.id}`}
-							>
-								{chat.name}
-							</a>
+							<div class="flex items-center gap-1">
+								<a
+									class="btn btn-xs btn-ghost min-w-0 flex-1 justify-start truncate"
+									class:btn-active={activeId === chat.id}
+									href={`/chats/${chat.id}`}
+								>
+									{chat.name}
+								</a>
+								{@render chatActions(chat)}
+							</div>
 						</li>
 					{/each}
 				</ul>

@@ -6,7 +6,7 @@
 	import { getCharacter } from '$lib/gun/characters';
 	import { getCurrentUser } from '$lib/state/auth.svelte';
 	import { deleteMyCharacter, forkCharacter } from '$lib/state/characters.svelte';
-	import { createChat, getChats, initChats, isChatsReady } from '$lib/state/chats.svelte';
+	import { createChat, getChats, importChat, initChats, isChatsReady } from '$lib/state/chats.svelte';
 	import {
 		addComment,
 		getCommentsFor,
@@ -60,6 +60,24 @@
 		if (!character) return;
 		const chat = await createChat(character.id, character.name);
 		await goto(`/chats/${chat.id}`);
+	}
+
+	let importInput = $state<HTMLInputElement>();
+	let importError = $state('');
+
+	async function handleImportChat(event: Event) {
+		if (!character) return;
+		const file = (event.target as HTMLInputElement).files?.[0];
+		if (!file) return;
+		importError = '';
+		try {
+			const chat = await importChat(character.id, await file.text());
+			await goto(`/chats/${chat.id}`);
+		} catch (err) {
+			importError = err instanceof Error ? err.message : 'Failed to import chat.';
+		} finally {
+			if (importInput) importInput.value = '';
+		}
 	}
 
 	async function handleFork() {
@@ -135,6 +153,16 @@
 					<button class="btn btn-primary btn-sm" type="button" onclick={handleStartChat}>
 						Start new chat
 					</button>
+					<button class="btn btn-sm" type="button" onclick={() => importInput?.click()}>
+						Import chat
+					</button>
+					<input
+						bind:this={importInput}
+						type="file"
+						accept="application/json"
+						class="hidden"
+						onchange={handleImportChat}
+					/>
 					{#if isMine}
 						<a class="btn btn-sm" href={`/characters/${character.id}/edit`}>Edit</a>
 						<button class="btn btn-sm btn-error" type="button" onclick={handleDelete}>
@@ -144,6 +172,10 @@
 						<button class="btn btn-sm" type="button" onclick={handleFork}>Fork</button>
 					{/if}
 				</div>
+
+				{#if importError}
+					<p class="text-sm text-error">{importError}</p>
+				{/if}
 
 				{#if isChatsReady() && pastChats.length}
 					<div>

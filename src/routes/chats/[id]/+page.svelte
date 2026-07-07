@@ -1,6 +1,7 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { page } from '$app/state';
-	import { getChat } from '$lib/state/chats.svelte';
+	import { getChat, addMessage } from '$lib/state/chats.svelte';
 	import { resolveCharacter, ensureCharacterLoaded } from '$lib/state/characterCache.svelte';
 	import ChatThreadSwitcher from '$lib/components/ChatThreadSwitcher.svelte';
 	import ChatBubble from '$lib/components/ChatBubble.svelte';
@@ -14,6 +15,16 @@
 	});
 
 	const character = $derived(chat ? resolveCharacter(chat.character_id) : undefined);
+
+	// A brand-new chat has no messages yet — post the character's greeting as
+	// the opening message so a fresh chat isn't just an empty composer.
+	$effect(() => {
+		if (chat && character && chat.messages.length === 0 && character.first_message) {
+			untrack(() => {
+				void addMessage(chat.id, 'character', character.first_message);
+			});
+		}
+	});
 </script>
 
 {#if !chat}

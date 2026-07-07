@@ -6,8 +6,11 @@ import {
 	createChat,
 	deleteChat,
 	deleteMessage,
+	exportChat,
 	getChat,
 	getChats,
+	importChat,
+	renameChat,
 	setActiveVersion
 } from './chats.svelte';
 import { activeContent } from '$lib/types';
@@ -27,6 +30,38 @@ describe('createChat / deleteChat', () => {
 		const chat = await createChat('char-1', 'Test chat');
 		await deleteChat(chat.id);
 		expect(getChats()).toEqual([]);
+	});
+
+	it('renames a chat', async () => {
+		const chat = await createChat('char-1', 'Test chat');
+		await renameChat(chat.id, 'New name');
+		expect(getChat(chat.id)!.name).toBe('New name');
+	});
+});
+
+describe('exportChat / importChat', () => {
+	it('round-trips a chat with messages to a new id', async () => {
+		const chat = await createChat('char-1', 'Test chat');
+		await addMessage(chat.id, 'user', 'hello');
+
+		const json = exportChat(chat.id);
+		const imported = await importChat('char-2', json);
+
+		expect(imported.id).not.toBe(chat.id);
+		expect(imported.character_id).toBe('char-2');
+		expect(imported.name).toBe('Test chat');
+		expect(imported.messages).toHaveLength(1);
+		expect(getChat(imported.id)).toEqual(imported);
+	});
+
+	it('rejects invalid JSON', async () => {
+		await expect(importChat('char-1', 'not json')).rejects.toThrow('Not valid JSON.');
+	});
+
+	it('rejects JSON that is not a chat export', async () => {
+		await expect(importChat('char-1', JSON.stringify({ foo: 'bar' }))).rejects.toThrow(
+			'Not a valid chat export.'
+		);
 	});
 });
 
