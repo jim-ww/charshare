@@ -161,84 +161,6 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 					name={name || "?"}
 				/>
 			</div>
-			<div
-				class="collapse-arrow bg-base-200 border-base-300 collapse border"
-			>
-				<input type="checkbox" />
-				<div class="collapse-title label-text font-medium">
-					Image URLs{imageUrls.length
-						? ` (${imageUrls.length})`
-						: ""}
-				</div>
-				<div class="collapse-content">
-					<div class="form-control gap-2">
-						<div class="flex items-center justify-end">
-							<button
-								type="button"
-								class="btn btn-ghost btn-sm"
-								onclick={addImageUrl}
-							>
-								+ Add image
-							</button>
-						</div>
-						{#each imageUrls as _, i}
-							<div
-								role="listitem"
-								class="flex items-center gap-2 {dragOverImageIndex ===
-									i &&
-								draggedImageIndex !== null &&
-								draggedImageIndex !== i
-									? 'border-primary rounded border-2 border-dashed'
-									: ''}"
-								ondragover={(e) =>
-									handleImageDragOver(
-										e,
-										i,
-									)}
-								ondrop={() =>
-									handleImageDrop(i)}
-							>
-								<button
-									type="button"
-									class="btn btn-ghost btn-sm cursor-grab active:cursor-grabbing"
-									aria-label="Drag to reorder"
-									draggable="true"
-									ondragstart={() =>
-										handleImageDragStart(
-											i,
-										)}
-									ondragend={handleImageDragEnd}
-								>
-									⠿
-								</button>
-								<span
-									class="text-sm opacity-60 tabular-nums"
-								>
-									{i + 1}
-								</span>
-								<input
-									class="input input-bordered w-full"
-									bind:value={
-										imageUrls[i]
-									}
-									placeholder="https://…"
-								/>
-								<button
-									type="button"
-									class="btn btn-ghost btn-sm"
-									aria-label="Remove image"
-									onclick={() =>
-										removeImageUrl(
-											i,
-										)}
-								>
-									✕
-								</button>
-							</div>
-						{/each}
-					</div>
-				</div>
-			</div>
 			<label class="form-control">
 				<span class="label-text">Name</span>
 				<input
@@ -335,6 +257,101 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 					<div
 						class="collapse-title label-text font-medium"
 					>
+						Image URLs{imageUrls.length
+							? ` (${imageUrls.length})`
+							: ""}
+					</div>
+					<div class="collapse-content">
+						<div class="form-control gap-2">
+							<div
+								class="flex items-center justify-end"
+							>
+								<button
+									type="button"
+									class="btn btn-ghost btn-sm"
+									onclick={addImageUrl}
+								>
+									+ Add
+									image
+								</button>
+							</div>
+							{#each imageUrls as _, i}
+								<div
+									role="listitem"
+									class="flex items-center gap-2 {dragOverImageIndex ===
+										i &&
+									draggedImageIndex !==
+										null &&
+									draggedImageIndex !==
+										i
+										? 'border-primary rounded border-2 border-dashed'
+										: ''}"
+									ondragover={(
+										e,
+									) =>
+										handleImageDragOver(
+											e,
+											i,
+										)}
+									ondrop={() =>
+										handleImageDrop(
+											i,
+										)}
+								>
+									<button
+										type="button"
+										class="btn btn-ghost btn-sm cursor-grab active:cursor-grabbing"
+										aria-label="Drag to reorder"
+										draggable="true"
+										ondragstart={() =>
+											handleImageDragStart(
+												i,
+											)}
+										ondragend={handleImageDragEnd}
+									>
+										⠿
+									</button>
+									<span
+										class="text-sm opacity-60 tabular-nums"
+									>
+										{i +
+											1}
+									</span>
+									<input
+										class="input input-bordered w-full"
+										bind:value={
+											imageUrls[
+												i
+											]
+										}
+										placeholder="https://…"
+									/>
+									<button
+										type="button"
+										class="btn btn-ghost btn-sm"
+										aria-label="Remove image"
+										onclick={() =>
+											removeImageUrl(
+												i,
+											)}
+									>
+										✕
+									</button>
+								</div>
+							{/each}
+						</div>
+					</div>
+				</div>
+				<div
+					class="collapse-arrow bg-base-200 border-base-300 join-item collapse border"
+				>
+					<input
+						type="radio"
+						name="character-form-accordion"
+					/>
+					<div
+						class="collapse-title label-text font-medium"
+					>
 						Personality
 					</div>
 					<div class="collapse-content">
@@ -365,28 +382,7 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 						></textarea>
 					</div>
 				</div>
-				<div
-					class="collapse-arrow bg-base-200 border-base-300 join-item collapse border"
-				>
-					<input
-						type="radio"
-						name="character-form-accordion"
-					/>
-					<div
-						class="collapse-title label-text font-medium"
-					>
-						System prompt
-					</div>
-					<div class="collapse-content">
-						<textarea
-							class="textarea textarea-bordered field-sizing-content min-h-32 w-full"
-							bind:value={
-								systemPrompt
-							}
-							placeholder="Instructions sent to the AI describing how to roleplay this character…"
-						></textarea>
-					</div>
-				</div>
+
 				<div
 					class="collapse-arrow bg-base-200 border-base-300 join-item collapse border"
 				>
@@ -472,21 +468,39 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 							{/each}
 						</div>
 					</div>
+					<div
+						class="collapse-arrow bg-base-200 border-base-300 join-item collapse border"
+					>
+						<input
+							type="radio"
+							name="character-form-accordion"
+						/>
+						<div
+							class="collapse-title label-text font-medium"
+						>
+							System prompt
+						</div>
+						<div class="collapse-content">
+							<textarea
+								class="textarea textarea-bordered field-sizing-content min-h-32 w-full"
+								bind:value={
+									systemPrompt
+								}
+								placeholder="Instructions sent to the AI describing how to roleplay this character…"
+							></textarea>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>
 	</div>
 
 	<div class="flex items-center gap-4">
-		<button
-				class="btn btn-primary"
-				type="submit"
-				disabled={saving}
-			>
-				{saving ? "Saving…" : submitLabel}
-			</button>
-			{#if error}
-				<p class="text-error text-sm">{error}</p>
-			{/if}
-		</div>
+		<button class="btn btn-primary" type="submit" disabled={saving}>
+			{saving ? "Saving…" : submitLabel}
+		</button>
+		{#if error}
+			<p class="text-error text-sm">{error}</p>
+		{/if}
+	</div>
 </form>
