@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import type { Character, Comment } from '$lib/types';
@@ -26,12 +27,14 @@
 	$effect(() => {
 		character = null;
 		notFound = false;
-		getCharacter(id).then((result) => {
-			if (result.ok) character = result.doc;
-			else notFound = true;
+		untrack(() => {
+			getCharacter(id).then((result) => {
+				if (result.ok) character = result.doc;
+				else notFound = true;
+			});
+			void initChats();
+			void loadComments(id);
 		});
-		void initChats();
-		void loadComments(id);
 	});
 
 	const comments = $derived(getCommentsFor(id));
