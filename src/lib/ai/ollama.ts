@@ -1,5 +1,6 @@
 import type { OllamaProviderConfig } from '$lib/types';
 import type { CompletionMessage, CompletionResult, RequestCompletionOptions } from './openrouter';
+import { stripThinking } from './strip-thinking';
 
 /** Calls a local/self-hosted Ollama server's native chat endpoint. No API
  *  key: Ollama is expected to run on the user's machine or trusted network.
@@ -61,11 +62,11 @@ export async function requestCompletion(
 			const delta = parsed.message?.content;
 			if (delta) {
 				content += delta;
-				options.onChunk?.(content);
+				options.onChunk?.(stripThinking(content));
 			}
 			if (parsed.done && parsed.done_reason) finishReason = parsed.done_reason;
 		}
 	}
 
-	return { content, finishReason };
+	return { content: stripThinking(content), finishReason };
 }

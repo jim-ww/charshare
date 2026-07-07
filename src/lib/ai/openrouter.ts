@@ -1,4 +1,5 @@
 import type { OpenRouterProviderConfig } from '$lib/types';
+import { stripThinking } from './strip-thinking';
 
 export interface CompletionMessage {
 	role: 'system' | 'user' | 'assistant';
@@ -87,12 +88,12 @@ export async function requestCompletion(
 			const delta = parsed.choices?.[0]?.delta?.content;
 			if (delta) {
 				content += delta;
-				options.onChunk?.(content);
+				options.onChunk?.(stripThinking(content));
 			}
 			const reason = parsed.choices?.[0]?.finish_reason;
 			if (reason) finishReason = reason;
 		}
 	}
 
-	return { content, finishReason };
+	return { content: stripThinking(content), finishReason };
 }
