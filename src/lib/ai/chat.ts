@@ -138,6 +138,26 @@ export async function sendMessage(
 	await streamReply(chat.id, message.id, getPreferences().provider, messages, options);
 }
 
+/** Like sendMessage, but for when the user submits with nothing typed:
+ *  no new user message is added, the existing active path is sent as-is
+ *  so the AI just continues from whoever spoke last. */
+export async function continueChat(
+	chat: Chat,
+	character: Character,
+	options: { signal?: AbortSignal } = {}
+): Promise<void> {
+	await ensurePreferencesReady();
+	const priorMessages = getActivePath(chat);
+
+	const messages: CompletionMessage[] = [
+		{ role: 'system', content: systemPrompt(character) },
+		...historyToMessages(priorMessages)
+	];
+
+	const message = await addMessage(chat.id, 'character', '');
+	await streamReply(chat.id, message.id, getPreferences().provider, messages, options);
+}
+
 /** Regenerates a character message, adding the new reply as a sibling branch
  *  under the same parent rather than overwriting it — so any messages built
  *  on top of the old reply aren't lost, just no longer on the active path

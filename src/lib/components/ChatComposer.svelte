@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Chat, Character } from '$lib/types';
-	import { sendMessage, generateUserDraft } from '$lib/ai/chat';
+	import { sendMessage, continueChat, generateUserDraft } from '$lib/ai/chat';
 
 	interface Props {
 		chat: Chat;
@@ -21,13 +21,17 @@
 			abortController?.abort();
 			return;
 		}
-		if (!content.trim()) return;
+		const trimmed = content.trim();
 		const controller = new AbortController();
 		abortController = controller;
 		sending = true;
 		error = null;
 		try {
-			await sendMessage(chat, character, content, { signal: controller.signal });
+			if (trimmed) {
+				await sendMessage(chat, character, trimmed, { signal: controller.signal });
+			} else {
+				await continueChat(chat, character, { signal: controller.signal });
+			}
 			content = '';
 		} catch (err) {
 			if (!(err instanceof DOMException && err.name === 'AbortError')) {
