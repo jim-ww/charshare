@@ -7,11 +7,14 @@ import {
 	deleteChat,
 	deleteMessage,
 	exportChat,
+	getActivePath,
 	getChat,
 	getChats,
+	getSiblings,
 	importChat,
 	renameChat,
-	setActiveVersion
+	setActiveVersion,
+	switchBranch
 } from './chats.svelte';
 import { activeContent } from '$lib/types';
 
@@ -100,5 +103,47 @@ describe('messages', () => {
 		await deleteMessage(chat.id, message.id);
 
 		expect(getChat(chat.id)!.messages).toEqual([]);
+	});
+});
+
+describe('message tree: branches, getActivePath, switchBranch', () => {
+	it('a message with no alternates is its own only sibling', async () => {
+		const chat = await createChat('char-1', 'Test chat');
+		const message = await addMessage(chat.id, 'user', 'hello');
+		expect(getSiblings(getChat(chat.id)!, message.id).map((m) => m.id)).toEqual([message.id]);
+	});
+
+	it('regenerating (adding a sibling under the same parent) switches the active path without losing the old branch', async () => {
+		const chat = await createChat('char-1', 'Test chat');
+		const first = await addMessage(chat.id, 'user', 'hello');
+		const replyA = await addMessage(chat.id, 'character', 'reply A');
+		await addMessage(chat.id, 'user', 'follow-up on A');
+
+		// regenerate replyA: new sibling under the same parent (first)
+		const replyB = await addMessage(chat.id, 'character', 'reply B', first.id);
+
+		let stored = getChat(chat.id)!;
+		expect(getActivePath(stored).map((m) => m.id)).toEqual([first.id, replyB.id]);
+		expect(getSiblings(stored, replyA.id).map((m) => m.id)).toEqual([replyA.id, replyB.id]);
+
+		// switch back to the original branch — the follow-up built on it is still there
+		await switchBranch(chat.id, replyA.id);
+		stored = getChat(chat.id)!;
+		const path = getActivePath(stored);
+		expect(path.map((m) => m.role)).toEqual(['user', 'character', 'user']);
+		expect(path[1].id).toBe(replyA.id);
+	});
+
+	it('deleting a message cascades to everything built on top of it', async () => {
+		const chat = await createChat('char-1', 'Test chat');
+		const first = await addMessage(chat.id, 'user', 'hello');
+		const reply = await addMessage(chat.id, 'character', 'reply');
+		await addMessage(chat.id, 'user', 'follow-up');
+
+		await deleteMessage(chat.id, reply.id);
+
+		const stored = getChat(chat.id)!;
+		expect(getActivePath(stored).map((m) => m.id)).toEqual([first.id]);
+		expect(stored.messages).toHaveLength(1);
 	});
 });

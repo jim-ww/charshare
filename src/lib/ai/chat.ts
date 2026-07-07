@@ -1,7 +1,7 @@
-import type { Character, Chat, ProviderConfig } from '$lib/types';
+import type { Character, Chat, ChatId, Message, MessageId, ProviderConfig } from '$lib/types';
 import { activeContent } from '$lib/types';
 import { getPreferences, initPreferences } from '$lib/state/preferences.svelte';
-import { addMessage, deleteMessage, updateMessageContent } from '$lib/state/chats.svelte';
+import { addMessage, deleteMessage, getActivePath, updateMessageContent } from '$lib/state/chats.svelte';
 import { requestCompletion, type CompletionMessage } from './index';
 
 const MAX_CONTINUATIONS = 3;
@@ -57,8 +57,8 @@ async function ensurePreferencesReady(): Promise<void> {
 	}
 }
 
-function historyToMessages(chat: Chat): CompletionMessage[] {
-	return chat.messages.map((m) => ({
+function historyToMessages(messages: Message[]): CompletionMessage[] {
+	return messages.map((m) => ({
 		role: m.role === 'user' ? 'user' : 'assistant',
 		content: activeContent(m)
 	}));
@@ -68,6 +68,37 @@ function systemPrompt(character: Character): string {
 	return [character.system_prompt, character.scenario && `Scenario: ${character.scenario}`]
 		.filter(Boolean)
 		.join('\n\n');
+}
+
+/** Streams a completion into an already-created (empty) message, keeping
+ *  whatever arrived if the stream is aborted or dropped partway through
+ *  (shared by sendMessage and regenerateMessage). */
+async function streamReply(
+	chatId: ChatId,
+	messageId: MessageId,
+	config: ProviderConfig,
+	messages: CompletionMessage[],
+	options: CompleteOptions = {}
+): Promise<void> {
+	let latest = '';
+	try {
+		latest = await completeWithContinuation(config, messages, {
+			signal: options.signal,
+			onChunk: (soFar) => {
+				latest = soFar;
+				void updateMessageContent(chatId, messageId, soFar);
+			}
+		});
+	} catch (err) {
+		if (!latest) {
+			await deleteMessage(chatId, messageId);
+			throw err;
+		}
+		// stopped mid-stream (user hit "stop", or the connection dropped) —
+		// keep whatever was generated instead of losing it
+	} finally {
+		if (latest) await updateMessageContent(chatId, messageId, latest, { persist: true });
+	}
 }
 
 /** Sends the user's message, then asks the AI to respond in character (see
@@ -85,34 +116,45 @@ export async function sendMessage(
 	options: { signal?: AbortSignal } = {}
 ): Promise<void> {
 	await ensurePreferencesReady();
+	const priorMessages = getActivePath(chat);
 	await addMessage(chat.id, 'user', content);
 
 	const messages: CompletionMessage[] = [
 		{ role: 'system', content: systemPrompt(character) },
-		...historyToMessages(chat),
+		...historyToMessages(priorMessages),
 		{ role: 'user', content }
 	];
 
 	const message = await addMessage(chat.id, 'character', '');
-	let latest = '';
-	try {
-		latest = await completeWithContinuation(getPreferences().provider, messages, {
-			signal: options.signal,
-			onChunk: (soFar) => {
-				latest = soFar;
-				void updateMessageContent(chat.id, message.id, soFar);
-			}
-		});
-	} catch (err) {
-		if (!latest) {
-			await deleteMessage(chat.id, message.id);
-			throw err;
-		}
-		// stopped mid-stream (user hit "stop", or the connection dropped) —
-		// keep whatever was generated instead of losing it
-	} finally {
-		if (latest) await updateMessageContent(chat.id, message.id, latest, { persist: true });
-	}
+	await streamReply(chat.id, message.id, getPreferences().provider, messages, options);
+}
+
+/** Regenerates a character message, adding the new reply as a sibling branch
+ *  under the same parent rather than overwriting it — so any messages built
+ *  on top of the old reply aren't lost, just no longer on the active path
+ *  (switchBranch/getSiblings let the UI move between them, like the message
+ *  version switcher but for whole branches). All still lives in the same
+ *  chat; nothing is forked into a separate chat. */
+export async function regenerateMessage(
+	chat: Chat,
+	character: Character,
+	messageId: MessageId,
+	options: { signal?: AbortSignal } = {}
+): Promise<void> {
+	await ensurePreferencesReady();
+	const activePath = getActivePath(chat);
+	const index = activePath.findIndex((m) => m.id === messageId);
+	if (index === -1) throw new Error('Message not found.');
+
+	const priorMessages = activePath.slice(0, index);
+	const parentId = activePath[index].parent_id;
+
+	const message = await addMessage(chat.id, 'character', '', parentId);
+	const messages: CompletionMessage[] = [
+		{ role: 'system', content: systemPrompt(character) },
+		...historyToMessages(priorMessages)
+	];
+	await streamReply(chat.id, message.id, getPreferences().provider, messages, options);
 }
 
 /** "Generate response for me" — the same completion call as sendMessage,
@@ -126,7 +168,7 @@ export async function generateUserDraft(chat: Chat, character: Character): Promi
 			role: 'system',
 			content: `${systemPrompt(character)}\n\nWrite the next line for the human user in this conversation, in their voice — not as ${character.name}.`
 		},
-		...historyToMessages(chat)
+		...historyToMessages(getActivePath(chat))
 	];
 	return completeWithContinuation(getPreferences().provider, messages);
 }

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { page } from '$app/state';
-	import { getChat, addMessage } from '$lib/state/chats.svelte';
+	import { getChat, addMessage, getActivePath } from '$lib/state/chats.svelte';
 	import { resolveCharacter, ensureCharacterLoaded } from '$lib/state/characterCache.svelte';
 	import ChatThreadSwitcher from '$lib/components/ChatThreadSwitcher.svelte';
 	import ChatBubble from '$lib/components/ChatBubble.svelte';
@@ -10,6 +10,7 @@
 
 	const chatId = $derived(page.params.id as string);
 	const chat = $derived(getChat(chatId));
+	const activeMessages = $derived(chat ? getActivePath(chat) : []);
 
 	$effect(() => {
 		if (chat) ensureCharacterLoaded(chat.character_id);
@@ -21,7 +22,7 @@
 	// greetings (picked at random when alternates exist) as the opening
 	// message so a fresh chat isn't just an empty composer.
 	$effect(() => {
-		if (chat && character && chat.messages.length === 0 && character.first_message) {
+		if (chat && character && chat.root_id === null && character.first_message) {
 			untrack(() => {
 				const greetings = [character.first_message, ...character.alternate_greetings];
 				const greeting = greetings[Math.floor(Math.random() * greetings.length)];
@@ -38,9 +39,9 @@
 		<ChatThreadSwitcher {chat} />
 		<div class="relative flex-1 overflow-hidden">
 			<div class="h-full overflow-y-auto p-4">
-				{#each chat.messages as message (message.id)}
+				{#each activeMessages as message (message.id)}
 					{#if character}
-						<ChatBubble {chatId} {message} {character} />
+						<ChatBubble {chat} {message} {character} />
 					{/if}
 				{/each}
 			</div>

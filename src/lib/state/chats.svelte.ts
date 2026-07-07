@@ -43,6 +43,8 @@ export async function createChat(characterId: CharacterId, name: string): Promis
 		character_id: characterId,
 		name,
 		messages: [],
+		root_id: null,
+		active_child: {},
 		created_at: Date.now()
 	};
 	chats = { ...chats, [chat.id]: chat };
@@ -95,11 +97,63 @@ export async function importChat(characterId: CharacterId, json: string): Promis
 		character_id: characterId,
 		name: source.name,
 		messages: source.messages,
+		root_id: source.root_id ?? null,
+		active_child: source.active_child ?? {},
 		created_at: Date.now()
 	};
 	chats = { ...chats, [chat.id]: chat };
 	await persist();
 	return chat;
+}
+
+/** Walks the chat's active_child pointers from root_id to the leaf,
+ *  returning the currently-selected linear conversation — what's rendered
+ *  and what's sent to the model. All other messages in chat.messages belong
+ *  to branches regenerated away from (see getSiblings/switchBranch). */
+export function getActivePath(chat: Chat): Message[] {
+	if (chat.root_id === null) return [];
+	const byId = new Map(chat.messages.map((m) => [m.id, m]));
+	const path: Message[] = [];
+	let current: MessageId | undefined = chat.root_id;
+	while (current !== undefined) {
+		const message = byId.get(current);
+		if (!message) break;
+		path.push(message);
+		current = chat.active_child[current];
+	}
+	return path;
+}
+
+/** Id of the last message on the active path — where a newly-appended
+ *  message attaches by default (see addMessage). */
+function activeLeafId(chat: Chat): MessageId | null {
+	const path = getActivePath(chat);
+	return path.length > 0 ? path[path.length - 1].id : null;
+}
+
+/** All messages sharing the same parent as the given one, oldest first —
+ *  the alternate "routes" at that point in the tree, including the message
+ *  itself. A message regenerated only once returns just itself. */
+export function getSiblings(chat: Chat, messageId: MessageId): Message[] {
+	const message = chat.messages.find((m) => m.id === messageId);
+	if (!message) return [];
+	return chat.messages
+		.filter((m) => m.parent_id === message.parent_id)
+		.sort((a, b) => a.versions[0].created_at - b.versions[0].created_at);
+}
+
+/** Makes `messageId` the active branch at its position in the tree — either
+ *  a new root, or the active_child of its parent. */
+export async function switchBranch(chatId: ChatId, messageId: MessageId): Promise<void> {
+	updateChat(chatId, (chat) => {
+		const message = chat.messages.find((m) => m.id === messageId);
+		if (!message) return chat;
+		if (message.parent_id === null) {
+			return { ...chat, root_id: messageId };
+		}
+		return { ...chat, active_child: { ...chat.active_child, [message.parent_id]: messageId } };
+	});
+	await persist();
 }
 
 function updateChat(id: ChatId, update: (chat: Chat) => Chat): void {
@@ -108,18 +162,38 @@ function updateChat(id: ChatId, update: (chat: Chat) => Chat): void {
 	chats = { ...chats, [id]: update(chat) };
 }
 
-/** Appends a new message with a single version — the only way messages are
- *  created; edits always operate on an existing message's version history
- *  (see addMessageVersion). */
-export async function addMessage(chatId: ChatId, role: MessageRole, content: string): Promise<Message> {
+/** Appends a new message with a single version, attached under `parentId` —
+ *  or, if omitted, under the current active leaf (the normal case: continuing
+ *  the visible conversation). Passing an earlier message's id as `parentId`
+ *  instead adds a sibling branch there and switches the active path to it
+ *  (see regenerateMessage in $lib/ai/chat.ts) without touching the old
+ *  branch, which stays in `messages` and can be switched back to.
+ *
+ *  Edits to existing messages never create new nodes — they operate on a
+ *  message's version history instead (see addMessageVersion). */
+export async function addMessage(
+	chatId: ChatId,
+	role: MessageRole,
+	content: string,
+	parentId?: MessageId | null
+): Promise<Message> {
+	const chat = chats[chatId];
+	if (!chat) throw new Error('Chat not found.');
+	const parent = parentId !== undefined ? parentId : activeLeafId(chat);
 	const message: Message = {
 		id: crypto.randomUUID(),
+		parent_id: parent,
 		role,
 		versions: [{ content, created_at: Date.now() }],
 		active_version_index: 0,
 		updated_at: Date.now()
 	};
-	updateChat(chatId, (chat) => ({ ...chat, messages: [...chat.messages, message] }));
+	updateChat(chatId, (chat) => ({
+		...chat,
+		messages: [...chat.messages, message],
+		root_id: parent === null ? message.id : chat.root_id,
+		active_child: parent === null ? chat.active_child : { ...chat.active_child, [parent]: message.id }
+	}));
 	await persist();
 	return message;
 }
@@ -180,11 +254,30 @@ export async function setActiveVersion(chatId: ChatId, messageId: MessageId, ver
 	await persist();
 }
 
+/** Deletes a message and everything built on top of it (its whole subtree),
+ *  since a message with descendants elsewhere in the tree can't be removed
+ *  without orphaning them. Fixes up root_id/active_child so the tree stays
+ *  consistent — falling back to another root, or leaving the parent as a
+ *  leaf, if the removed branch was the active one. */
 export async function deleteMessage(chatId: ChatId, messageId: MessageId): Promise<void> {
-	updateChat(chatId, (chat) => ({
-		...chat,
-		messages: chat.messages.filter((m) => m.id !== messageId)
-	}));
+	updateChat(chatId, (chat) => {
+		const toDelete = new Set<MessageId>();
+		const collect = (id: MessageId) => {
+			toDelete.add(id);
+			for (const m of chat.messages) if (m.parent_id === id) collect(m.id);
+		};
+		collect(messageId);
+
+		const messages = chat.messages.filter((m) => !toDelete.has(m.id));
+		const active_child = Object.fromEntries(
+			Object.entries(chat.active_child).filter(([parent, child]) => !toDelete.has(parent) && !toDelete.has(child))
+		);
+		let root_id = chat.root_id;
+		if (root_id !== null && toDelete.has(root_id)) {
+			root_id = messages.find((m) => m.parent_id === null)?.id ?? null;
+		}
+		return { ...chat, messages, active_child, root_id };
+	});
 	await persist();
 }
 

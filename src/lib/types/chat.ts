@@ -12,6 +12,11 @@ export interface MessageVersion {
 
 export interface Message {
   id: MessageId;
+  // The message this one replies to, or null for the very first message in
+  // the chat. Regenerating a message with replies already built on it adds a
+  // sibling under the same parent instead of overwriting anything — see
+  // Chat.active_child.
+  parent_id: MessageId | null;
   role: MessageRole;
   versions: MessageVersion[]; // at least one entry
   active_version_index: number;
@@ -22,7 +27,19 @@ export interface Chat {
   id: ChatId;
   character_id: CharacterId;
   name: string;
+  // Every message node that has ever existed in this chat, across every
+  // regenerated branch — a tree (via Message.parent_id), not just the
+  // visible conversation. Use activePath()/getActivePath to get the
+  // currently-selected linear conversation to render or send to the model.
   messages: Message[];
+  // Id of the root message (parent_id === null) currently on the active
+  // path. Usually there's only one root; regenerating the very first
+  // message adds another and this points at whichever is selected.
+  root_id: MessageId | null;
+  // For every message id that has more than one child, which child id is
+  // currently selected as part of the conversation (the rest are alternate
+  // branches, still stored in `messages`, reachable by switching back).
+  active_child: Record<MessageId, MessageId>;
   created_at: number;
 }
 

@@ -4,6 +4,5 @@
 export const DEFAULT_GUN_RELAYS: string[] = [
 	"https://gun.defucc.me/gun",
 	"https://gun.o8.is/gun",
-	"https://shogun-relay.scobrudot.dev/gun",
 	"https://relay.peer.ooo/gun",
 ];

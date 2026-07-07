@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { Character, Chat } from '$lib/types';
-import { __setChatsForTests, createChat, getChat } from '$lib/state/chats.svelte';
-import { sendMessage, generateUserDraft } from './chat';
+import { __setChatsForTests, addMessage, createChat, getActivePath, getChat, switchBranch } from '$lib/state/chats.svelte';
+import { sendMessage, generateUserDraft, regenerateMessage } from './chat';
 
 const character: Character = {
 	id: 'char-1',
@@ -114,6 +114,58 @@ describe('generateUserDraft', () => {
 
 		expect(draft).toBe('a reply');
 		expect(getChat(chat.id)!.messages).toEqual([]);
+	});
+});
+
+describe('regenerateMessage', () => {
+	it('replaces the last character message on the active path when nothing comes after it', async () => {
+		const chat: Chat = await createChat(character.id, 'Test chat');
+		await sendMessage(chat, character, 'hi there');
+		const before = getChat(chat.id)!;
+		const replyId = getActivePath(before)[1].id;
+
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async () => sseResponse(['a different reply'], 'stop'))
+		);
+		await regenerateMessage(before, character, replyId);
+
+		const stored = getChat(chat.id)!;
+		const activePath = getActivePath(stored);
+		expect(activePath).toHaveLength(2);
+		expect(activePath[1].id).not.toBe(replyId);
+		expect(activePath[1].versions[0].content).toBe('a different reply');
+		// the old reply is still stored, just no longer on the active path
+		expect(stored.messages.some((m) => m.id === replyId)).toBe(true);
+	});
+
+	it('keeps the old branch (and what was built on it) reachable when later messages depend on the regenerated one', async () => {
+		const chat: Chat = await createChat(character.id, 'Test chat');
+		await sendMessage(chat, character, 'hi there');
+		const midpoint = getChat(chat.id)!;
+		const replyId = getActivePath(midpoint)[1].id;
+		await addMessage(chat.id, 'user', 'a follow-up');
+		const before = getChat(chat.id)!;
+
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async () => sseResponse(['a branched reply'], 'stop'))
+		);
+		await regenerateMessage(before, character, replyId);
+
+		const stored = getChat(chat.id)!;
+		const activePath = getActivePath(stored);
+		// the new branch is now active, and is shorter (nothing built on it yet)
+		expect(activePath).toHaveLength(2);
+		expect(activePath[1].versions[0].content).toBe('a branched reply');
+
+		// switching back to the old reply restores the follow-up after it
+		await switchBranch(chat.id, replyId);
+		const restored = getActivePath(getChat(chat.id)!);
+		expect(restored).toHaveLength(3);
+		expect(restored[1].id).toBe(replyId);
+		expect(restored[2].role).toBe('user');
+		expect(restored[2].versions[0].content).toBe('a follow-up');
 	});
 });
 

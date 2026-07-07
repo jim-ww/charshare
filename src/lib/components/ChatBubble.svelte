@@ -1,19 +1,32 @@
 <script lang="ts">
-	import type { ChatId, Character, Message } from '$lib/types';
+	import type { Chat, Character, Message } from '$lib/types';
 	import { activeContent } from '$lib/types';
-	import { addMessageVersion, deleteMessage, setActiveVersion } from '$lib/state/chats.svelte';
+	import { addMessageVersion, deleteMessage, getSiblings, setActiveVersion, switchBranch } from '$lib/state/chats.svelte';
+	import { regenerateMessage } from '$lib/ai/chat';
 	import Avatar from './Avatar.svelte';
 
 	interface Props {
-		chatId: ChatId;
+		chat: Chat;
 		message: Message;
 		character: Character;
 	}
 
-	let { chatId, message, character }: Props = $props();
+	let { chat, message, character }: Props = $props();
+	const chatId = $derived(chat.id);
+
+	// Other branches regenerated at this same point in the tree — the "other
+	// routes" of the conversation (see regenerateMessage in $lib/ai/chat.ts).
+	const branches = $derived(getSiblings(chat, message.id));
+	const branchPos = $derived(branches.findIndex((m) => m.id === message.id));
+
+	function goBranch(delta: number) {
+		const target = branches[branchPos + delta];
+		if (target) switchBranch(chatId, target.id);
+	}
 
 	let editing = $state(false);
 	let draft = $state('');
+	let regenerating = $state(false);
 
 	function startEdit() {
 		draft = activeContent(message);
@@ -31,6 +44,16 @@
 
 	function nextVersion() {
 		setActiveVersion(chatId, message.id, message.active_version_index + 1);
+	}
+
+	async function handleRegenerate() {
+		if (regenerating) return;
+		regenerating = true;
+		try {
+			await regenerateMessage(chat, character, message.id);
+		} finally {
+			regenerating = false;
+		}
 	}
 </script>
 
@@ -76,7 +99,46 @@
 				›
 			</button>
 		{/if}
+		{#if message.role === 'character' && branches.length > 1}
+			<button class="btn btn-xs btn-ghost" type="button" disabled={branchPos <= 0} onclick={() => goBranch(-1)}>
+				‹
+			</button>
+			<span>{branchPos + 1}/{branches.length}</span>
+			<button
+				class="btn btn-xs btn-ghost"
+				type="button"
+				disabled={branchPos >= branches.length - 1}
+				onclick={() => goBranch(1)}
+			>
+				›
+			</button>
+		{/if}
 		{#if !editing}
+			{#if message.role === 'character'}
+				<button
+					class="btn btn-xs btn-ghost"
+					type="button"
+					disabled={regenerating}
+					aria-label="Regenerate response"
+					title="Regenerate response"
+					onclick={handleRegenerate}
+				>
+					<svg
+						viewBox="0 0 24 24"
+						width="14"
+						height="14"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<path d="M21 12a9 9 0 11-3-6.7" />
+						<path d="M21 3v6h-6" />
+					</svg>
+				</button>
+			{/if}
 			<button class="btn btn-xs btn-ghost" type="button" onclick={startEdit}>Edit</button>
 			<button class="btn btn-xs btn-ghost" type="button" onclick={() => deleteMessage(chatId, message.id)}>
 				Delete
