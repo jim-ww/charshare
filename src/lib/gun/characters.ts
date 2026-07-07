@@ -2,6 +2,7 @@ import type { Character, CharacterDraft, CharacterId, Keyring, PubKey, Verified 
 import { signDocument } from '$lib/crypto/sign';
 import { getKeyring } from '$lib/state/auth.svelte';
 import { getDocument, putDocument, subscribeDocument, type Validator } from './document';
+import { addToTagIndex } from './tags';
 
 function characterPath(id: CharacterId): string {
 	return `characters/${id}`;
@@ -44,6 +45,7 @@ async function signAndPublish(draft: Omit<Character, 'signature' | 'updated_at'>
 	const signature = await signDocument(withTimestamp, keyring);
 	const doc: Character = { ...withTimestamp, signature };
 	await putDocument(characterPath(doc.id), doc);
+	await Promise.all(doc.tags.map((tag) => addToTagIndex(tag, doc.id)));
 	return doc;
 }
 

@@ -12,6 +12,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
 	provider: {
 		provider: 'openrouter',
 		apiKey: '',
+		model: 'meta-llama/llama-3.1-8b-instruct:free',
 		temperature: 1,
 		max_tokens: 512,
 		context_size: 8192,

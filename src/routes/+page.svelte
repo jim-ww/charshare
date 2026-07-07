@@ -10,7 +10,8 @@
 		initCharacters,
 		isCharactersReady
 	} from '$lib/state/characters.svelte';
-	import type { CharacterId } from '$lib/types';
+	import type { Character, CharacterId } from '$lib/types';
+	import { browseByTag } from '$lib/gun/browse';
 
 	onMount(() => {
 		initAuth();
@@ -109,6 +110,23 @@
 	async function handleFork(id: CharacterId) {
 		await forkCharacter(id);
 	}
+
+	let browseTag = $state('');
+	let browsing = $state(false);
+	let browseResults = $state<Character[]>([]);
+	let browseSearched = $state(false);
+
+	async function handleBrowse(event: SubmitEvent) {
+		event.preventDefault();
+		if (!browseTag.trim()) return;
+		browsing = true;
+		try {
+			browseResults = await browseByTag(browseTag.trim());
+			browseSearched = true;
+		} finally {
+			browsing = false;
+		}
+	}
 </script>
 
 {#if !ready}
@@ -184,6 +202,25 @@
 					<p class="text-error text-sm">{characterError}</p>
 				{/if}
 			</form>
+		{/if}
+	</div>
+
+	<div class="mt-6 max-w-md">
+		<h2 class="text-lg font-semibold">Browse by tag</h2>
+		<form class="mt-2 flex gap-2" onsubmit={handleBrowse}>
+			<input class="input input-bordered w-full" placeholder="tag" bind:value={browseTag} />
+			<button class="btn btn-primary" type="submit" disabled={browsing}>
+				{browsing ? 'Searching…' : 'Search'}
+			</button>
+		</form>
+		{#if browseSearched}
+			<ul class="mt-2 flex flex-col gap-2">
+				{#each browseResults as character (character.id)}
+					<li class="rounded border p-2">{character.name}</li>
+				{:else}
+					<li class="text-sm opacity-70">No characters found for that tag.</li>
+				{/each}
+			</ul>
 		{/if}
 	</div>
 {/if}
