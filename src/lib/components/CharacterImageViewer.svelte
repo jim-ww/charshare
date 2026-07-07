@@ -21,17 +21,20 @@
 		keyboardNav = false,
 		index = $bindable(0)
 	}: Props = $props();
-	let loaded = $state(false);
-	let failed = $state(false);
+	// Tracks which src last fired onload/onerror, rather than a plain
+	// loaded/failed boolean reset in an effect keyed on `index` — that reset
+	// races the <img>'s own onload for cached images (onload can fire before
+	// the effect runs), permanently clobbering an already-loaded image back
+	// to "loading" with no event left to undo it. Deriving from the src
+	// instead means there's no ordering to race.
+	let loadedSrc = $state<string | null>(null);
+	let failedSrc = $state<string | null>(null);
+	const currentSrc = $derived(images[index] as string | undefined);
+	const loaded = $derived(loadedSrc === currentSrc);
+	const failed = $derived(failedSrc === currentSrc);
 
 	$effect(() => {
 		if (index >= images.length) index = 0;
-	});
-
-	$effect(() => {
-		images[index];
-		loaded = false;
-		failed = false;
 	});
 
 	function prev(event: MouseEvent) {
@@ -73,8 +76,8 @@
 					src={images[index]}
 					alt={name}
 					class="h-full w-full object-cover"
-					onload={() => (loaded = true)}
-					onerror={() => (failed = true)}
+					onload={() => (loadedSrc = images[index])}
+					onerror={() => (failedSrc = images[index])}
 				/>
 			</button>
 		{:else}
@@ -82,8 +85,8 @@
 				src={images[index]}
 				alt={name}
 				class="h-full w-full object-cover"
-				onload={() => (loaded = true)}
-				onerror={() => (failed = true)}
+				onload={() => (loadedSrc = images[index])}
+				onerror={() => (failedSrc = images[index])}
 			/>
 		{/if}
 		{#if failed}
