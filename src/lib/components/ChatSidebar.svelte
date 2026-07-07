@@ -74,19 +74,12 @@
 		<ul class="menu dropdown-content menu-sm z-10 w-32 rounded-box bg-base-200 p-1 shadow">
 			<li><button type="button" onclick={() => handleExport(chat)}>Export</button></li>
 			<li><button type="button" onclick={() => handleRename(chat)}>Rename</button></li>
+			<li><button type="button" class="text-error" onclick={() => handleDelete(chat)}>Delete</button></li>
 		</ul>
 	</div>
-	<button
-		class="btn btn-ghost btn-xs px-1"
-		type="button"
-		aria-label="Delete conversation"
-		onclick={() => handleDelete(chat)}
-	>
-		✕
-	</button>
 {/snippet}
 
-<aside class="flex w-64 shrink-0 flex-col gap-1 overflow-y-auto p-2">
+<aside class="flex w-80 shrink-0 flex-col gap-1 overflow-y-auto p-2">
 	{#each groups as [characterId, characterChats] (characterId)}
 		{@const character = resolveCharacter(characterId)}
 		{@const latest = characterChats[0]}
@@ -100,10 +93,12 @@
 					/>
 				</a>
 				<a href={`/chats/${latest.id}`} class="min-w-0 flex-1">
-					<div class="truncate text-sm font-medium">
+					<div class="truncate text-base font-medium">
 						{character?.name ?? 'Unknown character'}
 					</div>
-					<div class="truncate text-xs opacity-60">{latest.name}</div>
+					{#if latest.name !== character?.name}
+						<div class="truncate text-sm opacity-60">{latest.name}</div>
+					{/if}
 				</a>
 				{#if characterChats.length > 1}
 					<button

@@ -16,7 +16,7 @@
 	style={chat?.active_background ? `background-image: url('${chat.active_background}')` : ''}
 >
 	<ChatSidebar />
-	<div class="flex-1 overflow-hidden">
+	<div class="flex-1 overflow-hidden" style="box-shadow: -4px 0 12px -4px rgba(0, 0, 0, 0.35);">
 		{@render children()}
 	</div>
 </div>
