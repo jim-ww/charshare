@@ -11,6 +11,6 @@
 </script>
 
 <div class="p-4">
-	<h1 class="mb-4 text-xl font-semibold">New character</h1>
+	<h1 class="mx-auto mb-4 max-w-6xl text-xl font-semibold">New character</h1>
 	<CharacterForm submitLabel="Create character" onsubmit={handleSubmit} />
 </div>
