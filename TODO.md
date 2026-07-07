@@ -1,3 +1,1 @@
 - preferences modal: combine profile, backup into one. and in backup instead of taking contents of backup file, allow just to select file itself
-- save scratch from text input (that havent been sent yet) to local chat history too (so user can close page and continue later)
-- chat view: switch between past messages on up down arrow keys, with last unsent message as last

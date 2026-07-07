@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
+	import { tick, untrack } from 'svelte';
 	import type { Chat, Character } from '$lib/types';
 	import { sendMessage, continueChat, generateUserDraft } from '$lib/ai/chat';
-	import { setChatDraft } from '$lib/state/chats.svelte';
+	import { setChatDraft, getActivePath } from '$lib/state/chats.svelte';
 
 	interface Props {
 		chat: Chat;
@@ -18,6 +18,14 @@
 	let abortController: AbortController | null = null;
 	let loadedDraftFor: string | null = null;
 
+	// Up/down arrow history navigation over the user's own past messages
+	// (oldest to newest). -1 means "showing the draft"; 0 is the most recent
+	// past message, counting back from there. Reset whenever the chat
+	// changes or the user types, so navigation always starts from "newest".
+	let historyIndex = $state(-1);
+	let draftBackup = '';
+	const userHistory = $derived(getActivePath(chat).filter((m) => m.role === 'user').map((m) => m.content));
+
 	// The composer stays mounted while navigating between chats (same route,
 	// different :id param), so `content` needs re-syncing to the new chat's
 	// saved draft rather than carrying over the previous chat's text.
@@ -26,6 +34,8 @@
 			untrack(() => {
 				content = chat.draft;
 				loadedDraftFor = chat.id;
+				historyIndex = -1;
+				draftBackup = '';
 			});
 		}
 	});
@@ -53,6 +63,8 @@
 				await continueChat(chat, character, { signal: controller.signal });
 			}
 			content = '';
+			historyIndex = -1;
+			draftBackup = '';
 		} catch (err) {
 			if (!(err instanceof DOMException && err.name === 'AbortError')) {
 				error = err instanceof Error ? err.message : String(err);
@@ -67,7 +79,46 @@
 		if (event.key === 'Enter' && !event.shiftKey) {
 			event.preventDefault();
 			handleSend(new SubmitEvent('submit', { cancelable: true }));
+			return;
 		}
+		if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+			const textarea = event.currentTarget as HTMLTextAreaElement;
+			// Only hijack the arrow keys at the very start/end of the text (no
+			// selection), so navigating within a multi-line draft still works.
+			const atStart = textarea.selectionStart === 0 && textarea.selectionEnd === 0;
+			const atEnd = textarea.selectionStart === content.length && textarea.selectionEnd === content.length;
+			if (event.key === 'ArrowUp' && atStart) {
+				event.preventDefault();
+				navigateHistory('up', textarea);
+			} else if (event.key === 'ArrowDown' && atEnd) {
+				event.preventDefault();
+				navigateHistory('down', textarea);
+			}
+		}
+	}
+
+	function navigateHistory(direction: 'up' | 'down', textarea: HTMLTextAreaElement) {
+		const history = userHistory;
+		if (direction === 'up') {
+			if (historyIndex + 1 >= history.length) return;
+			if (historyIndex === -1) draftBackup = content;
+			historyIndex += 1;
+			content = history[history.length - 1 - historyIndex];
+		} else {
+			if (historyIndex === -1) return;
+			historyIndex -= 1;
+			content = historyIndex === -1 ? draftBackup : history[history.length - 1 - historyIndex];
+		}
+		void tick().then(() => {
+			const pos = content.length;
+			textarea.setSelectionRange(pos, pos);
+		});
+	}
+
+	function handleInput() {
+		// Manual typing means the box no longer reflects a history entry —
+		// treat whatever's there now as the draft going forward.
+		historyIndex = -1;
 	}
 
 	async function handleGenerateForMe() {
@@ -75,6 +126,8 @@
 		error = null;
 		try {
 			content = await generateUserDraft(chat, character);
+			historyIndex = -1;
+			draftBackup = '';
 		} catch (err) {
 			error = err instanceof Error ? err.message : String(err);
 		} finally {
@@ -90,6 +143,7 @@
 		placeholder="Message"
 		bind:value={content}
 		onkeydown={handleKeydown}
+		oninput={handleInput}
 	></textarea>
 	<div class="flex justify-between gap-2">
 		<button class="btn btn-sm" type="button" disabled={generating} onclick={handleGenerateForMe}>
