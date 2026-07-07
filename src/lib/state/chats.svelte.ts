@@ -1,6 +1,7 @@
 import { browser } from '$app/environment';
 import type { Chat, ChatId, CharacterId, Message, MessageId, MessageRole, PersonaId } from '$lib/types';
 import { loadChats, saveChats } from '$lib/db/chats';
+import { getPreferences } from '$lib/state/preferences.svelte';
 
 let chats = $state<Record<ChatId, Chat>>({});
 let ready = $state(false);
@@ -51,6 +52,7 @@ export async function createChat(
 	name: string,
 	personaId: PersonaId | null = null
 ): Promise<Chat> {
+	const defaultBackground = getPreferences().defaultBackground.trim();
 	const chat: Chat = {
 		id: crypto.randomUUID(),
 		character_id: characterId,
@@ -62,8 +64,8 @@ export async function createChat(
 		created_at: Date.now(),
 		draft: '',
 		image_index: 0,
-		backgrounds: [],
-		active_background: null
+		backgrounds: defaultBackground ? [defaultBackground] : [],
+		active_background: defaultBackground || null
 	};
 	chats = { ...chats, [chat.id]: chat };
 	await persist();

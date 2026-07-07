@@ -87,4 +87,5 @@ export interface Preferences {
   personaSelections: Record<string, string>; // characterId -> personaId, remembers the last mask used per character
   provider: ProviderConfig; // the currently active provider's config
   providerConfigs: ProviderConfigMap; // last-saved config per provider
+  defaultBackground: string; // applied to newly-created chats when non-empty
 }

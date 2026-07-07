@@ -64,6 +64,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
 	blockedTags: [],
 	hiddenCharacterIds: [],
 	personaSelections: {},
+	defaultBackground: "",
 	provider: DEFAULT_HUGGINGFACE_CONFIG,
 	providerConfigs: {
 		openrouter: DEFAULT_OPENROUTER_CONFIG,
@@ -112,6 +113,7 @@ export function initPreferences(): Promise<void> {
 					...preferences,
 					hiddenCharacterIds: preferences.hiddenCharacterIds ?? [],
 					personaSelections: preferences.personaSelections ?? {},
+					defaultBackground: preferences.defaultBackground ?? "",
 					providerConfigs: {
 						...DEFAULT_PREFERENCES.providerConfigs,
 						...preferences.providerConfigs,
