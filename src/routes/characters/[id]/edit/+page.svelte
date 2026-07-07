@@ -1,8 +1,9 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import type { Character, CharacterDraft } from '$lib/types';
-	import { getCharacter } from '$lib/gun/characters';
+	import { subscribeCharacter } from '$lib/gun/characters';
 	import { createOrEditCharacter, getMyCharacters, isCharacterLocalOnly } from '$lib/state/characters.svelte';
 	import CharacterForm from '$lib/components/CharacterForm.svelte';
 
@@ -12,18 +13,32 @@
 	let notFound = $state(false);
 
 	$effect(() => {
+		character = null;
+		notFound = false;
+		const currentId = id;
+
 		// Local-only characters were never written to GUN — fetching them from
 		// GUN would always report not-found. Their doc only lives in the local
 		// "my characters" store.
-		const local = getMyCharacters().find((c) => c.id === id);
-		if (local && isCharacterLocalOnly(id)) {
+		const local = getMyCharacters().find((c) => c.id === currentId);
+		if (local && isCharacterLocalOnly(currentId)) {
 			character = local;
 			return;
 		}
-		getCharacter(id).then((result) => {
-			if (result.ok) character = result.doc;
-			else notFound = true;
-		});
+
+		return untrack(() =>
+			subscribeCharacter(currentId, (result) => {
+				if (result.ok) {
+					character = result.doc;
+					notFound = false;
+				} else if (!character) {
+					// Only flag not-found while we have nothing to show yet — GUN's
+					// `.on()` can fire once with stale/missing local data before a
+					// relay answers, then fire again once the real doc syncs in.
+					notFound = true;
+				}
+			})
+		);
 	});
 
 	async function handleSubmit(draft: CharacterDraft) {
