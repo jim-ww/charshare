@@ -34,7 +34,9 @@
 	}
 
 	async function saveEdit() {
-		await addMessageVersion(chatId, message.id, draft);
+		if (draft !== activeContent(message)) {
+			await addMessageVersion(chatId, message.id, draft);
+		}
 		editing = false;
 	}
 
