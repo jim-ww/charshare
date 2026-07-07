@@ -10,7 +10,7 @@
 	let expanded = $state(false);
 </script>
 
-<div class="aspect-square w-28 shrink-0 sm:w-36">
+<div class="aspect-square w-28 shrink-0 sm:w-56">
 	<CharacterImageViewer
 		images={character.image_urls}
 		name={character.name}
