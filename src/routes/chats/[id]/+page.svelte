@@ -45,7 +45,7 @@
 				{/each}
 			</div>
 			{#if character}
-				<div class="absolute bottom-3 left-3 z-20">
+				<div class="fixed bottom-3 left-3 z-20">
 					<ChatCharacterImage {character} />
 				</div>
 			{/if}
