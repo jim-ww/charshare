@@ -4,6 +4,7 @@
 	import type { Chat, CharacterId } from '$lib/types';
 	import { getChats, deleteChat, renameChat, exportChat } from '$lib/state/chats.svelte';
 	import { resolveCharacter, ensureCharacterLoaded } from '$lib/state/characterCache.svelte';
+	import Avatar from './Avatar.svelte';
 
 	const chats = $derived(getChats());
 
@@ -85,22 +86,28 @@
 	</button>
 {/snippet}
 
-<aside class="flex w-64 shrink-0 flex-col gap-1 p-2">
+<aside class="flex w-64 shrink-0 flex-col gap-1 overflow-y-auto p-2">
 	{#each groups as [characterId, characterChats] (characterId)}
 		{@const character = resolveCharacter(characterId)}
 		{@const latest = characterChats[0]}
-		<div>
-			<div class="flex items-center gap-1">
-				<a
-					class="btn btn-sm flex-1 justify-start"
-					class:btn-active={activeId === latest.id}
-					href={`/chats/${latest.id}`}
-				>
-					{character?.name ?? 'Unknown character'}
+		<div class="rounded-box" class:bg-base-200={activeId === latest.id && !expanded[characterId]}>
+			<div class="group flex items-center gap-2 rounded-box p-1.5 hover:bg-base-200">
+				<a href={`/chats/${latest.id}`} class="shrink-0">
+					<Avatar
+						name={character?.name ?? '?'}
+						imageUrl={character?.image_urls[0]}
+						class="w-9"
+					/>
+				</a>
+				<a href={`/chats/${latest.id}`} class="min-w-0 flex-1">
+					<div class="truncate text-sm font-medium">
+						{character?.name ?? 'Unknown character'}
+					</div>
+					<div class="truncate text-xs opacity-60">{latest.name}</div>
 				</a>
 				{#if characterChats.length > 1}
 					<button
-						class="btn btn-xs btn-ghost"
+						class="btn btn-xs btn-ghost shrink-0"
 						type="button"
 						onclick={() => toggle(characterId)}
 						aria-label="Show other conversations"
@@ -108,21 +115,24 @@
 						{characterChats.length} {expanded[characterId] ? '▴' : '▾'}
 					</button>
 				{/if}
-				{@render chatActions(latest)}
+				<div class="shrink-0 opacity-0 group-hover:opacity-100">
+					{@render chatActions(latest)}
+				</div>
 			</div>
 			{#if expanded[characterId]}
-				<ul class="ml-2 flex flex-col gap-1">
+				<ul class="ml-10 flex flex-col gap-0.5 pb-1">
 					{#each characterChats as chat (chat.id)}
 						<li>
-							<div class="flex items-center gap-1">
+							<div class="group flex items-center gap-1 rounded-box" class:bg-base-200={activeId === chat.id}>
 								<a
-									class="btn btn-xs btn-ghost min-w-0 flex-1 justify-start truncate"
-									class:btn-active={activeId === chat.id}
+									class="min-w-0 flex-1 truncate rounded-box px-2 py-1 text-sm hover:bg-base-200"
 									href={`/chats/${chat.id}`}
 								>
 									{chat.name}
 								</a>
-								{@render chatActions(chat)}
+								<div class="shrink-0 opacity-0 group-hover:opacity-100">
+									{@render chatActions(chat)}
+								</div>
 							</div>
 						</li>
 					{/each}
@@ -130,6 +140,6 @@
 			{/if}
 		</div>
 	{:else}
-		<p class="p-2 text-sm opacity-70">No conversations yet.</p>
+		<p class="p-3 text-center text-sm opacity-60">No conversations yet.</p>
 	{/each}
 </aside>
