@@ -73,6 +73,15 @@
 	const commentsLoading = $derived(isLoadingComments(id));
 	const isMine = $derived(character !== null && getCurrentUser() === character.author);
 	const pastChats = $derived(getChats().filter((c) => c.character_id === id));
+	const latestChat = $derived(
+		pastChats.reduce<(typeof pastChats)[number] | null>((latest, chat) => {
+			const chatTime = Math.max(chat.created_at, ...chat.messages.map((m) => m.updated_at));
+			const latestTime = latest
+				? Math.max(latest.created_at, ...latest.messages.map((m) => m.updated_at))
+				: -Infinity;
+			return chatTime > latestTime ? chat : latest;
+		}, null)
+	);
 	let publishing = $state(false);
 
 	$effect(() => {
@@ -199,9 +208,6 @@
 				{/if}
 
 				<div class="flex flex-wrap gap-2">
-					<button class="btn btn-primary btn-sm" type="button" onclick={handleStartChat}>
-						Start new chat
-					</button>
 					<button class="btn btn-sm" type="button" onclick={() => importInput?.click()}>
 						Import chat
 					</button>
@@ -236,6 +242,15 @@
 				{#if importError}
 					<p class="text-sm text-error">{importError}</p>
 				{/if}
+
+				<div class="flex flex-col gap-2">
+					<button class="btn btn-primary btn-block" type="button" onclick={handleStartChat}>
+						Start new chat
+					</button>
+					{#if latestChat}
+						<a class="btn btn-block" href={`/chats/${latestChat.id}`}>Continue latest chat</a>
+					{/if}
+				</div>
 
 				{#if isChatsReady() && pastChats.length}
 					<div>
