@@ -40,13 +40,24 @@ const isCharacter: Validator<Character> = (data): data is Character => {
 
 const pubkeyOf = (doc: Character): PubKey => doc.author;
 
-async function signAndPublish(draft: Omit<Character, 'signature' | 'updated_at'>, keyring: Keyring): Promise<Character> {
+async function sign(draft: Omit<Character, 'signature' | 'updated_at'>, keyring: Keyring): Promise<Character> {
 	const withTimestamp = { ...draft, updated_at: Date.now(), signature: '' };
 	const signature = await signDocument(withTimestamp, keyring);
-	const doc: Character = { ...withTimestamp, signature };
+	return { ...withTimestamp, signature };
+}
+
+/** Writes an already-signed character to GUN and indexes its tags. Used both
+ *  for normal publish/edit flows and for promoting a local-only character
+ *  (see publishLocalCharacter). */
+async function writeToGun(doc: Character): Promise<Character> {
 	await putDocument(characterPath(doc.id), doc);
 	await Promise.all(doc.tags.map((tag) => addToTagIndex(tag, doc.id)));
 	return doc;
+}
+
+async function signAndPublish(draft: Omit<Character, 'signature' | 'updated_at'>, keyring: Keyring): Promise<Character> {
+	const doc = await sign(draft, keyring);
+	return writeToGun(doc);
 }
 
 export function getCharacter(id: CharacterId): Promise<Verified<Character>> {
@@ -119,7 +130,9 @@ export async function deleteCharacter(id: CharacterId): Promise<Character> {
 
 /** Copies `id`'s fields into a new document under a new id, authored and
  *  signed by the current user, with `forked_from` set for provenance (see
- *  spec: Fork). Non-authors get this instead of edit/delete. */
+ *  spec: Fork). Non-authors get this instead of edit/delete. Kept local-only
+ *  until the user explicitly publishes it — forking shouldn't broadcast a
+ *  copy to the network before the forker has had a chance to edit it. */
 export async function forkCharacter(id: CharacterId): Promise<Character> {
 	const keyring = getKeyring();
 	if (!keyring) throw new Error('No identity available yet — call initAuth() first.');
@@ -129,7 +142,7 @@ export async function forkCharacter(id: CharacterId): Promise<Character> {
 
 	const { id: _id, version: _version, author: _author, forked_from: _forkedFrom, signature: _signature, created_at: _createdAt, updated_at: _updatedAt, deleted: _deleted, deleted_at: _deletedAt, ...fields } = existing.doc;
 
-	return signAndPublish(
+	return sign(
 		{
 			...fields,
 			id: crypto.randomUUID(),
@@ -142,4 +155,53 @@ export async function forkCharacter(id: CharacterId): Promise<Character> {
 		},
 		keyring
 	);
+}
+
+/** Builds a signed character document without writing it to GUN — used for
+ *  local-only creates/edits/forks, which live entirely in this browser's
+ *  IndexedDB (see db/characters.ts) until explicitly published. */
+export async function createLocalCharacter(draft: CharacterDraft): Promise<Character> {
+	const keyring = getKeyring();
+	if (!keyring) throw new Error('No identity available yet — call initAuth() first.');
+	if (draft.id) throw new Error('createLocalCharacter is only for brand-new characters.');
+
+	return sign(
+		{
+			...draft,
+			id: crypto.randomUUID(),
+			version: 1,
+			forked_from: null,
+			author: keyring.publicKey,
+			deleted: false,
+			deleted_at: null,
+			created_at: Date.now()
+		},
+		keyring
+	);
+}
+
+/** Re-signs a new version of a local-only character — no GUN interaction,
+ *  since the previous version was never published either. */
+export async function editLocalCharacter(existing: Character, draft: CharacterDraft): Promise<Character> {
+	const keyring = getKeyring();
+	if (!keyring) throw new Error('No identity available yet — call initAuth() first.');
+
+	return sign(
+		{
+			...draft,
+			id: existing.id,
+			version: existing.version + 1,
+			forked_from: existing.forked_from,
+			author: existing.author,
+			deleted: false,
+			deleted_at: null,
+			created_at: existing.created_at
+		},
+		keyring
+	);
+}
+
+/** Promotes an already-signed local-only character to the network as-is. */
+export function publishLocalCharacter(character: Character): Promise<Character> {
+	return writeToGun(character);
 }

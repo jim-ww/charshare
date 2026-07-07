@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import type { Character, CharacterDraft } from '$lib/types';
 	import { getCharacter } from '$lib/gun/characters';
-	import { createOrEditCharacter } from '$lib/state/characters.svelte';
+	import { createOrEditCharacter, getMyCharacters, isCharacterLocalOnly } from '$lib/state/characters.svelte';
 	import CharacterForm from '$lib/components/CharacterForm.svelte';
 
 	const id = $derived(page.params.id as string);
@@ -12,6 +12,14 @@
 	let notFound = $state(false);
 
 	$effect(() => {
+		// Local-only characters were never written to GUN — fetching them from
+		// GUN would always report not-found. Their doc only lives in the local
+		// "my characters" store.
+		const local = getMyCharacters().find((c) => c.id === id);
+		if (local && isCharacterLocalOnly(id)) {
+			character = local;
+			return;
+		}
 		getCharacter(id).then((result) => {
 			if (result.ok) character = result.doc;
 			else notFound = true;
@@ -19,7 +27,7 @@
 	});
 
 	async function handleSubmit(draft: CharacterDraft) {
-		await createOrEditCharacter(draft);
+		await createOrEditCharacter(draft, { localOnly: isCharacterLocalOnly(id) });
 		await goto('/characters');
 	}
 </script>

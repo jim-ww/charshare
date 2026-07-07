@@ -1,11 +1,13 @@
 <script lang="ts">
 	import type { Character } from "$lib/types";
+	import { isCharacterLocalOnly } from "$lib/state/characters.svelte";
 
 	interface Props {
 		character: Character;
 	}
 
 	let { character }: Props = $props();
+	const localOnly = $derived(isCharacterLocalOnly(character.id));
 </script>
 
 <a
@@ -29,6 +31,9 @@
 	<div class="card-body p-4">
 		<h3 class:line-through={character.deleted} class="card-title text-base">
 			{character.name}
+			<span class="badge badge-sm" class:badge-outline={localOnly} class:badge-primary={!localOnly}>
+				{localOnly ? "Local only" : "Published"}
+			</span>
 		</h3>
 		{#if character.description}
 			<p class="line-clamp-3 text-sm opacity-80">

@@ -5,7 +5,13 @@
 	import type { Character, Comment } from '$lib/types';
 	import { subscribeCharacter } from '$lib/gun/characters';
 	import { getCurrentUser } from '$lib/state/auth.svelte';
-	import { deleteMyCharacter, forkCharacter } from '$lib/state/characters.svelte';
+	import {
+		deleteMyCharacter,
+		forkCharacter,
+		getMyCharacters,
+		isCharacterLocalOnly,
+		publishMyCharacter
+	} from '$lib/state/characters.svelte';
 	import { createChat, getChats, importChat, initChats, isChatsReady } from '$lib/state/chats.svelte';
 	import {
 		addComment,
@@ -24,10 +30,23 @@
 	let posting = $state(false);
 	let authorNames = $state<Record<string, string>>({});
 
+	const localOnly = $derived(isCharacterLocalOnly(id));
+
 	$effect(() => {
 		character = null;
 		notFound = false;
 		const currentId = id;
+
+		// Local-only characters were never written to GUN — subscribing there
+		// would never resolve. Their doc lives only in the local store.
+		if (isCharacterLocalOnly(currentId)) {
+			const local = getMyCharacters().find((c) => c.id === currentId);
+			character = local ?? null;
+			notFound = !local;
+			untrack(() => void initChats());
+			return;
+		}
+
 		const unsubscribe = untrack(() =>
 			subscribeCharacter(currentId, (result) => {
 				if (result.ok) {
@@ -52,6 +71,7 @@
 	const commentsLoading = $derived(isLoadingComments(id));
 	const isMine = $derived(character !== null && getCurrentUser() === character.author);
 	const pastChats = $derived(getChats().filter((c) => c.character_id === id));
+	let publishing = $state(false);
 
 	$effect(() => {
 		for (const c of comments) {
@@ -94,7 +114,17 @@
 	async function handleFork() {
 		if (!character) return;
 		const fork = await forkCharacter(character.id);
-		await goto(`/characters/${fork.id}`);
+		await goto(`/characters/${fork.id}/edit`);
+	}
+
+	async function handlePublish() {
+		if (!character) return;
+		publishing = true;
+		try {
+			await publishMyCharacter(character.id);
+		} finally {
+			publishing = false;
+		}
 	}
 
 	async function handleDelete() {
@@ -146,6 +176,13 @@
 				<div>
 					<h1 class:line-through={character.deleted} class="text-2xl font-semibold">
 						{character.name}
+						<span
+							class="badge badge-sm align-middle"
+							class:badge-outline={localOnly}
+							class:badge-primary={!localOnly}
+						>
+							{localOnly ? 'Local only' : 'Published'}
+						</span>
 					</h1>
 					{#if character.tags.length}
 						<div class="mt-1 flex flex-wrap gap-1">
@@ -176,6 +213,16 @@
 					/>
 					{#if isMine}
 						<a class="btn btn-sm" href={`/characters/${character.id}/edit`}>Edit</a>
+						{#if localOnly}
+							<button
+								class="btn btn-sm btn-primary"
+								type="button"
+								disabled={publishing}
+								onclick={handlePublish}
+							>
+								{publishing ? 'Publishing…' : 'Publish'}
+							</button>
+						{/if}
 						<button class="btn btn-sm btn-error" type="button" onclick={handleDelete}>
 							Delete
 						</button>
@@ -245,7 +292,11 @@
 				<div class="mt-4">
 					<h2 class="mb-2 text-lg font-semibold">Comments</h2>
 
-					{#if character.comments_enabled}
+					{#if localOnly}
+						<p class="text-sm opacity-60">
+							Local-only characters can't have comments — publish this character to enable them.
+						</p>
+					{:else if character.comments_enabled}
 						<form class="mb-3 flex flex-col gap-2" onsubmit={handlePostComment}>
 							<textarea
 								class="textarea textarea-bordered w-full text-sm"
