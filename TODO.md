@@ -1,5 +1,4 @@
 - preferences modal: combine profile, backup into one. and in backup instead of taking contents of backup file, allow just to select file itself
-- user profile: add image_url field(optional string). should also be shown in chat view(in bubbles)
 - chat view: edit on user's messages show be changed from 'save' to 'send', which would branch conersation from that point, sending current changed state to AI again, so it would generate response
 - save scratch from text input (that havent been sent yet) to local chat history too (so user can close page and continue later)
 - chat view: switch between past messages on up down arrow keys, with last unsent message as last

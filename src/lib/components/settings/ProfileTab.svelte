@@ -5,6 +5,7 @@
 
 	let username = $state('');
 	let description = $state('');
+	let imageUrl = $state('');
 	let saving = $state(false);
 	let saveError = $state<string | null>(null);
 	let loadedFromProfile = false;
@@ -16,6 +17,7 @@
 			const profile = getMyProfile();
 			username = profile?.username ?? '';
 			description = profile?.description ?? '';
+			imageUrl = profile?.image_url ?? '';
 			loadedFromProfile = true;
 		}
 	});
@@ -25,7 +27,7 @@
 		saving = true;
 		saveError = null;
 		try {
-			await saveProfile({ username, description });
+			await saveProfile({ username, description, image_url: imageUrl.trim() || undefined });
 		} catch (err) {
 			saveError = err instanceof Error ? err.message : String(err);
 		} finally {
@@ -45,6 +47,15 @@
 		<label class="form-control">
 			<span class="label-text">Description</span>
 			<textarea class="textarea textarea-bordered w-full" bind:value={description}></textarea>
+		</label>
+		<label class="form-control">
+			<span class="label-text">Image URL</span>
+			<input
+				class="input input-bordered w-full"
+				type="url"
+				placeholder="https://…"
+				bind:value={imageUrl}
+			/>
 		</label>
 		<button class="btn btn-primary self-start" type="submit" disabled={saving}>
 			{saving ? 'Saving…' : 'Save profile'}

@@ -14,6 +14,7 @@ const isUser: Validator<User> = (data): data is User => {
 		typeof d.id === 'string' &&
 		typeof d.username === 'string' &&
 		typeof d.description === 'string' &&
+		(d.image_url === undefined || typeof d.image_url === 'string') &&
 		typeof d.signature === 'string' &&
 		typeof d.created_at === 'number' &&
 		typeof d.updated_at === 'number' &&
@@ -48,7 +49,11 @@ export function subscribeProfile(pubkey: PubKey, onUpdate: (result: Verified<Use
 
 /** Signs and publishes the current user's profile. Preserves `created_at`
  *  from the existing published profile, if any (this is an edit, not a new doc). */
-export async function publishProfile(fields: { username: string; description: string }): Promise<User> {
+export async function publishProfile(fields: {
+	username: string;
+	description: string;
+	image_url?: string;
+}): Promise<User> {
 	const keyring = getKeyring();
 	if (!keyring) throw new Error('No identity available yet — call initAuth() first.');
 	const existing = await getProfile(keyring.publicKey);
@@ -57,6 +62,7 @@ export async function publishProfile(fields: { username: string; description: st
 			id: keyring.publicKey,
 			username: fields.username,
 			description: fields.description,
+			...(fields.image_url ? { image_url: fields.image_url } : {}),
 			deleted: false,
 			deleted_at: null,
 			created_at: existing.ok ? existing.doc.created_at : Date.now()

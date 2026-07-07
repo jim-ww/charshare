@@ -34,6 +34,10 @@ export function initProfile(): Promise<void> {
 	return initPromise;
 }
 
-export async function saveProfile(fields: { username: string; description: string }): Promise<void> {
+export async function saveProfile(fields: {
+	username: string;
+	description: string;
+	image_url?: string;
+}): Promise<void> {
 	profile = await publishProfile(fields);
 }

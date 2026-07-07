@@ -80,7 +80,7 @@
 				<Avatar name={character.name} imageUrl={character.image_urls[0]} />
 			</a>
 		{:else}
-			<Avatar name="You" />
+			<Avatar name={displayName} imageUrl={getMyProfile()?.image_url} />
 		{/if}
 	</div>
 	<div class="chat-header text-sm font-semibold opacity-100">{displayName}</div>

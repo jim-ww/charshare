@@ -8,6 +8,7 @@ export interface UserFields {
   id: PubKey;
   username: string; // required, can be empty
   description: string; // required, can be empty
+  image_url?: string;
 }
 
 /** The full document as it's signed, published, and validated. Unlike
