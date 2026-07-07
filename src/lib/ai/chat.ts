@@ -2,7 +2,7 @@ import type { Character, Chat } from '$lib/types';
 import { activeContent } from '$lib/types';
 import { getPreferences } from '$lib/state/preferences.svelte';
 import { addMessage } from '$lib/state/chats.svelte';
-import { requestCompletion, type CompletionMessage } from './openrouter';
+import { requestCompletion, type CompletionMessage } from './index';
 
 function historyToMessages(chat: Chat): CompletionMessage[] {
 	return chat.messages.map((m) => ({

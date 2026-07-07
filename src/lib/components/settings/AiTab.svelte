@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { getPreferences, updatePreferences } from '$lib/state/preferences.svelte';
+	import { getPreferences, updatePreferences, DEFAULT_OPENROUTER_CONFIG, DEFAULT_OLLAMA_CONFIG } from '$lib/state/preferences.svelte';
+	import type { ProviderConfig } from '$lib/types';
 
 	const preferences = $derived(getPreferences());
 	const provider = $derived(preferences.provider);
@@ -7,19 +8,51 @@
 	function update<K extends keyof typeof provider>(key: K, value: (typeof provider)[K]) {
 		updatePreferences({ provider: { ...preferences.provider, [key]: value } });
 	}
+
+	function switchProvider(next: ProviderConfig['provider']) {
+		if (next === provider.provider) return;
+		const defaults = next === 'openrouter' ? DEFAULT_OPENROUTER_CONFIG : DEFAULT_OLLAMA_CONFIG;
+		updatePreferences({ provider: { ...defaults, model: provider.model } });
+	}
 </script>
 
 <div class="flex flex-col gap-3">
 	<label class="form-control">
-		<span class="label-text">OpenRouter API key</span>
-		<input
-			class="input input-bordered w-full"
-			type="password"
-			value={provider.apiKey}
-			oninput={(e) => update('apiKey', e.currentTarget.value)}
-		/>
-		<span class="text-sm opacity-70">Stored locally only, never published.</span>
+		<span class="label-text">Provider</span>
+		<select
+			class="select select-bordered w-full"
+			value={provider.provider}
+			onchange={(e) => switchProvider(e.currentTarget.value as ProviderConfig['provider'])}
+		>
+			<option value="openrouter">OpenRouter</option>
+			<option value="ollama">Ollama</option>
+		</select>
 	</label>
+
+	{#if provider.provider === 'openrouter'}
+		<label class="form-control">
+			<span class="label-text">OpenRouter API key</span>
+			<input
+				class="input input-bordered w-full"
+				type="password"
+				value={provider.apiKey}
+				oninput={(e) => update('apiKey', e.currentTarget.value)}
+			/>
+			<span class="text-sm opacity-70">Stored locally only, never published.</span>
+		</label>
+	{:else}
+		<label class="form-control">
+			<span class="label-text">Ollama server URL</span>
+			<input
+				class="input input-bordered w-full"
+				value={provider.baseUrl}
+				oninput={(e) => update('baseUrl', e.currentTarget.value)}
+			/>
+			<span class="text-sm opacity-70">
+				Local or self-hosted Ollama instance. No API key needed.
+			</span>
+		</label>
+	{/if}
 
 	<label class="form-control">
 		<span class="label-text">Model</span>
@@ -96,6 +129,8 @@
 				step="0.1"
 				value={provider.frequency_penalty}
 				oninput={(e) => update('frequency_penalty', Number(e.currentTarget.value))}
+				disabled={provider.provider === 'ollama'}
+				title={provider.provider === 'ollama' ? 'Not supported by Ollama' : undefined}
 			/>
 		</label>
 	</div>

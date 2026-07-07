@@ -1,4 +1,4 @@
-import type { ProviderConfig } from '$lib/types';
+import type { OpenRouterProviderConfig } from '$lib/types';
 
 export interface CompletionMessage {
 	role: 'system' | 'user' | 'assistant';
@@ -10,7 +10,10 @@ const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 /** Calls OpenRouter's OpenAI-compatible chat completions endpoint directly
  *  from the browser (see spec: Preferences — CORS-supported, no proxy
  *  needed for this provider). The API key never leaves the client. */
-export async function requestCompletion(config: ProviderConfig, messages: CompletionMessage[]): Promise<string> {
+export async function requestCompletion(
+	config: OpenRouterProviderConfig,
+	messages: CompletionMessage[]
+): Promise<string> {
 	const response = await fetch(OPENROUTER_URL, {
 		method: 'POST',
 		headers: {
