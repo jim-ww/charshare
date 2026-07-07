@@ -63,6 +63,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
 	theme: "dark",
 	blockedTags: [],
 	hiddenCharacterIds: [],
+	personaSelections: {},
 	provider: DEFAULT_HUGGINGFACE_CONFIG,
 	providerConfigs: {
 		openrouter: DEFAULT_OPENROUTER_CONFIG,
@@ -110,6 +111,7 @@ export function initPreferences(): Promise<void> {
 				preferences = {
 					...preferences,
 					hiddenCharacterIds: preferences.hiddenCharacterIds ?? [],
+					personaSelections: preferences.personaSelections ?? {},
 					providerConfigs: {
 						...DEFAULT_PREFERENCES.providerConfigs,
 						...preferences.providerConfigs,

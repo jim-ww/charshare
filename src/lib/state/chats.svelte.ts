@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import type { Chat, ChatId, CharacterId, Message, MessageId, MessageRole } from '$lib/types';
+import type { Chat, ChatId, CharacterId, Message, MessageId, MessageRole, PersonaId } from '$lib/types';
 import { loadChats, saveChats } from '$lib/db/chats';
 
 let chats = $state<Record<ChatId, Chat>>({});
@@ -28,6 +28,7 @@ export function initChats(): Promise<void> {
 			for (const chat of Object.values(loaded)) {
 				if (chat.draft === undefined) chat.draft = '';
 				if (chat.image_index === undefined) chat.image_index = 0;
+				if (chat.persona_id === undefined) chat.persona_id = null;
 			}
 			chats = loaded;
 			ready = true;
@@ -43,10 +44,15 @@ async function persist(): Promise<void> {
 	await saveChats($state.snapshot(chats));
 }
 
-export async function createChat(characterId: CharacterId, name: string): Promise<Chat> {
+export async function createChat(
+	characterId: CharacterId,
+	name: string,
+	personaId: PersonaId | null = null
+): Promise<Chat> {
 	const chat: Chat = {
 		id: crypto.randomUUID(),
 		character_id: characterId,
+		persona_id: personaId,
 		name,
 		messages: [],
 		root_id: null,
@@ -118,7 +124,11 @@ export function exportChat(id: ChatId): string {
 /** Imports a previously-exported chat JSON for a given character, assigning a
  *  fresh id/created_at rather than reusing the export's (avoids collisions
  *  and lets the same export be imported more than once). */
-export async function importChat(characterId: CharacterId, json: string): Promise<Chat> {
+export async function importChat(
+	characterId: CharacterId,
+	json: string,
+	personaId: PersonaId | null = null
+): Promise<Chat> {
 	let parsed: unknown;
 	try {
 		parsed = JSON.parse(json);
@@ -137,6 +147,7 @@ export async function importChat(characterId: CharacterId, json: string): Promis
 	const chat: Chat = {
 		id: crypto.randomUUID(),
 		character_id: characterId,
+		persona_id: personaId,
 		name: source.name,
 		messages: source.messages,
 		root_id: source.root_id ?? null,

@@ -1,4 +1,5 @@
 import type { CharacterId } from './character';
+import type { PersonaId } from './persona';
 
 export type ChatId = string; // uuid
 export type MessageId = string; // uuid
@@ -21,6 +22,10 @@ export interface Message {
 export interface Chat {
   id: ChatId;
   character_id: CharacterId;
+  // Which persona the user was "playing as" when this chat was created —
+  // fixed for the chat's lifetime so switching personas later doesn't
+  // rewrite history. Null for chats created before personas existed.
+  persona_id: PersonaId | null;
   name: string;
   // Every message node that has ever existed in this chat, across every
   // regenerated branch — a tree (via Message.parent_id), not just the

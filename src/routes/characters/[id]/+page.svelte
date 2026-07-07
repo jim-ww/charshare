@@ -23,6 +23,8 @@
 	} from '$lib/state/comments.svelte';
 	import { getProfile } from '$lib/gun/users';
 	import CharacterImageViewer from '$lib/components/CharacterImageViewer.svelte';
+	import PersonaSelectorButton from '$lib/components/PersonaSelectorButton.svelte';
+	import { getSelectedPersonaId, initPersonas } from '$lib/state/personas.svelte';
 
 	const id = $derived(page.params.id as string);
 
@@ -100,7 +102,8 @@
 
 	async function handleStartChat() {
 		if (!character) return;
-		const chat = await createChat(character.id, character.name);
+		await initPersonas();
+		const chat = await createChat(character.id, character.name, getSelectedPersonaId(character.id) ?? null);
 		await goto(`/chats/${chat.id}`);
 	}
 
@@ -113,7 +116,12 @@
 		if (!file) return;
 		importError = '';
 		try {
-			const chat = await importChat(character.id, await file.text());
+			await initPersonas();
+			const chat = await importChat(
+				character.id,
+				await file.text(),
+				getSelectedPersonaId(character.id) ?? null
+			);
 			await goto(`/chats/${chat.id}`);
 		} catch (err) {
 			importError = err instanceof Error ? err.message : 'Failed to import chat.';
@@ -244,12 +252,13 @@
 				{/if}
 
 				<div class="flex flex-col gap-2">
-					<button class="btn btn-primary btn-block" type="button" onclick={handleStartChat}>
-						Start new chat
-					</button>
+					<PersonaSelectorButton characterId={id} />
 					{#if latestChat}
 						<a class="btn btn-block" href={`/chats/${latestChat.id}`}>Continue latest chat</a>
 					{/if}
+					<button class="btn btn-primary btn-block" type="button" onclick={handleStartChat}>
+						Start new chat
+					</button>
 				</div>
 
 				{#if isChatsReady() && pastChats.length}

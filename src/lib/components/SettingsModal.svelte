@@ -7,6 +7,7 @@
 		type SettingsTab,
 	} from "$lib/state/settingsModal.svelte";
 	import ProfileTab from "./settings/ProfileTab.svelte";
+	import PersonasTab from "./settings/PersonasTab.svelte";
 	import GeneralTab from "./settings/GeneralTab.svelte";
 	import NetworkTab from "./settings/NetworkTab.svelte";
 	import AiTab from "./settings/AiTab.svelte";
@@ -14,6 +15,7 @@
 
 	const tabs: { id: SettingsTab; label: string }[] = [
 		{ id: "profile", label: "Profile" },
+		{ id: "personas", label: "Personas" },
 		{ id: "general", label: "General" },
 		{ id: "network", label: "Network" },
 		{ id: "ai", label: "AI" },
@@ -54,6 +56,8 @@
 		<div class="flex-1 overflow-y-auto p-4">
 			{#if activeTab === "profile"}
 				<ProfileTab />
+			{:else if activeTab === "personas"}
+				<PersonasTab />
 			{:else if activeTab === "general"}
 				<GeneralTab />
 			{:else if activeTab === "network"}

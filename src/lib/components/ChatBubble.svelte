@@ -3,6 +3,7 @@
 	import { deleteMessage, editMessage, getSiblings, switchBranch } from '$lib/state/chats.svelte';
 	import { regenerateMessage } from '$lib/ai/chat';
 	import { getMyProfile } from '$lib/state/profile.svelte';
+	import { getPersona, personaDisplayName } from '$lib/state/personas.svelte';
 	import Avatar from './Avatar.svelte';
 
 	interface Props {
@@ -14,13 +15,15 @@
 	let { chat, message, character }: Props = $props();
 	const chatId = $derived(chat.id);
 
-	const displayName = $derived(
-		message.role === 'character' ? character.name : (getMyProfile()?.username ?? 'You')
-	);
+	// The persona the user was playing as when this chat was created — falls
+	// back to the real profile username for chats from before personas existed.
+	const persona = $derived(chat.persona_id ? getPersona(chat.persona_id) : undefined);
+	const userName = $derived(persona ? personaDisplayName(persona) : (getMyProfile()?.username ?? 'You'));
+
+	const displayName = $derived(message.role === 'character' ? character.name : userName);
 
 	const displayContent = $derived.by(() => {
-		const name = getMyProfile()?.username;
-		return name ? message.content.replaceAll(/{{user}}/gi, name) : message.content;
+		return userName ? message.content.replaceAll(/{{user}}/gi, userName) : message.content;
 	});
 
 	function escapeHtml(text: string): string {

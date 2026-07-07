@@ -1,1 +1,2 @@
 - exported chat filename should match chat name
+- in preferences, show some ui change, when preferences have been saved

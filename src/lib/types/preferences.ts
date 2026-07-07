@@ -46,6 +46,7 @@ export interface Preferences {
   theme: ThemeMode;
   blockedTags: string[];
   hiddenCharacterIds: string[]; // other users' characters hidden locally, not deleted
+  personaSelections: Record<string, string>; // characterId -> personaId, remembers the last mask used per character
   provider: ProviderConfig; // the currently active provider's config
   providerConfigs: ProviderConfigMap; // last-saved config per provider
 }
