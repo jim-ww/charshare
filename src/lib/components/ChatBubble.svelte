@@ -2,6 +2,7 @@
 	import type { Chat, Character, Message } from '$lib/types';
 	import { deleteMessage, editMessage, getSiblings, switchBranch } from '$lib/state/chats.svelte';
 	import { regenerateMessage } from '$lib/ai/chat';
+	import { getMyProfile } from '$lib/state/profile.svelte';
 	import Avatar from './Avatar.svelte';
 
 	interface Props {
@@ -12,6 +13,11 @@
 
 	let { chat, message, character }: Props = $props();
 	const chatId = $derived(chat.id);
+
+	const displayContent = $derived.by(() => {
+		const name = getMyProfile()?.username;
+		return name ? message.content.replaceAll(/{{user}}/gi, name) : message.content;
+	});
 
 	// Other branches regenerated at this same point in the tree — the "other
 	// routes" of the conversation (see regenerateMessage in $lib/ai/chat.ts).
@@ -67,7 +73,7 @@
 				<button class="btn btn-xs" type="button" onclick={() => (editing = false)}>Cancel</button>
 			</div>
 		{:else}
-			<p class="whitespace-pre-wrap">{message.content}</p>
+			<p class="whitespace-pre-wrap">{displayContent}</p>
 		{/if}
 	</div>
 	<div class="chat-footer flex items-center gap-2 text-xs opacity-70">
