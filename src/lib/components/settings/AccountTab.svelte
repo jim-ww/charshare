@@ -17,6 +17,8 @@
 	let imageUrl = $state('');
 	let saving = $state(false);
 	let saveError = $state<string | null>(null);
+	let justSaved = $state(false);
+	let saveTimeout: ReturnType<typeof setTimeout> | undefined;
 	let loadedFromProfile = false;
 
 	let importError = $state<string | null>(null);
@@ -54,6 +56,11 @@
 		saveError = null;
 		try {
 			await saveProfile({ username, description, image_url: imageUrl.trim() || undefined });
+			justSaved = true;
+			clearTimeout(saveTimeout);
+			saveTimeout = setTimeout(() => {
+				justSaved = false;
+			}, 2000);
 		} catch (err) {
 			saveError = err instanceof Error ? err.message : String(err);
 		} finally {
@@ -178,9 +185,14 @@
 					bind:value={imageUrl}
 				/>
 			</label>
-			<button class="btn btn-primary self-start" type="submit" disabled={saving}>
-				{saving ? 'Saving…' : 'Save profile'}
-			</button>
+			<div class="flex items-center gap-2">
+				<button class="btn btn-primary self-start" type="submit" disabled={saving}>
+					{saving ? 'Saving…' : 'Save profile'}
+				</button>
+				{#if justSaved}
+					<span class="text-success text-sm">Saved!</span>
+				{/if}
+			</div>
 			{#if saveError}
 				<p class="text-error text-sm">{saveError}</p>
 			{/if}
