@@ -7,6 +7,7 @@
 	import { getCurrentUser } from '$lib/state/auth.svelte';
 	import {
 		deleteMyCharacter,
+		exportCharacter,
 		forkCharacter,
 		getMyCharacters,
 		isCharacterLocalOnly,
@@ -127,6 +128,17 @@
 		}
 	}
 
+	function handleExport() {
+		if (!character) return;
+		const blob = new Blob([exportCharacter(character)], { type: 'application/json' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = `${character.name.replace(/[^a-z0-9_-]+/gi, '_') || 'character'}.json`;
+		a.click();
+		URL.revokeObjectURL(url);
+	}
+
 	async function handleDelete() {
 		if (!character) return;
 		await deleteMyCharacter(character.id);
@@ -211,6 +223,7 @@
 						class="hidden"
 						onchange={handleImportChat}
 					/>
+					<button class="btn btn-sm" type="button" onclick={handleExport}>Export</button>
 					{#if isMine}
 						<a class="btn btn-sm" href={`/characters/${character.id}/edit`}>Edit</a>
 						{#if localOnly}

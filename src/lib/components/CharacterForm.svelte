@@ -3,12 +3,21 @@
 
 	interface Props {
 		initial?: Character;
+		draft?: CharacterDraft;
 		submitLabel: string;
 		onsubmit: (draft: CharacterDraft) => Promise<void>;
+		localOnly?: boolean;
+		showLocalOnlyToggle?: boolean;
 	}
 
-	let { initial, submitLabel, onsubmit }: Props = $props();
-
+	let {
+		initial,
+		draft,
+		submitLabel,
+		onsubmit,
+		localOnly = $bindable(true),
+		showLocalOnlyToggle = false
+	}: Props = $props();
 	const defaultSystemPrompt = `You are {{char}}, and you must stay in character as {{char}} at all times.
 Write {{char}}'s next reply in a fictional chat between {{char}} and {{user}}.
 Narrate actions and physical reactions in *asterisks*, and speak dialogue plainly.
@@ -16,20 +25,24 @@ Never speak, act, or narrate for {{user}} — only control {{char}}.
 Never state or assume what {{user}} does, thinks, or feels unless {{user}} has explicitly said so.
 Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 
-	let name = $state(initial?.name ?? '');
-	let imageUrl = $state(initial?.image_url ?? '');
-	let description = $state(initial?.description ?? '');
-	let personality = $state(initial?.personality ?? '');
-	let scenario = $state(initial?.scenario ?? '');
-	let tagsText = $state(initial?.tags.join(', ') ?? '');
-	let nsfw = $state(initial?.nsfw ?? false);
-	let language = $state(initial?.language ?? (initial ? '' : 'en'));
-	let systemPrompt = $state(initial?.system_prompt ?? (initial ? '' : defaultSystemPrompt));
-	let firstMessage = $state(initial?.first_message ?? '');
-	let alternateGreetings = $state<string[]>(
-		initial?.alternate_greetings.length ? [...initial.alternate_greetings] : []
+	let name = $state(initial?.name ?? draft?.name ?? '');
+	let imageUrl = $state(initial?.image_url ?? draft?.image_url ?? '');
+	let description = $state(initial?.description ?? draft?.description ?? '');
+	let personality = $state(initial?.personality ?? draft?.personality ?? '');
+	let scenario = $state(initial?.scenario ?? draft?.scenario ?? '');
+	let tagsText = $state((initial ?? draft)?.tags.join(', ') ?? '');
+	let nsfw = $state(initial?.nsfw ?? draft?.nsfw ?? false);
+	let language = $state(initial?.language ?? draft?.language ?? (initial || draft ? '' : 'en'));
+	let systemPrompt = $state(
+		initial?.system_prompt ?? draft?.system_prompt ?? (initial || draft ? '' : defaultSystemPrompt)
 	);
-	let commentsEnabled = $state(initial?.comments_enabled ?? true);
+	let firstMessage = $state(initial?.first_message ?? draft?.first_message ?? '');
+	let alternateGreetings = $state<string[]>(
+		(initial ?? draft)?.alternate_greetings.length
+			? [...(initial ?? draft)!.alternate_greetings]
+			: []
+	);
+	let commentsEnabled = $state(initial?.comments_enabled ?? draft?.comments_enabled ?? true);
 
 	function addGreeting() {
 		alternateGreetings.push('');
@@ -121,6 +134,14 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 				<input type="checkbox" class="checkbox" bind:checked={commentsEnabled} />
 				<span class="label-text">Comments enabled</span>
 			</label>
+			{#if showLocalOnlyToggle}
+				<label class="flex cursor-pointer items-start gap-2">
+					<input type="checkbox" class="checkbox" bind:checked={localOnly} />
+					<span class="label-text">
+						Keep local-only (not published to the network — no comments, only visible to you)
+					</span>
+				</label>
+			{/if}
 		</div>
 
 		<div class="order-1 flex flex-col gap-4 lg:order-2 lg:col-span-2">
