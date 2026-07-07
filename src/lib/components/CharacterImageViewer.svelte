@@ -10,9 +10,15 @@
 	let { images, name, class: className = '', onImageClick }: Props = $props();
 
 	let index = $state(0);
+	let loaded = $state(false);
 
 	$effect(() => {
 		if (index >= images.length) index = 0;
+	});
+
+	$effect(() => {
+		images[index];
+		loaded = false;
 	});
 
 	function prev(event: MouseEvent) {
@@ -35,10 +41,25 @@
 				onclick={onImageClick}
 				aria-label={`Toggle ${name} image size`}
 			>
-				<img src={images[index]} alt={name} class="h-full w-full object-cover" />
+				<img
+					src={images[index]}
+					alt={name}
+					class="h-full w-full object-cover"
+					onload={() => (loaded = true)}
+				/>
 			</button>
 		{:else}
-			<img src={images[index]} alt={name} class="h-full w-full object-cover" />
+			<img
+				src={images[index]}
+				alt={name}
+				class="h-full w-full object-cover"
+				onload={() => (loaded = true)}
+			/>
+		{/if}
+		{#if !loaded}
+			<div class="absolute inset-0 flex items-center justify-center bg-base-300">
+				<span class="loading loading-spinner loading-lg"></span>
+			</div>
 		{/if}
 		{#if images.length > 1}
 			{#if index > 0}

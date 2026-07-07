@@ -132,41 +132,50 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 					name={name || "?"}
 				/>
 			</div>
-			<div class="form-control gap-2">
-				<div class="flex items-center justify-between">
-					<span class="label-text"
-						>Image URLs</span
-					>
-					<button
-						type="button"
-						class="btn btn-ghost btn-sm"
-						onclick={addImageUrl}
-					>
-						+ Add image
-					</button>
+			<div
+				class="collapse-arrow bg-base-200 border-base-300 collapse border"
+			>
+				<input type="checkbox" />
+				<div class="collapse-title label-text font-medium">
+					Image URLs{imageUrls.length
+						? ` (${imageUrls.length})`
+						: ""}
 				</div>
-				{#each imageUrls as _, i}
-					<div class="flex gap-2">
-						<input
-							class="input input-bordered w-full"
-							bind:value={
-								imageUrls[i]
-							}
-							placeholder="https://…"
-						/>
-						<button
-							type="button"
-							class="btn btn-ghost btn-sm"
-							aria-label="Remove image"
-							onclick={() =>
-								removeImageUrl(
-									i,
-								)}
-						>
-							✕
-						</button>
+				<div class="collapse-content">
+					<div class="form-control gap-2">
+						<div class="flex items-center justify-end">
+							<button
+								type="button"
+								class="btn btn-ghost btn-sm"
+								onclick={addImageUrl}
+							>
+								+ Add image
+							</button>
+						</div>
+						{#each imageUrls as _, i}
+							<div class="flex gap-2">
+								<input
+									class="input input-bordered w-full"
+									bind:value={
+										imageUrls[i]
+									}
+									placeholder="https://…"
+								/>
+								<button
+									type="button"
+									class="btn btn-ghost btn-sm"
+									aria-label="Remove image"
+									onclick={() =>
+										removeImageUrl(
+											i,
+										)}
+								>
+									✕
+								</button>
+							</div>
+						{/each}
 					</div>
-				{/each}
+				</div>
 			</div>
 			<label class="form-control">
 				<span class="label-text">Name</span>
