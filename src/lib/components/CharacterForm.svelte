@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from "svelte";
 	import type { Character, CharacterDraft } from "$lib/types";
 	import CharacterImageViewer from "./CharacterImageViewer.svelte";
 	import { isAccountRegistered } from "$lib/state/auth.svelte";
@@ -29,10 +30,10 @@ Never speak, act, or narrate for {{user}} — only control {{char}}.
 Never state or assume what {{user}} does, thinks, or feels unless {{user}} has explicitly said so.
 Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 
-	let name = $state(initial?.name ?? draft?.name ?? "");
-	let imageUrls = $state<string[]>([
-		...((initial ?? draft)?.image_urls ?? []),
-	]);
+	let name = $state(untrack(() => initial?.name ?? draft?.name ?? ""));
+	let imageUrls = $state<string[]>(
+		untrack(() => [...((initial ?? draft)?.image_urls ?? [])]),
+	);
 	let viewerIndex = $state(0);
 
 	function addImageUrl() {
@@ -81,34 +82,46 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 		dragOverImageIndex = null;
 	}
 	let description = $state(
-		initial?.description ?? draft?.description ?? "",
+		untrack(() => initial?.description ?? draft?.description ?? ""),
 	);
 	let personality = $state(
-		initial?.personality ?? draft?.personality ?? "",
+		untrack(() => initial?.personality ?? draft?.personality ?? ""),
 	);
-	let scenario = $state(initial?.scenario ?? draft?.scenario ?? "");
-	let tagsText = $state((initial ?? draft)?.tags.join(", ") ?? "");
-	let nsfw = $state(initial?.nsfw ?? draft?.nsfw ?? false);
+	let scenario = $state(
+		untrack(() => initial?.scenario ?? draft?.scenario ?? ""),
+	);
+	let tagsText = $state(
+		untrack(() => (initial ?? draft)?.tags.join(", ") ?? ""),
+	);
+	let nsfw = $state(untrack(() => initial?.nsfw ?? draft?.nsfw ?? false));
 	let language = $state(
-		initial?.language ??
-			draft?.language ??
-			(initial || draft ? "" : "en"),
+		untrack(
+			() =>
+				initial?.language ??
+				draft?.language ??
+				(initial || draft ? "" : "en"),
+		),
 	);
 	let systemPrompt = $state(
-		initial?.system_prompt ??
-			draft?.system_prompt ??
-			(initial || draft ? "" : defaultSystemPrompt),
+		untrack(
+			() =>
+				initial?.system_prompt ??
+				draft?.system_prompt ??
+				(initial || draft ? "" : defaultSystemPrompt),
+		),
 	);
 	let firstMessage = $state(
-		initial?.first_message ?? draft?.first_message ?? "",
+		untrack(() => initial?.first_message ?? draft?.first_message ?? ""),
 	);
 	let alternateGreetings = $state<string[]>(
-		(initial ?? draft)?.alternate_greetings.length
-			? [...(initial ?? draft)!.alternate_greetings]
-			: [],
+		untrack(() =>
+			(initial ?? draft)?.alternate_greetings.length
+				? [...(initial ?? draft)!.alternate_greetings]
+				: [],
+		),
 	);
 	let commentsEnabled = $state(
-		initial?.comments_enabled ?? draft?.comments_enabled ?? true,
+		untrack(() => initial?.comments_enabled ?? draft?.comments_enabled ?? true),
 	);
 
 	function addGreeting() {

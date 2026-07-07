@@ -1,8 +1,9 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { getPreferences, updatePreferences } from '$lib/state/preferences.svelte';
 
 	const preferences = $derived(getPreferences());
-	let tagsText = $state(preferences.blockedTags.join(', '));
+	let tagsText = $state(untrack(() => preferences.blockedTags.join(', ')));
 
 	function handleSave() {
 		const tags = tagsText

@@ -1,8 +1,9 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { getPreferences, updatePreferences } from '$lib/state/preferences.svelte';
 
 	const preferences = $derived(getPreferences());
-	let relaysText = $state(preferences.gunRelays.join('\n'));
+	let relaysText = $state(untrack(() => preferences.gunRelays.join('\n')));
 
 	function handleSave() {
 		const relays = relaysText
