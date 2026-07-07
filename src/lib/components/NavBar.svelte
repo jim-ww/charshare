@@ -22,18 +22,18 @@
 			>+ New Character</a
 		>
 		<button
-			class="btn btn-sm btn-ghost btn-circle"
+			class="btn btn-sm btn-ghost gap-2"
 			type="button"
 			aria-label="Settings"
-			onclick={() => openSettings("general")}
-		>
-			⚙
-		</button>
-		<button
-			class="btn btn-sm btn-ghost"
-			type="button"
 			onclick={() => openSettings("profile")}
 		>
+			{#if profile?.image_url}
+				<div class="avatar">
+					<div class="w-6 rounded-full">
+						<img src={profile.image_url} alt={displayName} />
+					</div>
+				</div>
+			{/if}
 			{displayName}
 		</button>
 	</div>
