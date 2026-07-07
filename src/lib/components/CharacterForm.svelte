@@ -161,7 +161,7 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 				<textarea
 					class="textarea textarea-bordered field-sizing-content min-h-24 w-full"
 					bind:value={firstMessage}
-					placeholder="The message {{char}} sends to open the conversation…"
+					placeholder="The message {'{{char}}'} sends to open the conversation…"
 				></textarea>
 			</label>
 
