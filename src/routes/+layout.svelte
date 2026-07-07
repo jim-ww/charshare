@@ -4,7 +4,7 @@
 	import { locales, localizeHref } from '$lib/paraglide/runtime';
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
-	import { initPreferences } from '$lib/state/preferences.svelte';
+	import { initPreferences, getPreferences } from '$lib/state/preferences.svelte';
 	import { initAuth } from '$lib/state/auth.svelte';
 	import { initProfile } from '$lib/state/profile.svelte';
 	import { initCharacters } from '$lib/state/characters.svelte';
@@ -20,6 +20,10 @@
 		initProfile();
 		initCharacters();
 		initChats();
+	});
+
+	$effect(() => {
+		document.documentElement.dataset.theme = getPreferences().theme;
 	});
 </script>
 
