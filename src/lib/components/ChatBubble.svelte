@@ -14,6 +14,10 @@
 	let { chat, message, character }: Props = $props();
 	const chatId = $derived(chat.id);
 
+	const displayName = $derived(
+		message.role === 'character' ? character.name : (getMyProfile()?.username ?? 'You')
+	);
+
 	const displayContent = $derived.by(() => {
 		const name = getMyProfile()?.username;
 		return name ? message.content.replaceAll(/{{user}}/gi, name) : message.content;
@@ -79,6 +83,7 @@
 			<Avatar name="You" />
 		{/if}
 	</div>
+	<div class="chat-header text-sm font-semibold opacity-100">{displayName}</div>
 	<div class="chat-bubble">
 		{#if editing}
 			<textarea class="textarea textarea-bordered w-full text-base-content" bind:value={draft}
