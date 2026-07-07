@@ -1,22 +1,22 @@
-import { browser } from '$app/environment';
-import { get, set } from 'idb-keyval';
+import { browser } from "$app/environment";
+import { get, set } from "idb-keyval";
 import type {
 	HuggingFaceProviderConfig,
 	OllamaProviderConfig,
 	OpenRouterProviderConfig,
 	Preferences,
-	ProviderConfig
-} from '$lib/types';
-import { DEFAULT_GUN_RELAYS } from '$lib/gun/relays';
+	ProviderConfig,
+} from "$lib/types";
+import { DEFAULT_GUN_RELAYS } from "$lib/gun/relays";
 
-const STORAGE_KEY = 'charshare:preferences';
+const STORAGE_KEY = "charshare:preferences";
 
 /** Defaults used both for initial preferences and when the user switches
  *  provider in Settings, so each provider's fields start from something sane. */
 export const DEFAULT_OPENROUTER_CONFIG: OpenRouterProviderConfig = {
-	provider: 'openrouter',
-	apiKey: '',
-	model: 'meta-llama/llama-3.1-8b-instruct:free',
+	provider: "openrouter",
+	apiKey: "",
+	model: "tencent/hy3:free",
 	temperature: 1,
 	max_tokens: 512,
 	context_size: 8192,
@@ -25,13 +25,13 @@ export const DEFAULT_OPENROUTER_CONFIG: OpenRouterProviderConfig = {
 	repetition_penalty: 1,
 	frequency_penalty: 0,
 	forbidden_words: [],
-	disable_thinking: false
+	disable_thinking: true,
 };
 
 export const DEFAULT_OLLAMA_CONFIG: OllamaProviderConfig = {
-	provider: 'ollama',
-	baseUrl: 'http://localhost:11434',
-	model: 'llama3.1:8b',
+	provider: "ollama",
+	baseUrl: "http://localhost:11434",
+	model: "llama3.1:8b",
 	temperature: 1,
 	max_tokens: 512,
 	context_size: 8192,
@@ -40,13 +40,13 @@ export const DEFAULT_OLLAMA_CONFIG: OllamaProviderConfig = {
 	repetition_penalty: 1,
 	frequency_penalty: 0,
 	forbidden_words: [],
-	disable_thinking: false
+	disable_thinking: false,
 };
 
 export const DEFAULT_HUGGINGFACE_CONFIG: HuggingFaceProviderConfig = {
-	provider: 'huggingface',
-	apiKey: '',
-	model: 'meta-llama/Meta-Llama-3-8B-Instruct',
+	provider: "huggingface",
+	apiKey: "",
+	model: "Sao10K/L3-8B-Stheno-v3.2",
 	temperature: 1,
 	max_tokens: 512,
 	context_size: 8192,
@@ -55,32 +55,32 @@ export const DEFAULT_HUGGINGFACE_CONFIG: HuggingFaceProviderConfig = {
 	repetition_penalty: 1,
 	frequency_penalty: 0,
 	forbidden_words: [],
-	disable_thinking: false
+	disable_thinking: false,
 };
 
 export const DEFAULT_PREFERENCES: Preferences = {
 	gunRelays: DEFAULT_GUN_RELAYS,
-	theme: 'dark',
+	theme: "dark",
 	blockedTags: [],
-	provider: DEFAULT_OPENROUTER_CONFIG,
+	provider: DEFAULT_HUGGINGFACE_CONFIG,
 	providerConfigs: {
 		openrouter: DEFAULT_OPENROUTER_CONFIG,
 		ollama: DEFAULT_OLLAMA_CONFIG,
-		huggingface: DEFAULT_HUGGINGFACE_CONFIG
-	}
+		huggingface: DEFAULT_HUGGINGFACE_CONFIG,
+	},
 };
 
 /** The "nerdy" fields grouped under the Advanced collapse in Settings. Model
  *  and disable_thinking are deliberately excluded — they stay top-level. */
 const ADVANCED_DEFAULT_KEYS = [
-	'temperature',
-	'max_tokens',
-	'context_size',
-	'top_k',
-	'top_p',
-	'repetition_penalty',
-	'frequency_penalty',
-	'forbidden_words'
+	"temperature",
+	"max_tokens",
+	"context_size",
+	"top_k",
+	"top_p",
+	"repetition_penalty",
+	"frequency_penalty",
+	"forbidden_words",
 ] as const satisfies (keyof OpenRouterProviderConfig)[];
 
 let preferences = $state<Preferences>(DEFAULT_PREFERENCES);
@@ -111,8 +111,8 @@ export function initPreferences(): Promise<void> {
 					providerConfigs: {
 						...DEFAULT_PREFERENCES.providerConfigs,
 						...preferences.providerConfigs,
-						[preferences.provider.provider]: preferences.provider
-					}
+						[preferences.provider.provider]: preferences.provider,
+					},
 				};
 			}
 			ready = true;
@@ -121,7 +121,9 @@ export function initPreferences(): Promise<void> {
 	return initPromise;
 }
 
-export async function updatePreferences(patch: Partial<Preferences>): Promise<void> {
+export async function updatePreferences(
+	patch: Partial<Preferences>,
+): Promise<void> {
 	preferences = { ...preferences, ...patch };
 	// idb-keyval structured-clones the value for IndexedDB, which throws on
 	// the Proxy that $state wraps objects in — persist a plain snapshot instead.
@@ -130,17 +132,24 @@ export async function updatePreferences(patch: Partial<Preferences>): Promise<vo
 
 /** Updates the active provider's config, keeping its saved slot in
  *  providerConfigs in sync so switching providers and back preserves it. */
-export async function updateProviderConfig(patch: Partial<ProviderConfig>): Promise<void> {
+export async function updateProviderConfig(
+	patch: Partial<ProviderConfig>,
+): Promise<void> {
 	const provider = { ...preferences.provider, ...patch } as ProviderConfig;
 	await updatePreferences({
 		provider,
-		providerConfigs: { ...preferences.providerConfigs, [provider.provider]: provider }
+		providerConfigs: {
+			...preferences.providerConfigs,
+			[provider.provider]: provider,
+		},
 	});
 }
 
 /** Switches the active provider, restoring that provider's own last-saved
  *  config instead of resetting or borrowing settings from the old one. */
-export async function switchProvider(next: ProviderConfig['provider']): Promise<void> {
+export async function switchProvider(
+	next: ProviderConfig["provider"],
+): Promise<void> {
 	if (next === preferences.provider.provider) return;
 	await updatePreferences({ provider: preferences.providerConfigs[next] });
 }
@@ -148,9 +157,10 @@ export async function switchProvider(next: ProviderConfig['provider']): Promise<
 /** Resets only the nerdy/advanced fields of the active provider back to
  *  defaults, leaving model, connection details and disable_thinking as-is. */
 export async function resetAdvancedProviderDefaults(): Promise<void> {
-	const defaults = DEFAULT_PREFERENCES.providerConfigs[preferences.provider.provider];
+	const defaults =
+		DEFAULT_PREFERENCES.providerConfigs[preferences.provider.provider];
 	const patch = Object.fromEntries(
-		ADVANCED_DEFAULT_KEYS.map((key) => [key, defaults[key]])
+		ADVANCED_DEFAULT_KEYS.map((key) => [key, defaults[key]]),
 	) as Partial<ProviderConfig>;
 	await updateProviderConfig(patch);
 }
