@@ -52,6 +52,10 @@
 			return;
 		}
 		const trimmed = content.trim();
+		// Clear the box the moment the send goes out, so it doesn't sit there
+		// while the AI replies — restored below if the send doesn't pan out.
+		const backup = content;
+		if (trimmed) content = '';
 		const controller = new AbortController();
 		abortController = controller;
 		sending = true;
@@ -62,10 +66,10 @@
 			} else {
 				await continueChat(chat, character, { signal: controller.signal });
 			}
-			content = '';
 			historyIndex = -1;
 			draftBackup = '';
 		} catch (err) {
+			content = backup;
 			if (!(err instanceof DOMException && err.name === 'AbortError')) {
 				error = err instanceof Error ? err.message : String(err);
 			}
