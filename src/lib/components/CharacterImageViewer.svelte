@@ -6,9 +6,18 @@
 		aspectSquare?: boolean;
 		/** If provided, the image itself becomes clickable (used by chat's expand/collapse toggle). */
 		onImageClick?: () => void;
+		/** Listen for arrow key presses to switch images (used by the expanded/modal view). */
+		keyboardNav?: boolean;
 	}
 
-	let { images, name, class: className = '', aspectSquare = false, onImageClick }: Props = $props();
+	let {
+		images,
+		name,
+		class: className = '',
+		aspectSquare = false,
+		onImageClick,
+		keyboardNav = false
+	}: Props = $props();
 
 	let index = $state(0);
 	let loaded = $state(false);
@@ -33,7 +42,18 @@
 		event.stopPropagation();
 		index = (index + 1) % images.length;
 	}
+
+	function handleKeydown(event: KeyboardEvent) {
+		if (images.length < 2) return;
+		if (event.key === 'ArrowLeft') {
+			index = (index - 1 + images.length) % images.length;
+		} else if (event.key === 'ArrowRight') {
+			index = (index + 1) % images.length;
+		}
+	}
 </script>
+
+<svelte:window onkeydown={keyboardNav ? handleKeydown : undefined} />
 
 <figure
 	class="relative {aspectSquare

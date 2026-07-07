@@ -1,4 +1,3 @@
-- image viewer: switch between images on < > arrow keys
 - add option to disable thinking process in provider options
 - change system prompt to treat everything put in parenthesis ( ) as system messages, not user's. And do exactly as it prompts.
 - preferences modal: combine profile, backup into one. and in backup instead of taking contents of backup file, allow just to select file itself

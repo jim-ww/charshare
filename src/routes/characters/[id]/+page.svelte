@@ -181,7 +181,7 @@
 	{:else}
 		<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 			<div class="flex flex-col gap-4">
-				<CharacterImageViewer images={character.image_urls} name={character.name} />
+				<CharacterImageViewer images={character.image_urls} name={character.name} keyboardNav />
 
 				<div>
 					<h1 class:line-through={character.deleted} class="text-2xl font-semibold">

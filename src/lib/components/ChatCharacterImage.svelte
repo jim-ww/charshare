@@ -39,6 +39,7 @@
 				class="rounded-2xl shadow-2xl"
 				aspectSquare
 				onImageClick={() => (expanded = false)}
+				keyboardNav
 			/>
 		</div>
 	</div>
