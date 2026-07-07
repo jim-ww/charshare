@@ -19,6 +19,21 @@
 		return name ? message.content.replaceAll(/{{user}}/gi, name) : message.content;
 	});
 
+	function escapeHtml(text: string): string {
+		return text
+			.replaceAll('&', '&amp;')
+			.replaceAll('<', '&lt;')
+			.replaceAll('>', '&gt;');
+	}
+
+	// Renders *actions* dimmed and (asides) in a distinct color. Escapes first
+	// so message content can never inject markup.
+	const formattedContent = $derived.by(() => {
+		return escapeHtml(displayContent)
+			.replace(/\*([^*]+)\*/g, '<span class="opacity-60 italic">$1</span>')
+			.replace(/\(([^)]+)\)/g, '<span class="text-secondary">($1)</span>');
+	});
+
 	// Other branches regenerated at this same point in the tree — the "other
 	// routes" of the conversation (see regenerateMessage in $lib/ai/chat.ts).
 	const branches = $derived(getSiblings(chat, message.id));
@@ -73,7 +88,7 @@
 				<button class="btn btn-xs" type="button" onclick={() => (editing = false)}>Cancel</button>
 			</div>
 		{:else}
-			<p class="whitespace-pre-wrap">{displayContent}</p>
+			<p class="whitespace-pre-wrap">{@html formattedContent}</p>
 		{/if}
 	</div>
 	<div class="chat-footer flex items-center gap-2 text-xs opacity-70">
