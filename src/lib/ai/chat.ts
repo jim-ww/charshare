@@ -63,11 +63,17 @@ function historyToMessages(messages: Message[]): CompletionMessage[] {
 	}));
 }
 
+const PARENTHETICAL_INSTRUCTION =
+	'Any text inside parentheses ( ) in a message, from either party, is an out-of-character ' +
+	'instruction to you, not dialogue or narration. Follow it exactly, then continue the scene ' +
+	"without the parenthesized text itself appearing in your reply, unless the instruction says otherwise.";
+
 function systemPrompt(character: Character): string {
 	return [
 		character.system_prompt && `<SystemPrompt>\n${character.system_prompt}\n</SystemPrompt>`,
 		character.personality && `<Personality>\n${character.personality}\n</Personality>`,
-		character.scenario && `<Scenario>\n${character.scenario}\n</Scenario>`
+		character.scenario && `<Scenario>\n${character.scenario}\n</Scenario>`,
+		PARENTHETICAL_INSTRUCTION
 	]
 		.filter(Boolean)
 		.join('\n\n');
