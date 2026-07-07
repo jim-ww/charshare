@@ -64,7 +64,11 @@ function historyToMessages(messages: Message[]): CompletionMessage[] {
 }
 
 function systemPrompt(character: Character): string {
-	return [character.system_prompt, character.scenario && `Scenario: ${character.scenario}`]
+	return [
+		character.system_prompt && `<SystemPrompt>\n${character.system_prompt}\n</SystemPrompt>`,
+		character.personality && `<Personality>\n${character.personality}\n</Personality>`,
+		character.scenario && `<Scenario>\n${character.scenario}\n</Scenario>`
+	]
 		.filter(Boolean)
 		.join('\n\n');
 }
