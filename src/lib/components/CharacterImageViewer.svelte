@@ -62,6 +62,11 @@
 			</div>
 		{/if}
 		{#if images.length > 1}
+			<span
+				class="badge badge-neutral absolute left-2 top-2 opacity-80"
+			>
+				{index + 1}
+			</span>
 			{#if index > 0}
 				<button
 					type="button"

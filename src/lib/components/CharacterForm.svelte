@@ -38,6 +38,35 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 	function removeImageUrl(index: number) {
 		imageUrls.splice(index, 1);
 	}
+
+	let draggedImageIndex = $state<number | null>(null);
+	let dragOverImageIndex = $state<number | null>(null);
+
+	function handleImageDragStart(index: number) {
+		draggedImageIndex = index;
+	}
+
+	function handleImageDragOver(event: DragEvent, index: number) {
+		event.preventDefault();
+		dragOverImageIndex = index;
+	}
+
+	function handleImageDrop(index: number) {
+		if (draggedImageIndex === null || draggedImageIndex === index) {
+			draggedImageIndex = null;
+			dragOverImageIndex = null;
+			return;
+		}
+		const [moved] = imageUrls.splice(draggedImageIndex, 1);
+		imageUrls.splice(index, 0, moved);
+		draggedImageIndex = null;
+		dragOverImageIndex = null;
+	}
+
+	function handleImageDragEnd() {
+		draggedImageIndex = null;
+		dragOverImageIndex = null;
+	}
 	let description = $state(
 		initial?.description ?? draft?.description ?? "",
 	);
@@ -153,7 +182,40 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 							</button>
 						</div>
 						{#each imageUrls as _, i}
-							<div class="flex gap-2">
+							<div
+								role="listitem"
+								class="flex items-center gap-2 {dragOverImageIndex ===
+									i &&
+								draggedImageIndex !== null &&
+								draggedImageIndex !== i
+									? 'border-primary rounded border-2 border-dashed'
+									: ''}"
+								ondragover={(e) =>
+									handleImageDragOver(
+										e,
+										i,
+									)}
+								ondrop={() =>
+									handleImageDrop(i)}
+							>
+								<button
+									type="button"
+									class="btn btn-ghost btn-sm cursor-grab active:cursor-grabbing"
+									aria-label="Drag to reorder"
+									draggable="true"
+									ondragstart={() =>
+										handleImageDragStart(
+											i,
+										)}
+									ondragend={handleImageDragEnd}
+								>
+									⠿
+								</button>
+								<span
+									class="text-sm opacity-60 tabular-nums"
+								>
+									{i + 1}
+								</span>
 								<input
 									class="input input-bordered w-full"
 									bind:value={
