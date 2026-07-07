@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import type { Chat, Character } from '$lib/types';
 	import { sendMessage, continueChat, generateUserDraft } from '$lib/ai/chat';
+	import { setChatDraft } from '$lib/state/chats.svelte';
 
 	interface Props {
 		chat: Chat;
@@ -14,6 +16,24 @@
 	let generating = $state(false);
 	let error = $state<string | null>(null);
 	let abortController: AbortController | null = null;
+	let loadedDraftFor: string | null = null;
+
+	// The composer stays mounted while navigating between chats (same route,
+	// different :id param), so `content` needs re-syncing to the new chat's
+	// saved draft rather than carrying over the previous chat's text.
+	$effect(() => {
+		if (chat.id !== loadedDraftFor) {
+			untrack(() => {
+				content = chat.draft;
+				loadedDraftFor = chat.id;
+			});
+		}
+	});
+
+	$effect(() => {
+		const text = content;
+		untrack(() => setChatDraft(chat.id, text));
+	});
 
 	async function handleSend(event: SubmitEvent) {
 		event.preventDefault();

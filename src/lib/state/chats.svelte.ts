@@ -23,7 +23,12 @@ export function initChats(): Promise<void> {
 	if (!browser) return Promise.resolve();
 	if (!initPromise) {
 		initPromise = (async () => {
-			chats = await loadChats();
+			const loaded = await loadChats();
+			// migrate chats saved before `draft` existed
+			for (const chat of Object.values(loaded)) {
+				if (chat.draft === undefined) chat.draft = '';
+			}
+			chats = loaded;
 			ready = true;
 		})();
 	}
@@ -45,7 +50,8 @@ export async function createChat(characterId: CharacterId, name: string): Promis
 		messages: [],
 		root_id: null,
 		active_child: {},
-		created_at: Date.now()
+		created_at: Date.now(),
+		draft: ''
 	};
 	chats = { ...chats, [chat.id]: chat };
 	await persist();
@@ -57,6 +63,23 @@ export async function renameChat(id: ChatId, name: string): Promise<void> {
 	if (!chat) throw new Error('Chat not found.');
 	chats = { ...chats, [id]: { ...chat, name } };
 	await persist();
+}
+
+let draftPersistTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** Persists the composer's unsent text so it survives a page reload/close.
+ *  Called on every keystroke — updates in-memory state immediately but
+ *  debounces the IndexedDB write so typing doesn't hit disk on every
+ *  character. */
+export function setChatDraft(id: ChatId, draft: string): void {
+	const chat = chats[id];
+	if (!chat || chat.draft === draft) return;
+	chats = { ...chats, [id]: { ...chat, draft } };
+	if (draftPersistTimer) clearTimeout(draftPersistTimer);
+	draftPersistTimer = setTimeout(() => {
+		draftPersistTimer = null;
+		void persist();
+	}, 400);
 }
 
 export async function deleteChat(id: ChatId): Promise<void> {
@@ -99,7 +122,8 @@ export async function importChat(characterId: CharacterId, json: string): Promis
 		messages: source.messages,
 		root_id: source.root_id ?? null,
 		active_child: source.active_child ?? {},
-		created_at: Date.now()
+		created_at: Date.now(),
+		draft: ''
 	};
 	chats = { ...chats, [chat.id]: chat };
 	await persist();

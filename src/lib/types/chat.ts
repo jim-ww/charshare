@@ -36,4 +36,7 @@ export interface Chat {
   // branches, still stored in `messages`, reachable by switching back).
   active_child: Record<MessageId, MessageId>;
   created_at: number;
+  // Unsent composer text, kept so navigating away or closing the page
+  // doesn't lose an in-progress draft.
+  draft: string;
 }
