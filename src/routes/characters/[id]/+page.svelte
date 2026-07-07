@@ -3,7 +3,7 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import type { Character, Comment } from '$lib/types';
-	import { getCharacter } from '$lib/gun/characters';
+	import { subscribeCharacter } from '$lib/gun/characters';
 	import { getCurrentUser } from '$lib/state/auth.svelte';
 	import { deleteMyCharacter, forkCharacter } from '$lib/state/characters.svelte';
 	import { createChat, getChats, importChat, initChats, isChatsReady } from '$lib/state/chats.svelte';
@@ -27,14 +27,25 @@
 	$effect(() => {
 		character = null;
 		notFound = false;
+		const currentId = id;
+		const unsubscribe = untrack(() =>
+			subscribeCharacter(currentId, (result) => {
+				if (result.ok) {
+					character = result.doc;
+					notFound = false;
+				} else if (!character) {
+					// Only flag not-found while we have nothing to show yet — GUN's
+					// `.on()` can fire once with stale/missing local data before a
+					// relay answers, then fire again once the real doc syncs in.
+					notFound = true;
+				}
+			})
+		);
 		untrack(() => {
-			getCharacter(id).then((result) => {
-				if (result.ok) character = result.doc;
-				else notFound = true;
-			});
 			void initChats();
-			void loadComments(id);
+			void loadComments(currentId);
 		});
+		return unsubscribe;
 	});
 
 	const comments = $derived(getCommentsFor(id));
