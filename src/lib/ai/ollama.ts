@@ -17,6 +17,7 @@ export async function requestCompletion(
 			model: config.model,
 			messages,
 			stream: true,
+			...(config.disable_thinking ? { think: false } : {}),
 			options: {
 				temperature: config.temperature,
 				top_k: config.top_k,

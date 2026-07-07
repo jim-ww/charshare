@@ -10,6 +10,7 @@ interface CommonProviderConfig {
   repetition_penalty: number;
   frequency_penalty: number;
   forbidden_words: string[];
+  disable_thinking: boolean;
 }
 
 export interface OpenRouterProviderConfig extends CommonProviderConfig {

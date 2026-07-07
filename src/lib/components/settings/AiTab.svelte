@@ -135,6 +135,16 @@
 		</label>
 	</div>
 
+	<label class="label cursor-pointer justify-start gap-3">
+		<input
+			type="checkbox"
+			class="checkbox"
+			checked={provider.disable_thinking}
+			onchange={(e) => update('disable_thinking', e.currentTarget.checked)}
+		/>
+		<span class="label-text">Disable thinking/reasoning</span>
+	</label>
+
 	<label class="form-control">
 		<span class="label-text">Forbidden words/phrases (comma-separated)</span>
 		<input

@@ -46,7 +46,8 @@ export async function requestCompletion(
 			max_tokens: config.max_tokens,
 			top_p: config.top_p,
 			repetition_penalty: config.repetition_penalty,
-			frequency_penalty: config.frequency_penalty
+			frequency_penalty: config.frequency_penalty,
+			...(config.disable_thinking ? { reasoning: { effort: 'none' } } : {})
 		}),
 		signal: options.signal
 	});

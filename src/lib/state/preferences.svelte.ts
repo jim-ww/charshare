@@ -18,7 +18,8 @@ export const DEFAULT_OPENROUTER_CONFIG: OpenRouterProviderConfig = {
 	top_p: 1,
 	repetition_penalty: 1,
 	frequency_penalty: 0,
-	forbidden_words: []
+	forbidden_words: [],
+	disable_thinking: false
 };
 
 export const DEFAULT_OLLAMA_CONFIG: OllamaProviderConfig = {
@@ -32,7 +33,8 @@ export const DEFAULT_OLLAMA_CONFIG: OllamaProviderConfig = {
 	top_p: 1,
 	repetition_penalty: 1,
 	frequency_penalty: 0,
-	forbidden_words: []
+	forbidden_words: [],
+	disable_thinking: false
 };
 
 export const DEFAULT_PREFERENCES: Preferences = {
