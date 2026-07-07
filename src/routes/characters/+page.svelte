@@ -1,16 +1,18 @@
 <script lang="ts">
+	import { onMount } from "svelte";
 	import type { Character } from "$lib/types";
 	import {
 		getMyCharacters,
 		isCharactersReady,
 	} from "$lib/state/characters.svelte";
 	import { getCurrentUser } from "$lib/state/auth.svelte";
-	import { browseByTag } from "$lib/gun/browse";
+	import { browseByTag, browseNetwork } from "$lib/gun/browse";
 	import CharacterCard from "$lib/components/CharacterCard.svelte";
 
 	let mineOnly = $state(false);
 	let query = $state("");
 	let remoteResults = $state<Character[]>([]);
+	let networkResults = $state<Character[]>([]);
 	let searching = $state(false);
 	let searchedTag = $state("");
 
@@ -18,6 +20,12 @@
 		getMyCharacters().filter((c) => !c.deleted),
 	);
 	const ready = $derived(isCharactersReady());
+
+	onMount(() => {
+		browseNetwork().then((results) => {
+			networkResults = results;
+		});
+	});
 
 	async function handleSearch(event: SubmitEvent) {
 		event.preventDefault();
@@ -49,6 +57,15 @@
 
 		const combined = new Map<string, Character>();
 		for (const c of localMatches) combined.set(c.id, c);
+		for (const c of networkResults) {
+			if (
+				!q ||
+				c.name.toLowerCase().includes(q) ||
+				c.tags.some((t) => t.toLowerCase().includes(q))
+			) {
+				if (!combined.has(c.id)) combined.set(c.id, c);
+			}
+		}
 		if (searchedTag) {
 			for (const c of remoteResults) {
 				if (!combined.has(c.id)) combined.set(c.id, c);

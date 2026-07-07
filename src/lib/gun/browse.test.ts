@@ -4,7 +4,7 @@ import { __setGunForTests } from './client';
 import { __setKeyringForTests } from '$lib/state/auth.svelte';
 import { generateKeyring } from '$lib/crypto/keys';
 import { deleteCharacter, publishCharacter } from './characters';
-import { browseByTag } from './browse';
+import { browseByTag, browseNetwork } from './browse';
 
 const baseFields = {
 	image_urls: [],
@@ -46,5 +46,25 @@ describe('browseByTag', () => {
 	it('returns nothing for an unused tag', async () => {
 		const results = await browseByTag(`unused-${crypto.randomUUID()}`);
 		expect(results).toEqual([]);
+	});
+});
+
+describe('browseNetwork', () => {
+	it('finds a published character regardless of its tags', async () => {
+		const tag = `t-${crypto.randomUUID()}`;
+		const created = await publishCharacter({ ...baseFields, name: 'Nova', tags: [tag] });
+
+		const results = await browseNetwork();
+
+		expect(results.map((c) => c.id)).toContain(created.id);
+	});
+
+	it('excludes tombstoned characters', async () => {
+		const tag = `t-${crypto.randomUUID()}`;
+		const created = await publishCharacter({ ...baseFields, name: 'GoneNetwork', tags: [tag] });
+		await deleteCharacter(created.id);
+
+		const results = await browseNetwork();
+		expect(results.map((c) => c.id)).not.toContain(created.id);
 	});
 });

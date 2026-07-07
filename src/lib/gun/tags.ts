@@ -12,6 +12,12 @@ import { getGun, gunPath } from './client';
  *  good enough until that's revisited. */
 const TAG_INDEX_TIMEOUT_MS = 3000;
 
+/** Well-known pseudo-tag every published character is also indexed under, so
+ *  browsing can list everything on the network without requiring a caller to
+ *  already know one of a character's real tags. Not a valid user-entered tag
+ *  (leading/trailing underscores), so it can't collide with real tag names. */
+export const NETWORK_INDEX_TAG = '__network__';
+
 function tagIndexPath(tag: string): string {
 	return `tags/${encodeURIComponent(tag)}/index`;
 }
@@ -73,7 +79,19 @@ export function getTagIndex(tag: string): Promise<CharacterId[]> {
 	return readTagIndex(tag);
 }
 
+const ADD_TO_INDEX_MAX_ATTEMPTS = 5;
+
+/** Read-modify-write with a post-write re-read to catch concurrent clobbers.
+ *  GUN gives no atomic merge for this blob-index scheme (see module doc), so
+ *  this is a best-effort retry: if another publisher overwrote the index
+ *  between our read and write, `id` will be missing on verify and we retry
+ *  from a fresh read rather than silently losing it. */
 export async function addToTagIndex(tag: string, id: CharacterId): Promise<void> {
-	const ids = await readTagIndex(tag);
-	if (!ids.includes(id)) await writeTagIndex(tag, [...ids, id]);
+	for (let attempt = 0; attempt < ADD_TO_INDEX_MAX_ATTEMPTS; attempt++) {
+		const ids = await readTagIndex(tag);
+		if (ids.includes(id)) return;
+		await writeTagIndex(tag, [...ids, id]);
+		const verify = await readTagIndex(tag);
+		if (verify.includes(id)) return;
+	}
 }

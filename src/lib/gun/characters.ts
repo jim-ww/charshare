@@ -2,7 +2,7 @@ import type { Character, CharacterDraft, CharacterId, Keyring, PubKey, Verified 
 import { signDocument } from '$lib/crypto/sign';
 import { getKeyring } from '$lib/state/auth.svelte';
 import { getDocument, putDocument, subscribeDocument, type Validator } from './document';
-import { addToTagIndex } from './tags';
+import { addToTagIndex, NETWORK_INDEX_TAG } from './tags';
 
 function characterPath(id: CharacterId): string {
 	return `characters/${id}`;
@@ -52,7 +52,10 @@ async function sign(draft: Omit<Character, 'signature' | 'updated_at'>, keyring:
  *  (see publishLocalCharacter). */
 async function writeToGun(doc: Character): Promise<Character> {
 	await putDocument(characterPath(doc.id), doc);
-	await Promise.all(doc.tags.map((tag) => addToTagIndex(tag, doc.id)));
+	await Promise.all([
+		...doc.tags.map((tag) => addToTagIndex(tag, doc.id)),
+		addToTagIndex(NETWORK_INDEX_TAG, doc.id)
+	]);
 	return doc;
 }
 
