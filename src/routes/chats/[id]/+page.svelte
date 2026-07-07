@@ -12,8 +12,19 @@
 	const chat = $derived(getChat(chatId));
 	const activeMessages = $derived(chat ? getActivePath(chat) : []);
 
+	let scrollContainer = $state<HTMLDivElement | undefined>();
+
 	$effect(() => {
 		if (chat) ensureCharacterLoaded(chat.character_id);
+	});
+
+	// Re-run whenever a message is added and scroll it into view.
+	$effect(() => {
+		const lastMessage = activeMessages[activeMessages.length - 1];
+		if (!lastMessage || !scrollContainer) return;
+		untrack(() => {
+			scrollContainer?.scrollTo({ top: scrollContainer.scrollHeight, behavior: 'smooth' });
+		});
 	});
 
 	const character = $derived(chat ? resolveCharacter(chat.character_id) : undefined);
@@ -38,7 +49,7 @@
 	<div class="flex h-full flex-col">
 		<ChatThreadSwitcher {chat} />
 		<div class="relative flex-1 overflow-hidden">
-			<div class="h-full overflow-y-auto p-4">
+			<div class="h-full overflow-y-auto p-4" bind:this={scrollContainer}>
 				{#each activeMessages as message (message.id)}
 					{#if character}
 						<ChatBubble {chat} {message} {character} />

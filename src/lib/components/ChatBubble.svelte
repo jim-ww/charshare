@@ -92,6 +92,8 @@
 				<button class="btn btn-xs" type="button" onclick={saveEdit}>Save</button>
 				<button class="btn btn-xs" type="button" onclick={() => (editing = false)}>Cancel</button>
 			</div>
+		{:else if message.role === 'character' && message.content === ''}
+			<p class="italic opacity-60">Replying…</p>
 		{:else}
 			<p class="whitespace-pre-wrap">{@html formattedContent}</p>
 		{/if}
