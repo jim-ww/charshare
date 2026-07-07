@@ -221,30 +221,51 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 		<div
 			class="order-1 flex flex-col gap-4 lg:order-2 lg:col-span-2"
 		>
-			<label class="form-control">
-				<span class="label-text">Description</span>
-				<textarea
-					class="textarea textarea-bordered field-sizing-content min-h-24 w-full"
-					bind:value={description}
-					placeholder="Who is this character? Appearance, background, notable traits…"
-				></textarea>
-			</label>
-			<label class="form-control">
-				<span class="label-text">Personality</span>
-				<textarea
-					class="textarea textarea-bordered field-sizing-content min-h-24 w-full"
-					bind:value={personality}
-					placeholder="How do they act, speak, and think? e.g. blunt, secretly caring, quick to anger…"
-				></textarea>
-			</label>
-			<label class="form-control">
-				<span class="label-text">Scenario</span>
-				<textarea
-					class="textarea textarea-bordered field-sizing-content min-h-24 w-full"
-					bind:value={scenario}
-					placeholder="The setting or situation the chat starts in…"
-				></textarea>
-			</label>
+			<div
+				class="collapse-arrow bg-base-200 border-base-300 collapse border"
+			>
+				<input type="checkbox" checked />
+				<div class="collapse-title label-text font-medium">
+					Description
+				</div>
+				<div class="collapse-content">
+					<textarea
+						class="textarea textarea-bordered field-sizing-content min-h-24 w-full"
+						bind:value={description}
+						placeholder="Who is this character? Appearance, background, notable traits…"
+					></textarea>
+				</div>
+			</div>
+			<div
+				class="collapse-arrow bg-base-200 border-base-300 collapse border"
+			>
+				<input type="checkbox" checked />
+				<div class="collapse-title label-text font-medium">
+					Personality
+				</div>
+				<div class="collapse-content">
+					<textarea
+						class="textarea textarea-bordered field-sizing-content min-h-24 w-full"
+						bind:value={personality}
+						placeholder="How do they act, speak, and think? e.g. blunt, secretly caring, quick to anger…"
+					></textarea>
+				</div>
+			</div>
+			<div
+				class="collapse-arrow bg-base-200 border-base-300 collapse border"
+			>
+				<input type="checkbox" checked />
+				<div class="collapse-title label-text font-medium">
+					Scenario
+				</div>
+				<div class="collapse-content">
+					<textarea
+						class="textarea textarea-bordered field-sizing-content min-h-24 w-full"
+						bind:value={scenario}
+						placeholder="The setting or situation the chat starts in…"
+					></textarea>
+				</div>
+			</div>
 			<label class="form-control">
 				<span class="label-text">System prompt</span>
 				<textarea
@@ -253,52 +274,71 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 					placeholder="Instructions sent to the AI describing how to roleplay this character…"
 				></textarea>
 			</label>
-			<label class="form-control">
-				<span class="label-text">First message</span>
-				<textarea
-					class="textarea textarea-bordered field-sizing-content min-h-24 w-full"
-					bind:value={firstMessage}
-					placeholder="The message {'{{char}}'} sends to open the conversation…"
-				></textarea>
-			</label>
-
-			<div class="form-control gap-2">
-				<div class="flex items-center justify-between">
-					<span class="label-text"
-						>Alternate greetings</span
-					>
-					<button
-						type="button"
-						class="btn btn-ghost btn-sm"
-						onclick={addGreeting}
-					>
-						+ Add greeting
-					</button>
+			<div
+				class="collapse-arrow bg-base-200 border-base-300 collapse border"
+			>
+				<input type="checkbox" checked />
+				<div class="collapse-title label-text font-medium">
+					First message
 				</div>
-				{#each alternateGreetings as _, i}
-					<div class="flex gap-2">
-						<textarea
-							class="textarea textarea-bordered field-sizing-content min-h-16 w-full"
-							bind:value={
-								alternateGreetings[
-									i
-								]
-							}
-							placeholder="An alternate opening message…"
-						></textarea>
-						<button
-							type="button"
-							class="btn btn-ghost btn-sm"
-							aria-label="Remove greeting"
-							onclick={() =>
-								removeGreeting(
-									i,
-								)}
-						>
-							✕
-						</button>
+				<div class="collapse-content">
+					<textarea
+						class="textarea textarea-bordered field-sizing-content min-h-24 w-full"
+						bind:value={firstMessage}
+						placeholder="The message {'{{char}}'} sends to open the conversation…"
+					></textarea>
+				</div>
+			</div>
+
+			<div
+				class="collapse-arrow bg-base-200 border-base-300 collapse border"
+			>
+				<input type="checkbox" />
+				<div class="collapse-title label-text font-medium">
+					Alternate greetings{alternateGreetings.length
+						? ` (${alternateGreetings.length})`
+						: ""}
+				</div>
+				<div class="collapse-content">
+					<div class="form-control gap-2">
+						<div class="flex items-center justify-between">
+							<span class="label-text"
+								>Alternate greetings</span
+							>
+							<button
+								type="button"
+								class="btn btn-ghost btn-sm"
+								onclick={addGreeting}
+							>
+								+ Add greeting
+							</button>
+						</div>
+						{#each alternateGreetings as _, i}
+							<div class="flex gap-2">
+								<textarea
+									class="textarea textarea-bordered field-sizing-content min-h-16 w-full"
+									bind:value={
+										alternateGreetings[
+											i
+										]
+									}
+									placeholder="An alternate opening message…"
+								></textarea>
+								<button
+									type="button"
+									class="btn btn-ghost btn-sm"
+									aria-label="Remove greeting"
+									onclick={() =>
+										removeGreeting(
+											i,
+										)}
+								>
+									✕
+								</button>
+							</div>
+						{/each}
 					</div>
-				{/each}
+				</div>
 			</div>
 		</div>
 	</div>
