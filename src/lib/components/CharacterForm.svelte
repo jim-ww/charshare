@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { Character, CharacterDraft } from "$lib/types";
 	import CharacterImageViewer from "./CharacterImageViewer.svelte";
+	import { isAccountRegistered } from "$lib/state/auth.svelte";
+	import { openSettings } from "$lib/state/settingsModal.svelte";
 
 	interface Props {
 		initial?: Character;
@@ -19,6 +21,7 @@
 		localOnly = $bindable(true),
 		showLocalOnlyToggle = false,
 	}: Props = $props();
+	const registered = $derived(isAccountRegistered());
 	const defaultSystemPrompt = `You are {{char}}, and you must stay in character as {{char}} at all times.
 Write {{char}}'s next reply in a fictional chat between {{char}} and {{user}}.
 Narrate actions and physical reactions in *asterisks*, and speak dialogue plainly.
@@ -222,7 +225,12 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 					<input
 						type="checkbox"
 						class="checkbox"
-						bind:checked={localOnly}
+						checked={localOnly || !registered}
+						disabled={!registered}
+						onchange={(e) =>
+							(localOnly = (
+								e.currentTarget as HTMLInputElement
+							).checked)}
 					/>
 					<span class="label-text">
 						Keep local-only (not published
@@ -230,6 +238,19 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 						only visible to you)
 					</span>
 				</label>
+				{#if !registered}
+					<p class="text-xs opacity-60">
+						You're browsing as a guest, so new
+						characters stay local-only.
+						<button
+							type="button"
+							class="link"
+							onclick={() =>
+								openSettings("account")}
+							>Create an account</button
+						> to publish to the network.
+					</p>
+				{/if}
 			{/if}
 		</div>
 

@@ -1,6 +1,6 @@
 import type { Character, CharacterDraft, CharacterId, Keyring, PubKey, Verified } from '$lib/types';
 import { signDocument } from '$lib/crypto/sign';
-import { getKeyring } from '$lib/state/auth.svelte';
+import { getKeyring, requireAccount } from '$lib/state/auth.svelte';
 import { getDocument, putDocument, subscribeDocument, type Validator } from './document';
 import { addToTagIndex, NETWORK_INDEX_TAG } from './tags';
 
@@ -78,6 +78,7 @@ export function subscribeCharacter(id: CharacterId, onUpdate: (result: Verified<
 export async function publishCharacter(draft: CharacterDraft): Promise<Character> {
 	const keyring = getKeyring();
 	if (!keyring) throw new Error('No identity available yet — call initAuth() first.');
+	requireAccount();
 
 	if (!draft.id) {
 		return signAndPublish(
@@ -120,6 +121,7 @@ export async function publishCharacter(draft: CharacterDraft): Promise<Character
 export async function deleteCharacter(id: CharacterId): Promise<Character> {
 	const keyring = getKeyring();
 	if (!keyring) throw new Error('No identity available yet — call initAuth() first.');
+	requireAccount();
 
 	const existing = await getCharacter(id);
 	if (!existing.ok) throw new Error('Character not found.');
@@ -207,5 +209,6 @@ export async function editLocalCharacter(existing: Character, draft: CharacterDr
 
 /** Promotes an already-signed local-only character to the network as-is. */
 export function publishLocalCharacter(character: Character): Promise<Character> {
+	requireAccount();
 	return writeToGun(character);
 }

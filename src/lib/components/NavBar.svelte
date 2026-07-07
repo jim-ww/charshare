@@ -1,13 +1,16 @@
 <script lang="ts">
-	import { getCurrentUser } from "$lib/state/auth.svelte";
+	import { getCurrentUser, isAccountRegistered } from "$lib/state/auth.svelte";
 	import { getMyProfile } from "$lib/state/profile.svelte";
 	import { openSettings } from "$lib/state/settingsModal.svelte";
 
 	const user = $derived(getCurrentUser());
 	const profile = $derived(getMyProfile());
+	const registered = $derived(isAccountRegistered());
 	const displayName = $derived(
-		profile?.username ||
-			(user ? `${user.slice(0, 6)}…${user.slice(-4)}` : ""),
+		registered
+			? profile?.username ||
+					(user ? `${user.slice(0, 6)}…${user.slice(-4)}` : "")
+			: "Guest — sign in",
 	);
 </script>
 
@@ -25,7 +28,7 @@
 			class="btn btn-sm btn-ghost gap-2"
 			type="button"
 			aria-label="Settings"
-			onclick={() => openSettings("profile")}
+			onclick={() => openSettings("account")}
 		>
 			{#if profile?.image_url}
 				<div class="avatar">

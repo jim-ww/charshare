@@ -1,6 +1,6 @@
 import type { CharacterId, Comment, CommentId, Keyring, PubKey, Verified } from '$lib/types';
 import { signDocument } from '$lib/crypto/sign';
-import { getKeyring } from '$lib/state/auth.svelte';
+import { getKeyring, requireAccount } from '$lib/state/auth.svelte';
 import { getDocument, putDocument, type Validator } from './document';
 import { getGun, gunPath } from './client';
 
@@ -115,6 +115,7 @@ async function signAndPublish(draft: Omit<Comment, 'signature' | 'updated_at'>, 
 export async function postComment(characterId: CharacterId, content: string): Promise<Comment> {
 	const keyring = getKeyring();
 	if (!keyring) throw new Error('No identity available yet — call initAuth() first.');
+	requireAccount();
 
 	const doc = await signAndPublish(
 		{
@@ -137,6 +138,7 @@ export async function postComment(characterId: CharacterId, content: string): Pr
 export async function deleteComment(id: CommentId): Promise<Comment> {
 	const keyring = getKeyring();
 	if (!keyring) throw new Error('No identity available yet — call initAuth() first.');
+	requireAccount();
 
 	const existing = await getComment(id);
 	if (!existing.ok) throw new Error('Comment not found.');

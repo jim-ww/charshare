@@ -1,2 +1,7 @@
+- improve browse search: by char name, author name with @ or public key? or tags
+- create landing page
+- create terms of service / legal page
+- create how-to-use page
+- find solution to prevent spam abuse in the network
 - exported chat filename should match chat name
 - in preferences, show some ui change, when preferences have been saved

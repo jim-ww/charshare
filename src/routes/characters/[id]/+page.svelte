@@ -4,7 +4,8 @@
 	import { goto } from "$app/navigation";
 	import type { Character, Comment } from "$lib/types";
 	import { subscribeCharacter } from "$lib/gun/characters";
-	import { getCurrentUser } from "$lib/state/auth.svelte";
+	import { getCurrentUser, isAccountRegistered } from "$lib/state/auth.svelte";
+	import { openSettings } from "$lib/state/settingsModal.svelte";
 	import {
 		deleteMyCharacter,
 		exportCharacter,
@@ -178,6 +179,10 @@
 
 	async function handlePublish() {
 		if (!character) return;
+		if (!isAccountRegistered()) {
+			openSettings("account");
+			return;
+		}
 		publishing = true;
 		try {
 			await publishMyCharacter(character.id);
@@ -209,6 +214,10 @@
 		event.preventDefault();
 		const content = newComment.trim();
 		if (!content) return;
+		if (!isAccountRegistered()) {
+			openSettings("account");
+			return;
+		}
 		posting = true;
 		try {
 			await addComment(id, content);
@@ -486,6 +495,11 @@
 									? "Posting…"
 									: "Post comment"}
 							</button>
+							{#if !isAccountRegistered()}
+								<p class="text-xs opacity-60">
+									You'll need an account to post — click "Post comment" to create one.
+								</p>
+							{/if}
 						</form>
 
 						{#if commentsLoading && comments.length === 0}
