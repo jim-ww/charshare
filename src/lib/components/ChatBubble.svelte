@@ -37,7 +37,9 @@
 <div class="chat" class:chat-end={message.role === 'user'} class:chat-start={message.role === 'character'}>
 	<div class="chat-image">
 		{#if message.role === 'character'}
-			<Avatar name={character.name} imageUrl={character.image_urls[0]} />
+			<a href={`/characters/${character.id}`}>
+				<Avatar name={character.name} imageUrl={character.image_urls[0]} />
+			</a>
 		{:else}
 			<Avatar name="You" />
 		{/if}
