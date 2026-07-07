@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 import type { User } from '$lib/types';
 import { getCurrentUser, initAuth } from './auth.svelte';
-import { getProfile, publishProfile } from '$lib/gun/users';
+import { publishProfile, subscribeProfile } from '$lib/gun/users';
 
 let profile = $state<User | null>(null);
 let ready = $state(false);
@@ -16,8 +16,11 @@ export function isProfileReady(): boolean {
 }
 
 /** Loads the current user's own published profile, if any — no published
- *  profile yet just means a new/unpublished user, not an error. Safe to call
- *  multiple times; the underlying load only happens once. */
+ *  profile yet just means a new/unpublished user, not an error. Subscribes
+ *  rather than doing a one-shot read: GUN's `.once` can resolve before the
+ *  profile has synced in from storage/peers, which would otherwise leave
+ *  `profile` stuck null even though a profile exists. Safe to call multiple
+ *  times; the underlying subscription only happens once. */
 export function initProfile(): Promise<void> {
 	if (!browser) return Promise.resolve();
 	if (!initPromise) {
@@ -25,8 +28,16 @@ export function initProfile(): Promise<void> {
 			await initAuth();
 			const pubkey = getCurrentUser();
 			if (pubkey) {
-				const result = await getProfile(pubkey);
-				if (result.ok) profile = result.doc;
+				await new Promise<void>((resolve) => {
+					let settled = false;
+					subscribeProfile(pubkey, (result) => {
+						if (result.ok) profile = result.doc;
+						if (!settled) {
+							settled = true;
+							resolve();
+						}
+					});
+				});
 			}
 			ready = true;
 		})();
