@@ -41,6 +41,15 @@
 			.replace(/\(([^)]+)\)/g, '<span class="text-secondary">($1)</span>');
 	});
 
+	// Messenger-style timestamp: just the time for today, otherwise date + time.
+	const formattedTime = $derived.by(() => {
+		const date = new Date(message.created_at);
+		const isToday = date.toDateString() === new Date().toDateString();
+		const time = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+		if (isToday) return time;
+		return `${date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}, ${time}`;
+	});
+
 	// Other branches regenerated at this same point in the tree — the "other
 	// routes" of the conversation (see regenerateMessage in $lib/ai/chat.ts).
 	const branches = $derived(getSiblings(chat, message.id));
@@ -76,7 +85,11 @@
 	}
 </script>
 
-<div class="chat" class:chat-end={message.role === 'user'} class:chat-start={message.role === 'character'}>
+<div
+	class="chat group"
+	class:chat-end={message.role === 'user'}
+	class:chat-start={message.role === 'character'}
+>
 	<div class="chat-image">
 		{#if message.role === 'character'}
 			<a href={`/characters/${character.id}`}>
@@ -86,12 +99,76 @@
 			<Avatar name={displayName} imageUrl={getMyProfile()?.image_url} />
 		{/if}
 	</div>
-	<div class="chat-header text-sm font-semibold opacity-100 [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">
-		{displayName}
+	<div
+		class="chat-header flex items-center gap-2 text-sm font-semibold opacity-100 [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]"
+		class:flex-row-reverse={message.role === 'user'}
+	>
+		<span class="flex items-baseline gap-2">
+			<span>{displayName}</span>
+			<span class="text-xs font-normal italic opacity-60">{formattedTime}</span>
+		</span>
+		{#if !editing}
+			<div
+				class="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100"
+			>
+				<button
+					class="btn btn-sm btn-ghost btn-circle text-error"
+					type="button"
+					aria-label="Delete message"
+					title="Delete message"
+					onclick={() => deleteMessage(chatId, message.id)}
+				>
+					<svg
+						viewBox="0 0 24 24"
+						width="20"
+						height="20"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<path d="M3 6h18" />
+						<path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+						<path d="M19 6l-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6" />
+						<path d="M10 11v6" />
+						<path d="M14 11v6" />
+					</svg>
+				</button>
+				<button
+					class="btn btn-sm btn-ghost btn-circle"
+					type="button"
+					aria-label="Edit message"
+					title="Edit message"
+					onclick={startEdit}
+				>
+					<svg
+						viewBox="0 0 24 24"
+						width="20"
+						height="20"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<path d="M12 20h9" />
+						<path
+							d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"
+						/>
+					</svg>
+				</button>
+			</div>
+		{/if}
 	</div>
 	<div class="chat-bubble">
 		{#if editing}
-			<textarea class="textarea textarea-bordered w-full text-base-content" bind:value={draft}
+			<textarea
+				class="textarea textarea-bordered w-full text-base-content"
+				style="height: 12rem; max-height: 60vh; min-height: 5rem; resize: vertical;"
+				bind:value={draft}
 			></textarea>
 			<div class="mt-1 flex gap-1">
 				<button class="btn btn-xs" type="button" onclick={saveEdit}>Save</button>
@@ -118,35 +195,29 @@
 				›
 			</button>
 		{/if}
-		{#if !editing}
-			{#if message.role === 'character'}
-				<button
-					class="btn btn-xs btn-ghost"
-					type="button"
-					disabled={regenerating}
-					aria-label="Regenerate response"
-					title="Regenerate response"
-					onclick={handleRegenerate}
+		{#if !editing && message.role === 'character'}
+			<button
+				class="btn btn-xs btn-ghost"
+				type="button"
+				disabled={regenerating}
+				aria-label="Regenerate response"
+				title="Regenerate response"
+				onclick={handleRegenerate}
+			>
+				<svg
+					viewBox="0 0 24 24"
+					width="14"
+					height="14"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
 				>
-					<svg
-						viewBox="0 0 24 24"
-						width="14"
-						height="14"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"
-					>
-						<path d="M21 12a9 9 0 11-3-6.7" />
-						<path d="M21 3v6h-6" />
-					</svg>
-				</button>
-			{/if}
-			<button class="btn btn-xs btn-ghost" type="button" onclick={startEdit}>Edit</button>
-			<button class="btn btn-xs btn-ghost" type="button" onclick={() => deleteMessage(chatId, message.id)}>
-				Delete
+					<path d="M21 12a9 9 0 11-3-6.7" />
+					<path d="M21 3v6h-6" />
+				</svg>
 			</button>
 		{/if}
 	</div>
