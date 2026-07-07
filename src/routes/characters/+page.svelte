@@ -1,70 +1,94 @@
 <script lang="ts">
 	import type { Character } from '$lib/types';
 	import { getMyCharacters, isCharactersReady } from '$lib/state/characters.svelte';
+	import { getCurrentUser } from '$lib/state/auth.svelte';
 	import { browseByTag } from '$lib/gun/browse';
 	import CharacterCard from '$lib/components/CharacterCard.svelte';
 
-	type Filter = 'mine' | 'tag';
-
-	let filter = $state<Filter>('mine');
-	let tag = $state('');
-	let tagResults = $state<Character[]>([]);
+	let mineOnly = $state(true);
+	let query = $state('');
+	let remoteResults = $state<Character[]>([]);
 	let searching = $state(false);
-	let searched = $state(false);
+	let searchedTag = $state('');
 
-	const myCharacters = $derived(getMyCharacters());
+	const myCharacters = $derived(getMyCharacters().filter((c) => !c.deleted));
 	const ready = $derived(isCharactersReady());
 
 	async function handleSearch(event: SubmitEvent) {
 		event.preventDefault();
-		if (!tag.trim()) return;
+		const tag = query.trim();
+		if (!tag) {
+			remoteResults = [];
+			searchedTag = '';
+			return;
+		}
 		searching = true;
 		try {
-			tagResults = await browseByTag(tag.trim());
-			searched = true;
+			remoteResults = await browseByTag(tag);
+			searchedTag = tag;
 		} finally {
 			searching = false;
 		}
 	}
+
+	const results = $derived.by(() => {
+		const q = query.trim().toLowerCase();
+		const me = getCurrentUser();
+
+		const localMatches = myCharacters.filter(
+			(c) =>
+				!q ||
+				c.name.toLowerCase().includes(q) ||
+				c.tags.some((t) => t.toLowerCase().includes(q))
+		);
+
+		const combined = new Map<string, Character>();
+		for (const c of localMatches) combined.set(c.id, c);
+		if (searchedTag) {
+			for (const c of remoteResults) {
+				if (!combined.has(c.id)) combined.set(c.id, c);
+			}
+		}
+
+		let list = [...combined.values()];
+		if (mineOnly) list = list.filter((c) => c.author === me);
+		return list;
+	});
 </script>
 
 <div class="p-4">
-	<div class="tabs tabs-boxed mb-4 w-fit">
-		<button class="tab" class:tab-active={filter === 'mine'} onclick={() => (filter = 'mine')}>
-			Mine
-		</button>
-		<button class="tab" class:tab-active={filter === 'tag'} onclick={() => (filter = 'tag')}>
-			Browse by tag
-		</button>
-	</div>
-
-	{#if filter === 'mine'}
-		{#if !ready}
-			<p>Loading…</p>
-		{:else if myCharacters.length === 0}
-			<p class="opacity-70">You haven't created any characters yet.</p>
-		{:else}
-			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-				{#each myCharacters as character (character.id)}
-					<CharacterCard {character} />
-				{/each}
-			</div>
-		{/if}
-	{:else}
-		<form class="mb-4 flex max-w-md gap-2" onsubmit={handleSearch}>
-			<input class="input input-bordered w-full" placeholder="tag" bind:value={tag} />
+	<div class="mb-4 flex flex-col items-center gap-3">
+		<form class="flex w-full max-w-md gap-2" onsubmit={handleSearch}>
+			<input
+				class="input input-bordered w-full"
+				placeholder="Search by name or tag…"
+				bind:value={query}
+			/>
 			<button class="btn btn-primary" type="submit" disabled={searching}>
 				{searching ? 'Searching…' : 'Search'}
 			</button>
 		</form>
-		{#if searched}
-			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-				{#each tagResults as character (character.id)}
-					<CharacterCard {character} />
-				{:else}
-					<p class="opacity-70">No characters found for that tag.</p>
-				{/each}
-			</div>
-		{/if}
+		<label class="label cursor-pointer gap-2">
+			<input type="checkbox" class="checkbox" bind:checked={mineOnly} />
+			<span class="label-text">Mine only</span>
+		</label>
+	</div>
+
+	{#if !ready}
+		<p>Loading…</p>
+	{:else if results.length === 0}
+		<p class="opacity-70">
+			{#if mineOnly && !query.trim()}
+				You haven't created any characters yet.
+			{:else}
+				No characters found.
+			{/if}
+		</p>
+	{:else}
+		<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+			{#each results as character (character.id)}
+				<CharacterCard {character} />
+			{/each}
+		</div>
 	{/if}
 </div>
