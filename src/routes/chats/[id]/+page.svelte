@@ -16,12 +16,15 @@
 
 	const character = $derived(chat ? resolveCharacter(chat.character_id) : undefined);
 
-	// A brand-new chat has no messages yet — post the character's greeting as
-	// the opening message so a fresh chat isn't just an empty composer.
+	// A brand-new chat has no messages yet — post one of the character's
+	// greetings (picked at random when alternates exist) as the opening
+	// message so a fresh chat isn't just an empty composer.
 	$effect(() => {
 		if (chat && character && chat.messages.length === 0 && character.first_message) {
 			untrack(() => {
-				void addMessage(chat.id, 'character', character.first_message);
+				const greetings = [character.first_message, ...character.alternate_greetings];
+				const greeting = greetings[Math.floor(Math.random() * greetings.length)];
+				void addMessage(chat.id, 'character', greeting);
 			});
 		}
 	});
