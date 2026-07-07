@@ -18,6 +18,14 @@ export function isAuthReady(): boolean {
 	return ready;
 }
 
+/** Switches this browser to a different account (see identity/backup.ts) —
+ *  persists it as the new local identity, replacing whatever was here. */
+export async function setKeyring(next: Keyring): Promise<void> {
+	await saveKeyring(next);
+	keyring = next;
+	ready = true;
+}
+
 /** Test-only escape hatch: sets the keyring directly, bypassing IndexedDB
  *  (unavailable under plain Node/vitest). */
 export function __setKeyringForTests(k: Keyring | null): void {

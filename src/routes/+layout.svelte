@@ -5,16 +5,28 @@
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import { initPreferences } from '$lib/state/preferences.svelte';
+	import { initAuth } from '$lib/state/auth.svelte';
+	import { initProfile } from '$lib/state/profile.svelte';
+	import { initCharacters } from '$lib/state/characters.svelte';
+	import { initChats } from '$lib/state/chats.svelte';
+	import NavBar from '$lib/components/NavBar.svelte';
+	import SettingsModal from '$lib/components/SettingsModal.svelte';
 
 	let { children } = $props();
 
 	onMount(() => {
 		initPreferences();
+		initAuth();
+		initProfile();
+		initCharacters();
+		initChats();
 	});
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
+<NavBar />
 {@render children()}
+<SettingsModal />
 
 <div style="display:none">
 	{#each locales as locale}
