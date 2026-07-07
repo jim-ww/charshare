@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { Chat, Character, Message } from '$lib/types';
-	import { activeContent } from '$lib/types';
-	import { addMessageVersion, deleteMessage, getSiblings, setActiveVersion, switchBranch } from '$lib/state/chats.svelte';
+	import { deleteMessage, editMessage, getSiblings, switchBranch } from '$lib/state/chats.svelte';
 	import { regenerateMessage } from '$lib/ai/chat';
 	import Avatar from './Avatar.svelte';
 
@@ -29,23 +28,13 @@
 	let regenerating = $state(false);
 
 	function startEdit() {
-		draft = activeContent(message);
+		draft = message.content;
 		editing = true;
 	}
 
 	async function saveEdit() {
-		if (draft !== activeContent(message)) {
-			await addMessageVersion(chatId, message.id, draft);
-		}
+		await editMessage(chatId, message.id, draft);
 		editing = false;
-	}
-
-	function prevVersion() {
-		setActiveVersion(chatId, message.id, message.active_version_index - 1);
-	}
-
-	function nextVersion() {
-		setActiveVersion(chatId, message.id, message.active_version_index + 1);
 	}
 
 	async function handleRegenerate() {
@@ -78,30 +67,11 @@
 				<button class="btn btn-xs" type="button" onclick={() => (editing = false)}>Cancel</button>
 			</div>
 		{:else}
-			<p class="whitespace-pre-wrap">{activeContent(message)}</p>
+			<p class="whitespace-pre-wrap">{message.content}</p>
 		{/if}
 	</div>
 	<div class="chat-footer flex items-center gap-2 text-xs opacity-70">
-		{#if message.versions.length > 1}
-			<button
-				class="btn btn-xs btn-ghost"
-				type="button"
-				disabled={message.active_version_index === 0}
-				onclick={prevVersion}
-			>
-				‹
-			</button>
-			<span>{message.active_version_index + 1}/{message.versions.length}</span>
-			<button
-				class="btn btn-xs btn-ghost"
-				type="button"
-				disabled={message.active_version_index === message.versions.length - 1}
-				onclick={nextVersion}
-			>
-				›
-			</button>
-		{/if}
-		{#if message.role === 'character' && branches.length > 1}
+		{#if branches.length > 1}
 			<button class="btn btn-xs btn-ghost" type="button" disabled={branchPos <= 0} onclick={() => goBranch(-1)}>
 				‹
 			</button>

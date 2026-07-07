@@ -5,21 +5,16 @@ export type MessageId = string; // uuid
 
 export type MessageRole = 'user' | 'character';
 
-export interface MessageVersion {
-  content: string; // required, can be empty
-  created_at: number;
-}
-
 export interface Message {
   id: MessageId;
   // The message this one replies to, or null for the very first message in
-  // the chat. Regenerating a message with replies already built on it adds a
-  // sibling under the same parent instead of overwriting anything — see
-  // Chat.active_child.
+  // the chat. Both regenerating and editing a message with replies already
+  // built on it add a sibling under the same parent instead of overwriting
+  // anything — see Chat.active_child.
   parent_id: MessageId | null;
   role: MessageRole;
-  versions: MessageVersion[]; // at least one entry
-  active_version_index: number;
+  content: string; // required, can be empty
+  created_at: number;
   updated_at: number;
 }
 
@@ -41,10 +36,4 @@ export interface Chat {
   // branches, still stored in `messages`, reachable by switching back).
   active_child: Record<MessageId, MessageId>;
   created_at: number;
-}
-
-/** Convenience accessor — components should use this instead of
- *  reaching into `versions[active_version_index]` themselves. */
-export function activeContent(message: Message): string {
-  return message.versions[message.active_version_index]?.content ?? '';
 }

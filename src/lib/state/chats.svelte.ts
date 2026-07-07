@@ -139,7 +139,7 @@ export function getSiblings(chat: Chat, messageId: MessageId): Message[] {
 	if (!message) return [];
 	return chat.messages
 		.filter((m) => m.parent_id === message.parent_id)
-		.sort((a, b) => a.versions[0].created_at - b.versions[0].created_at);
+		.sort((a, b) => a.created_at - b.created_at);
 }
 
 /** Makes `messageId` the active branch at its position in the tree — either
@@ -162,15 +162,12 @@ function updateChat(id: ChatId, update: (chat: Chat) => Chat): void {
 	chats = { ...chats, [id]: update(chat) };
 }
 
-/** Appends a new message with a single version, attached under `parentId` —
- *  or, if omitted, under the current active leaf (the normal case: continuing
- *  the visible conversation). Passing an earlier message's id as `parentId`
- *  instead adds a sibling branch there and switches the active path to it
- *  (see regenerateMessage in $lib/ai/chat.ts) without touching the old
- *  branch, which stays in `messages` and can be switched back to.
- *
- *  Edits to existing messages never create new nodes — they operate on a
- *  message's version history instead (see addMessageVersion). */
+/** Appends a new message, attached under `parentId` — or, if omitted, under
+ *  the current active leaf (the normal case: continuing the visible
+ *  conversation). Passing an earlier message's id as `parentId` instead adds
+ *  a sibling branch there and switches the active path to it (see
+ *  regenerateMessage and editMessage) without touching the old branch, which
+ *  stays in `messages` and can be switched back to. */
 export async function addMessage(
 	chatId: ChatId,
 	role: MessageRole,
@@ -180,13 +177,14 @@ export async function addMessage(
 	const chat = chats[chatId];
 	if (!chat) throw new Error('Chat not found.');
 	const parent = parentId !== undefined ? parentId : activeLeafId(chat);
+	const now = Date.now();
 	const message: Message = {
 		id: crypto.randomUUID(),
 		parent_id: parent,
 		role,
-		versions: [{ content, created_at: Date.now() }],
-		active_version_index: 0,
-		updated_at: Date.now()
+		content,
+		created_at: now,
+		updated_at: now
 	};
 	updateChat(chatId, (chat) => ({
 		...chat,
@@ -198,10 +196,10 @@ export async function addMessage(
 	return message;
 }
 
-/** Rewrites the content of a message's *active* version in place, without
- *  adding a new version — used while a streamed reply is still arriving.
- *  Persistence is skipped by default since this fires on every chunk;
- *  pass persist: true for the final write once the stream ends. */
+/** Rewrites a message's content in place, without creating a new node —
+ *  used while a streamed reply is still arriving. Persistence is skipped by
+ *  default since this fires on every chunk; pass persist: true for the final
+ *  write once the stream ends. */
 export async function updateMessageContent(
 	chatId: ChatId,
 	messageId: MessageId,
@@ -210,48 +208,22 @@ export async function updateMessageContent(
 ): Promise<void> {
 	updateChat(chatId, (chat) => ({
 		...chat,
-		messages: chat.messages.map((m) =>
-			m.id === messageId
-				? {
-						...m,
-						versions: m.versions.map((v, i) => (i === m.active_version_index ? { ...v, content } : v)),
-						updated_at: Date.now()
-					}
-				: m
-		)
+		messages: chat.messages.map((m) => (m.id === messageId ? { ...m, content, updated_at: Date.now() } : m))
 	}));
 	if (opts.persist) await persist();
 }
 
-/** Edits a message by appending a new version and marking it active — never
- *  mutates or discards prior versions (see spec: Message versioning). */
-export async function addMessageVersion(chatId: ChatId, messageId: MessageId, content: string): Promise<void> {
-	updateChat(chatId, (chat) => ({
-		...chat,
-		messages: chat.messages.map((m) =>
-			m.id === messageId
-				? {
-						...m,
-						versions: [...m.versions, { content, created_at: Date.now() }],
-						active_version_index: m.versions.length,
-						updated_at: Date.now()
-					}
-				: m
-		)
-	}));
-	await persist();
-}
-
-export async function setActiveVersion(chatId: ChatId, messageId: MessageId, versionIndex: number): Promise<void> {
-	updateChat(chatId, (chat) => ({
-		...chat,
-		messages: chat.messages.map((m) =>
-			m.id === messageId && versionIndex >= 0 && versionIndex < m.versions.length
-				? { ...m, active_version_index: versionIndex, updated_at: Date.now() }
-				: m
-		)
-	}));
-	await persist();
+/** Edits a message by adding a sibling branch under the same parent and
+ *  switching to it — the same tree-branching mechanism regenerateMessage
+ *  uses, so edits and regenerations show up as one unified set of branches
+ *  rather than two separate mechanisms. No-ops if the content didn't
+ *  actually change. */
+export async function editMessage(chatId: ChatId, messageId: MessageId, content: string): Promise<void> {
+	const chat = chats[chatId];
+	if (!chat) throw new Error('Chat not found.');
+	const message = chat.messages.find((m) => m.id === messageId);
+	if (!message || message.content === content) return;
+	await addMessage(chatId, message.role, content, message.parent_id);
 }
 
 /** Deletes a message and everything built on top of it (its whole subtree),

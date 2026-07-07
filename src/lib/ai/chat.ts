@@ -1,5 +1,4 @@
 import type { Character, Chat, ChatId, Message, MessageId, ProviderConfig } from '$lib/types';
-import { activeContent } from '$lib/types';
 import { getPreferences, initPreferences } from '$lib/state/preferences.svelte';
 import { addMessage, deleteMessage, getActivePath, updateMessageContent } from '$lib/state/chats.svelte';
 import { requestCompletion, type CompletionMessage } from './index';
@@ -60,7 +59,7 @@ async function ensurePreferencesReady(): Promise<void> {
 function historyToMessages(messages: Message[]): CompletionMessage[] {
 	return messages.map((m) => ({
 		role: m.role === 'user' ? 'user' : 'assistant',
-		content: activeContent(m)
+		content: m.content
 	}));
 }
 

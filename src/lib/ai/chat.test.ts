@@ -63,7 +63,7 @@ describe('sendMessage', () => {
 		expect(stored.messages).toHaveLength(2);
 		expect(stored.messages[0].role).toBe('user');
 		expect(stored.messages[1].role).toBe('character');
-		expect(stored.messages[1].versions[0].content).toBe('a reply');
+		expect(stored.messages[1].content).toBe('a reply');
 	});
 
 	it('cancels mid-stream and keeps whatever was generated so far', async () => {
@@ -103,7 +103,7 @@ describe('sendMessage', () => {
 		await sendPromise;
 
 		const stored = getChat(chat.id)!;
-		expect(stored.messages[1].versions[0].content).toBe('Her thumb pauses');
+		expect(stored.messages[1].content).toBe('Her thumb pauses');
 	});
 });
 
@@ -134,7 +134,7 @@ describe('regenerateMessage', () => {
 		const activePath = getActivePath(stored);
 		expect(activePath).toHaveLength(2);
 		expect(activePath[1].id).not.toBe(replyId);
-		expect(activePath[1].versions[0].content).toBe('a different reply');
+		expect(activePath[1].content).toBe('a different reply');
 		// the old reply is still stored, just no longer on the active path
 		expect(stored.messages.some((m) => m.id === replyId)).toBe(true);
 	});
@@ -157,7 +157,7 @@ describe('regenerateMessage', () => {
 		const activePath = getActivePath(stored);
 		// the new branch is now active, and is shorter (nothing built on it yet)
 		expect(activePath).toHaveLength(2);
-		expect(activePath[1].versions[0].content).toBe('a branched reply');
+		expect(activePath[1].content).toBe('a branched reply');
 
 		// switching back to the old reply restores the follow-up after it
 		await switchBranch(chat.id, replyId);
@@ -165,7 +165,7 @@ describe('regenerateMessage', () => {
 		expect(restored).toHaveLength(3);
 		expect(restored[1].id).toBe(replyId);
 		expect(restored[2].role).toBe('user');
-		expect(restored[2].versions[0].content).toBe('a follow-up');
+		expect(restored[2].content).toBe('a follow-up');
 	});
 });
 
@@ -186,7 +186,7 @@ describe('truncated replies', () => {
 		await sendMessage(chat, character, 'hi there');
 
 		const stored = getChat(chat.id)!;
-		expect(stored.messages[1].versions[0].content).toBe('Her thumb pauses mid-scroll, hovering over send.');
+		expect(stored.messages[1].content).toBe('Her thumb pauses mid-scroll, hovering over send.');
 		expect(call).toBe(2);
 	});
 
@@ -200,6 +200,6 @@ describe('truncated replies', () => {
 		await sendMessage(chat, character, 'hi there');
 
 		const stored = getChat(chat.id)!;
-		expect(stored.messages[1].versions[0].content).toBe('xxxx');
+		expect(stored.messages[1].content).toBe('xxxx');
 	});
 });

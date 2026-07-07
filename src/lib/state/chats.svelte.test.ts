@@ -2,10 +2,10 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
 	__setChatsForTests,
 	addMessage,
-	addMessageVersion,
 	createChat,
 	deleteChat,
 	deleteMessage,
+	editMessage,
 	exportChat,
 	getActivePath,
 	getChat,
@@ -13,10 +13,8 @@ import {
 	getSiblings,
 	importChat,
 	renameChat,
-	setActiveVersion,
 	switchBranch
 } from './chats.svelte';
-import { activeContent } from '$lib/types';
 
 beforeEach(() => {
 	__setChatsForTests({});
@@ -69,32 +67,40 @@ describe('exportChat / importChat', () => {
 });
 
 describe('messages', () => {
-	it('adds a message with a single version', async () => {
+	it('adds a message', async () => {
 		const chat = await createChat('char-1', 'Test chat');
 		const message = await addMessage(chat.id, 'user', 'hello');
 		const stored = getChat(chat.id)!.messages[0];
 		expect(stored.id).toBe(message.id);
-		expect(activeContent(stored)).toBe('hello');
+		expect(stored.content).toBe('hello');
 	});
 
-	it('editing appends a version and activates it, keeping history', async () => {
+	it('editing adds a sibling branch under the same parent and switches to it, keeping the old one', async () => {
 		const chat = await createChat('char-1', 'Test chat');
 		const message = await addMessage(chat.id, 'user', 'hello');
-		await addMessageVersion(chat.id, message.id, 'hello there');
+		await editMessage(chat.id, message.id, 'hello there');
 
-		const stored = getChat(chat.id)!.messages[0];
-		expect(stored.versions).toHaveLength(2);
-		expect(activeContent(stored)).toBe('hello there');
-		expect(stored.versions[0].content).toBe('hello');
+		const stored = getChat(chat.id)!;
+		expect(stored.messages).toHaveLength(2);
+		expect(getActivePath(stored).map((m) => m.content)).toEqual(['hello there']);
+		expect(getSiblings(stored, message.id).map((m) => m.content)).toEqual(['hello', 'hello there']);
 	});
 
-	it('can swap back to an earlier version', async () => {
+	it('editing with unchanged content is a no-op', async () => {
 		const chat = await createChat('char-1', 'Test chat');
 		const message = await addMessage(chat.id, 'user', 'hello');
-		await addMessageVersion(chat.id, message.id, 'hello there');
-		await setActiveVersion(chat.id, message.id, 0);
+		await editMessage(chat.id, message.id, 'hello');
 
-		expect(activeContent(getChat(chat.id)!.messages[0])).toBe('hello');
+		expect(getChat(chat.id)!.messages).toHaveLength(1);
+	});
+
+	it('can switch back to the pre-edit branch', async () => {
+		const chat = await createChat('char-1', 'Test chat');
+		const message = await addMessage(chat.id, 'user', 'hello');
+		await editMessage(chat.id, message.id, 'hello there');
+		await switchBranch(chat.id, message.id);
+
+		expect(getActivePath(getChat(chat.id)!).map((m) => m.content)).toEqual(['hello']);
 	});
 
 	it('deletes a message', async () => {
