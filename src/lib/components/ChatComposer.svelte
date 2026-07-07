@@ -180,7 +180,10 @@
 	}
 </script>
 
-<form class="flex flex-col gap-2 border-t border-base-300 p-3" onsubmit={handleSend}>
+<form
+	class="flex flex-col gap-2 p-3"
+	onsubmit={handleSend}
+>
 	<div class="relative">
 		<textarea
 			class="textarea textarea-bordered w-full pb-10"
@@ -194,12 +197,15 @@
 			class="btn btn-sm btn-circle btn-ghost absolute bottom-2 left-2"
 			type="button"
 			disabled={generating}
-			aria-label={generating ? "Generating…" : "Generate for me"}
+			aria-label={generating
+				? "Generating…"
+				: "Generate for me"}
 			title={generating ? "Generating…" : "Generate for me"}
 			onclick={handleGenerateForMe}
 		>
 			{#if generating}
-				<span class="loading loading-spinner loading-xs"></span>
+				<span class="loading loading-spinner loading-xs"
+				></span>
 			{:else}
 				<svg
 					viewBox="0 0 24 24"
@@ -219,13 +225,25 @@
 			{/if}
 		</button>
 		<button
-			class="btn btn-sm btn-primary btn-circle absolute right-2 bottom-2"
+			class="btn btn-sm btn-primary btn-soft btn-circle absolute right-2 bottom-2"
 			type="submit"
 			aria-label={sending ? "Stop" : "Send"}
 		>
 			{#if sending}
-				<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
-					<rect x="6" y="6" width="12" height="12" rx="1.5" />
+				<svg
+					viewBox="0 0 24 24"
+					width="16"
+					height="16"
+					fill="currentColor"
+					aria-hidden="true"
+				>
+					<rect
+						x="6"
+						y="6"
+						width="12"
+						height="12"
+						rx="1.5"
+					/>
 				</svg>
 			{:else}
 				<svg

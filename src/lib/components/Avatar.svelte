@@ -9,7 +9,9 @@
 </script>
 
 <div class="avatar {imageUrl ? '' : 'avatar-placeholder'}">
-	<div class="bg-neutral text-neutral-content rounded-full {className}">
+	<div
+		class="bg-neutral text-neutral-content rounded-full shadow-md ring-1 ring-base-content/10 {className}"
+	>
 		{#if imageUrl}
 			<img src={imageUrl} alt={name} class="h-full w-full object-cover" />
 		{:else}

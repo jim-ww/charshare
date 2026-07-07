@@ -86,7 +86,9 @@
 			<Avatar name={displayName} imageUrl={getMyProfile()?.image_url} />
 		{/if}
 	</div>
-	<div class="chat-header text-sm font-semibold opacity-100">{displayName}</div>
+	<div class="chat-header text-sm font-semibold opacity-100 [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">
+		{displayName}
+	</div>
 	<div class="chat-bubble">
 		{#if editing}
 			<textarea class="textarea textarea-bordered w-full text-base-content" bind:value={draft}

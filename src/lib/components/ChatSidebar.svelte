@@ -85,7 +85,7 @@
 	</button>
 {/snippet}
 
-<aside class="flex w-64 shrink-0 flex-col gap-1 border-r border-base-300 p-2">
+<aside class="flex w-64 shrink-0 flex-col gap-1 p-2">
 	{#each groups as [characterId, characterChats] (characterId)}
 		{@const character = resolveCharacter(characterId)}
 		{@const latest = characterChats[0]}
