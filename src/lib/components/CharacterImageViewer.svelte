@@ -12,6 +12,7 @@
 
 	let index = $state(0);
 	let loaded = $state(false);
+	let failed = $state(false);
 
 	$effect(() => {
 		if (index >= images.length) index = 0;
@@ -20,6 +21,7 @@
 	$effect(() => {
 		images[index];
 		loaded = false;
+		failed = false;
 	});
 
 	function prev(event: MouseEvent) {
@@ -51,6 +53,7 @@
 					alt={name}
 					class="h-full w-full object-cover"
 					onload={() => (loaded = true)}
+					onerror={() => (failed = true)}
 				/>
 			</button>
 		{:else}
@@ -59,9 +62,15 @@
 				alt={name}
 				class="h-full w-full object-cover"
 				onload={() => (loaded = true)}
+				onerror={() => (failed = true)}
 			/>
 		{/if}
-		{#if !loaded}
+		{#if failed}
+			<div class="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-base-300 text-center text-sm opacity-70">
+				<span>⚠</span>
+				<span>Image failed to load</span>
+			</div>
+		{:else if !loaded}
 			<div class="absolute inset-0 flex items-center justify-center bg-base-300">
 				<span class="loading loading-spinner loading-lg"></span>
 			</div>
