@@ -11,6 +11,10 @@
 	function handleDefaultBackgroundChange(event: Event) {
 		updatePreferences({ defaultBackground: (event.currentTarget as HTMLInputElement).value });
 	}
+
+	function handleChatOpacityChange(event: Event) {
+		updatePreferences({ chatOpacity: Number((event.currentTarget as HTMLInputElement).value) });
+	}
 </script>
 
 <div class="flex flex-col gap-4">
@@ -34,6 +38,21 @@
 		/>
 		<span class="mt-1 text-sm opacity-70">
 			Applied to new chats automatically when set. Leave empty for no default.
+		</span>
+	</label>
+
+	<label class="form-control w-full max-w-md">
+		<span class="label-text">Message/composer opacity ({preferences.chatOpacity}%)</span>
+		<input
+			class="range"
+			type="range"
+			min="10"
+			max="100"
+			value={preferences.chatOpacity}
+			oninput={handleChatOpacityChange}
+		/>
+		<span class="mt-1 text-sm opacity-70">
+			Fades chat bubbles and the composer so a chat background shows through.
 		</span>
 	</label>
 </div>
