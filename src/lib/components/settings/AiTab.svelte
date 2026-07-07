@@ -10,7 +10,13 @@
 	const preferences = $derived(getPreferences());
 	const provider = $derived(preferences.provider);
 
-	function update<K extends keyof typeof provider>(key: K, value: (typeof provider)[K]) {
+	type KeysOf<T> = T extends unknown ? keyof T : never;
+	type AnyProviderKey = KeysOf<ProviderConfig>;
+
+	function update<K extends AnyProviderKey>(
+		key: K,
+		value: Extract<ProviderConfig, Record<K, unknown>>[K]
+	) {
 		updateProviderConfig({ [key]: value } as Partial<ProviderConfig>);
 	}
 </script>
