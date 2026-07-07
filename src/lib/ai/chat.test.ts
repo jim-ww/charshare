@@ -7,7 +7,7 @@ const character: Character = {
 	id: 'char-1',
 	version: 1,
 	name: 'Aria',
-	image_url: '',
+	image_urls: [],
 	description: '',
 	personality: '',
 	scenario: 'A quiet library.',

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Character, CharacterDraft } from "$lib/types";
+	import CharacterImageViewer from "./CharacterImageViewer.svelte";
 
 	interface Props {
 		initial?: Character;
@@ -26,7 +27,17 @@ Never state or assume what {{user}} does, thinks, or feels unless {{user}} has e
 Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 
 	let name = $state(initial?.name ?? draft?.name ?? "");
-	let imageUrl = $state(initial?.image_url ?? draft?.image_url ?? "");
+	let imageUrls = $state<string[]>(
+		[...((initial ?? draft)?.image_urls ?? [])],
+	);
+
+	function addImageUrl() {
+		imageUrls.push("");
+	}
+
+	function removeImageUrl(index: number) {
+		imageUrls.splice(index, 1);
+	}
 	let description = $state(
 		initial?.description ?? draft?.description ?? "",
 	);
@@ -77,7 +88,7 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 			await onsubmit({
 				id: initial?.id,
 				name,
-				image_url: imageUrl,
+				image_urls: imageUrls.map((u) => u.trim()).filter(Boolean),
 				description,
 				personality,
 				scenario,
@@ -112,32 +123,40 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 		>
 			<div class="form-control">
 				<span class="label-text">Image</span>
-				<div
-					class="bg-base-200 aspect-square w-full overflow-hidden rounded-box"
-				>
-					{#if imageUrl}
-						<img
-							src={imageUrl}
-							alt=""
-							class="h-full w-full object-cover"
-						/>
-					{:else}
-						<div
-							class="text-base-content/40 flex h-full w-full items-center justify-center text-sm"
-						>
-							No image
-						</div>
-					{/if}
-				</div>
-			</div>
-			<label class="form-control">
-				<span class="label-text">Image URL</span>
-				<input
-					class="input input-bordered w-full"
-					bind:value={imageUrl}
-					placeholder="https://…"
+				<CharacterImageViewer
+					images={imageUrls.map((u) => u.trim()).filter(Boolean)}
+					name={name || "?"}
 				/>
-			</label>
+			</div>
+			<div class="form-control gap-2">
+				<div class="flex items-center justify-between">
+					<span class="label-text">Image URLs</span>
+					<button
+						type="button"
+						class="btn btn-ghost btn-sm"
+						onclick={addImageUrl}
+					>
+						+ Add image
+					</button>
+				</div>
+				{#each imageUrls as _, i}
+					<div class="flex gap-2">
+						<input
+							class="input input-bordered w-full"
+							bind:value={imageUrls[i]}
+							placeholder="https://…"
+						/>
+						<button
+							type="button"
+							class="btn btn-ghost btn-sm"
+							aria-label="Remove image"
+							onclick={() => removeImageUrl(i)}
+						>
+							✕
+						</button>
+					</div>
+				{/each}
+			</div>
 			<label class="form-control">
 				<span class="label-text">Name</span>
 				<input

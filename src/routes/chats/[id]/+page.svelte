@@ -6,6 +6,7 @@
 	import ChatThreadSwitcher from '$lib/components/ChatThreadSwitcher.svelte';
 	import ChatBubble from '$lib/components/ChatBubble.svelte';
 	import ChatComposer from '$lib/components/ChatComposer.svelte';
+	import ChatCharacterImage from '$lib/components/ChatCharacterImage.svelte';
 
 	const chatId = $derived(page.params.id as string);
 	const chat = $derived(getChat(chatId));
@@ -36,8 +37,13 @@
 	<div class="flex h-full flex-col">
 		<ChatThreadSwitcher {chat} />
 		<div class="flex-1 overflow-y-auto p-4">
+			{#if character}
+				<ChatCharacterImage {character} />
+			{/if}
 			{#each chat.messages as message (message.id)}
-				<ChatBubble {chatId} {message} />
+				{#if character}
+					<ChatBubble {chatId} {message} {character} />
+				{/if}
 			{/each}
 		</div>
 		{#if character}

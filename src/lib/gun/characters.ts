@@ -15,7 +15,8 @@ const isCharacter: Validator<Character> = (data): data is Character => {
 		typeof d.id === 'string' &&
 		typeof d.version === 'number' &&
 		typeof d.name === 'string' &&
-		typeof d.image_url === 'string' &&
+		Array.isArray(d.image_urls) &&
+		d.image_urls.every((u) => typeof u === 'string') &&
 		typeof d.description === 'string' &&
 		typeof d.personality === 'string' &&
 		typeof d.scenario === 'string' &&

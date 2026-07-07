@@ -8,6 +8,7 @@
 
 	let { character }: Props = $props();
 	const localOnly = $derived(isCharacterLocalOnly(character.id));
+	const imageUrl = $derived(character.image_urls[0]);
 </script>
 
 <a
@@ -16,12 +17,8 @@
 	class:opacity-60={character.deleted}
 >
 	<figure class="aspect-[3/4] w-full overflow-hidden bg-base-300">
-		{#if character.image_url}
-			<img
-				src={character.image_url}
-				alt={character.name}
-				class="h-full w-full object-cover"
-			/>
+		{#if imageUrl}
+			<img src={imageUrl} alt={character.name} class="h-full w-full object-cover" />
 		{:else}
 			<div class="flex h-full w-full items-center justify-center text-4xl opacity-30">
 				{character.name.charAt(0).toUpperCase()}

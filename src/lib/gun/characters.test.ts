@@ -20,7 +20,7 @@ beforeAll(async () => {
 
 const baseFields = {
 	name: 'Aria',
-	image_url: '',
+	image_urls: [],
 	description: 'A test character',
 	personality: '',
 	scenario: '',

@@ -7,7 +7,7 @@ export interface CharacterFields {
 	id: CharacterId;
 	version: number; // increments on every edit snapshot
 	name: string;
-	image_url: string; // '' if none
+	image_urls: string[]; // [] if none; first is shown by default
 	description: string;
 	personality: string;
 	scenario: string;

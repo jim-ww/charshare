@@ -22,6 +22,7 @@
 		removeComment
 	} from '$lib/state/comments.svelte';
 	import { getProfile } from '$lib/gun/users';
+	import CharacterImageViewer from '$lib/components/CharacterImageViewer.svelte';
 
 	const id = $derived(page.params.id as string);
 
@@ -171,19 +172,7 @@
 	{:else}
 		<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 			<div class="flex flex-col gap-4">
-				<figure class="aspect-[3/4] w-full overflow-hidden rounded-box bg-base-300">
-					{#if character.image_url}
-						<img
-							src={character.image_url}
-							alt={character.name}
-							class="h-full w-full object-cover"
-						/>
-					{:else}
-						<div class="flex h-full w-full items-center justify-center text-6xl opacity-30">
-							{character.name.charAt(0).toUpperCase()}
-						</div>
-					{/if}
-				</figure>
+				<CharacterImageViewer images={character.image_urls} name={character.name} />
 
 				<div>
 					<h1 class:line-through={character.deleted} class="text-2xl font-semibold">

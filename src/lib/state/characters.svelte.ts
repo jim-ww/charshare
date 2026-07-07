@@ -161,7 +161,7 @@ export function importCharacterDraft(json: string): CharacterFormFields {
 	const source = parsed as Character;
 	return {
 		name: source.name,
-		image_url: source.image_url ?? '',
+		image_urls: Array.isArray(source.image_urls) ? source.image_urls : [],
 		description: source.description ?? '',
 		personality: source.personality ?? '',
 		scenario: source.scenario ?? '',

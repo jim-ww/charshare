@@ -7,7 +7,7 @@ import { deleteCharacter, publishCharacter } from './characters';
 import { browseByTag } from './browse';
 
 const baseFields = {
-	image_url: '',
+	image_urls: [],
 	description: '',
 	personality: '',
 	scenario: '',
