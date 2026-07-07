@@ -1,3 +1,1 @@
-- chat view: focus view on last message after user sent his own / ai sent response
 - exported chat filename should match chat name
-- make selected image in chat persist

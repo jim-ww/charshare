@@ -39,4 +39,8 @@ export interface Chat {
   // Unsent composer text, kept so navigating away or closing the page
   // doesn't lose an in-progress draft.
   draft: string;
+  // Selected index in the character image viewer, so it stays put when
+  // navigating away and back. Clamp against the current image count when
+  // reading — the character's images can change after this was saved.
+  image_index: number;
 }

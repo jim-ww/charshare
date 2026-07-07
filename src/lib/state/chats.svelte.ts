@@ -24,9 +24,10 @@ export function initChats(): Promise<void> {
 	if (!initPromise) {
 		initPromise = (async () => {
 			const loaded = await loadChats();
-			// migrate chats saved before `draft` existed
+			// migrate chats saved before `draft`/`image_index` existed
 			for (const chat of Object.values(loaded)) {
 				if (chat.draft === undefined) chat.draft = '';
+				if (chat.image_index === undefined) chat.image_index = 0;
 			}
 			chats = loaded;
 			ready = true;
@@ -51,7 +52,8 @@ export async function createChat(characterId: CharacterId, name: string): Promis
 		root_id: null,
 		active_child: {},
 		created_at: Date.now(),
-		draft: ''
+		draft: '',
+		image_index: 0
 	};
 	chats = { ...chats, [chat.id]: chat };
 	await persist();
@@ -65,6 +67,8 @@ export async function renameChat(id: ChatId, name: string): Promise<void> {
 	await persist();
 }
 
+// Shared by setChatDraft and setChatImageIndex — both debounce into the same
+// full-snapshot persist(), so one pending timer covers whichever fired last.
 let draftPersistTimer: ReturnType<typeof setTimeout> | null = null;
 
 /** Persists the composer's unsent text so it survives a page reload/close.
@@ -75,6 +79,21 @@ export function setChatDraft(id: ChatId, draft: string): void {
 	const chat = chats[id];
 	if (!chat || chat.draft === draft) return;
 	chats = { ...chats, [id]: { ...chat, draft } };
+	if (draftPersistTimer) clearTimeout(draftPersistTimer);
+	draftPersistTimer = setTimeout(() => {
+		draftPersistTimer = null;
+		void persist();
+	}, 400);
+}
+
+/** Persists the character image viewer's selected index, debounced like
+ *  setChatDraft (arrow-key navigation can fire rapidly). The caller is
+ *  responsible for clamping against the current image count — this just
+ *  stores whatever index it's given. */
+export function setChatImageIndex(id: ChatId, imageIndex: number): void {
+	const chat = chats[id];
+	if (!chat || chat.image_index === imageIndex) return;
+	chats = { ...chats, [id]: { ...chat, image_index: imageIndex } };
 	if (draftPersistTimer) clearTimeout(draftPersistTimer);
 	draftPersistTimer = setTimeout(() => {
 		draftPersistTimer = null;
@@ -123,7 +142,8 @@ export async function importChat(characterId: CharacterId, json: string): Promis
 		root_id: source.root_id ?? null,
 		active_child: source.active_child ?? {},
 		created_at: Date.now(),
-		draft: ''
+		draft: '',
+		image_index: 0
 	};
 	chats = { ...chats, [chat.id]: chat };
 	await persist();

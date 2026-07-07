@@ -1,14 +1,33 @@
 <script lang="ts">
-	import type { Character } from "$lib/types";
+	import type { Chat, Character } from "$lib/types";
+	import { setChatImageIndex } from "$lib/state/chats.svelte";
 	import CharacterImageViewer from "./CharacterImageViewer.svelte";
 
 	interface Props {
+		chat: Chat;
 		character: Character;
 	}
 
-	let { character }: Props = $props();
+	let { chat, character }: Props = $props();
 	let expanded = $state(false);
-	let index = $state(0);
+
+	// Clamp the persisted index against the current image count — the
+	// character's images can change (or be down to zero) since it was saved.
+	function clampedIndex(): number {
+		const count = character.image_urls.length;
+		if (count === 0) return 0;
+		return Math.min(Math.max(chat.image_index, 0), count - 1);
+	}
+
+	let index = $state(clampedIndex());
+
+	$effect(() => {
+		index = clampedIndex();
+	});
+
+	$effect(() => {
+		setChatImageIndex(chat.id, index);
+	});
 </script>
 
 <div class="aspect-square w-28 shrink-0 sm:w-56">

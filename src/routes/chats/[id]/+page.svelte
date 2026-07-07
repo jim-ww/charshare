@@ -58,7 +58,7 @@
 			</div>
 			{#if character}
 				<div class="fixed bottom-3 left-3 z-20">
-					<ChatCharacterImage {character} />
+					<ChatCharacterImage {chat} {character} />
 				</div>
 			{/if}
 		</div>
