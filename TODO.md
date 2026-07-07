@@ -1,1 +1,1 @@
-- preferences modal: combine profile, backup into one. and in backup instead of taking contents of backup file, allow just to select file itself
+- chat view: focus view on last message after user sent his own / ai sent response

@@ -25,11 +25,26 @@ export interface OllamaProviderConfig extends CommonProviderConfig {
   // Ollama model tag, e.g. "llama3.1:8b"
 }
 
-export type ProviderConfig = OpenRouterProviderConfig | OllamaProviderConfig; // union grows as more providers are added
+export interface HuggingFaceProviderConfig extends CommonProviderConfig {
+  provider: 'huggingface';
+  apiKey: string; // stored locally only, never published
+  // Hugging Face model id, e.g. "meta-llama/Meta-Llama-3-8B-Instruct"
+}
+
+export type ProviderConfig =
+  | OpenRouterProviderConfig
+  | OllamaProviderConfig
+  | HuggingFaceProviderConfig; // union grows as more providers are added
+
+// Per-provider saved settings, so switching providers doesn't clobber the other's config.
+export type ProviderConfigMap = {
+  [P in ProviderConfig['provider']]: Extract<ProviderConfig, { provider: P }>;
+};
 
 export interface Preferences {
   gunRelays: string[]; // includes the default, user can add/remove
   theme: ThemeMode;
   blockedTags: string[];
-  provider: ProviderConfig;
+  provider: ProviderConfig; // the currently active provider's config
+  providerConfigs: ProviderConfigMap; // last-saved config per provider
 }
