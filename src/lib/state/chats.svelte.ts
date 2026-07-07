@@ -32,7 +32,9 @@ export function initChats(): Promise<void> {
 
 async function persist(): Promise<void> {
 	if (!persistenceEnabled) return;
-	await saveChats(chats);
+	// idb-keyval structured-clones the value for IndexedDB, which throws on
+	// the Proxy that $state wraps objects in — persist a plain snapshot instead.
+	await saveChats($state.snapshot(chats));
 }
 
 export async function createChat(characterId: CharacterId, name: string): Promise<Chat> {

@@ -1,8 +1,23 @@
 import type { Character, Chat } from '$lib/types';
 import { activeContent } from '$lib/types';
-import { getPreferences } from '$lib/state/preferences.svelte';
+import { getPreferences, initPreferences } from '$lib/state/preferences.svelte';
 import { addMessage } from '$lib/state/chats.svelte';
 import { requestCompletion, type CompletionMessage } from './index';
+
+/** Preferences load from IndexedDB asynchronously on app start; if a
+ *  completion request fires before that resolves (e.g. "Generate for me"
+ *  as the very first click on a freshly loaded chat page), the provider
+ *  config is still the empty-apiKey default. initPreferences() is
+ *  idempotent, so awaiting it here just waits for the in-flight load
+ *  rather than re-fetching. Ignore failures (e.g. no IndexedDB in tests) —
+ *  fall back to whatever's already in memory. */
+async function ensurePreferencesReady(): Promise<void> {
+	try {
+		await initPreferences();
+	} catch {
+		// no-op
+	}
+}
 
 function historyToMessages(chat: Chat): CompletionMessage[] {
 	return chat.messages.map((m) => ({
@@ -22,6 +37,7 @@ function systemPrompt(character: Character): string {
  *  passed in plus the new content, rather than re-reading state after
  *  addMessage — avoids a state-timing dependency. */
 export async function sendMessage(chat: Chat, character: Character, content: string): Promise<void> {
+	await ensurePreferencesReady();
 	await addMessage(chat.id, 'user', content);
 
 	const messages: CompletionMessage[] = [
@@ -38,6 +54,7 @@ export async function sendMessage(chat: Chat, character: Character, content: str
  *  (see spec). Returns the draft for the user to review/edit before
  *  sending; doesn't append it as a message itself. */
 export async function generateUserDraft(chat: Chat, character: Character): Promise<string> {
+	await ensurePreferencesReady();
 	const messages: CompletionMessage[] = [
 		{
 			role: 'system',

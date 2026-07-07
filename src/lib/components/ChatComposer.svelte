@@ -29,6 +29,13 @@
 		}
 	}
 
+	function handleKeydown(event: KeyboardEvent) {
+		if (event.key === 'Enter' && !event.shiftKey) {
+			event.preventDefault();
+			handleSend(new SubmitEvent('submit', { cancelable: true }));
+		}
+	}
+
 	async function handleGenerateForMe() {
 		generating = true;
 		error = null;
@@ -48,6 +55,7 @@
 		rows="2"
 		placeholder="Message"
 		bind:value={content}
+		onkeydown={handleKeydown}
 	></textarea>
 	<div class="flex justify-between gap-2">
 		<button class="btn btn-sm" type="button" disabled={generating} onclick={handleGenerateForMe}>

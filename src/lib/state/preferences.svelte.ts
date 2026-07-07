@@ -70,5 +70,7 @@ export function initPreferences(): Promise<void> {
 
 export async function updatePreferences(patch: Partial<Preferences>): Promise<void> {
 	preferences = { ...preferences, ...patch };
-	await set(STORAGE_KEY, preferences);
+	// idb-keyval structured-clones the value for IndexedDB, which throws on
+	// the Proxy that $state wraps objects in — persist a plain snapshot instead.
+	await set(STORAGE_KEY, $state.snapshot(preferences));
 }
