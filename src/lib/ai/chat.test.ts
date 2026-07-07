@@ -60,3 +60,51 @@ describe('generateUserDraft', () => {
 		expect(getChat(chat.id)!.messages).toEqual([]);
 	});
 });
+
+describe('truncated replies', () => {
+	it('asks the model to continue when finish_reason is length, and stitches the pieces together', async () => {
+		let call = 0;
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async () => {
+				call++;
+				return call === 1
+					? {
+							ok: true,
+							json: async () => ({
+								choices: [{ message: { content: 'Her thumb pauses mid-sc' }, finish_reason: 'length' }]
+							})
+						}
+					: {
+							ok: true,
+							json: async () => ({
+								choices: [{ message: { content: 'roll, hovering over send.' }, finish_reason: 'stop' }]
+							})
+						};
+			})
+		);
+
+		const chat: Chat = await createChat(character.id, 'Test chat');
+		await sendMessage(chat, character, 'hi there');
+
+		const stored = getChat(chat.id)!;
+		expect(stored.messages[1].versions[0].content).toBe('Her thumb pauses mid-scroll, hovering over send.');
+		expect(call).toBe(2);
+	});
+
+	it('gives up after MAX_CONTINUATIONS rounds instead of looping forever', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async () => ({
+				ok: true,
+				json: async () => ({ choices: [{ message: { content: 'x' }, finish_reason: 'length' }] })
+			}))
+		);
+
+		const chat: Chat = await createChat(character.id, 'Test chat');
+		await sendMessage(chat, character, 'hi there');
+
+		const stored = getChat(chat.id)!;
+		expect(stored.messages[1].versions[0].content).toBe('xxxx');
+	});
+});

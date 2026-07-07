@@ -1,12 +1,12 @@
 import type { OllamaProviderConfig } from '$lib/types';
-import type { CompletionMessage } from './openrouter';
+import type { CompletionMessage, CompletionResult } from './openrouter';
 
 /** Calls a local/self-hosted Ollama server's native chat endpoint. No API
  *  key: Ollama is expected to run on the user's machine or trusted network. */
 export async function requestCompletion(
 	config: OllamaProviderConfig,
 	messages: CompletionMessage[]
-): Promise<string> {
+): Promise<CompletionResult> {
 	const response = await fetch(`${config.baseUrl.replace(/\/$/, '')}/api/chat`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
@@ -29,6 +29,9 @@ export async function requestCompletion(
 		throw new Error(`Ollama request failed: ${response.status} ${await response.text()}`);
 	}
 
-	const data = (await response.json()) as { message?: { content?: string } };
-	return data.message?.content ?? '';
+	const data = (await response.json()) as { message?: { content?: string }; done_reason?: string | null };
+	return {
+		content: data.message?.content ?? '',
+		finishReason: data.done_reason ?? null
+	};
 }
