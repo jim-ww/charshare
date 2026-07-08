@@ -6,7 +6,7 @@
 		isCharactersReady,
 	} from "$lib/state/characters.svelte";
 	import { getCurrentUser } from "$lib/state/auth.svelte";
-	import { browseByTag, browseNetwork, browseByName, browseByAuthor } from "$lib/gun/browse";
+	import { browseNetwork } from "$lib/gun/browse";
 	import CharacterCard from "$lib/components/CharacterCard.svelte";
 	import TagCarousel from "$lib/components/TagCarousel.svelte";
 	import {
@@ -14,15 +14,17 @@
 		isCharacterHidden,
 		updatePreferences,
 	} from "$lib/state/preferences.svelte";
+	import {
+		addTagToQuery,
+		getRemoteResults,
+		getSearchQuery,
+		getSearchedQuery,
+	} from "$lib/state/search.svelte";
 
 	let mineOnly = $state(false);
 	let showHidden = $state(false);
 	const showNsfw = $derived(getPreferences().showNsfw);
-	let query = $state("");
-	let remoteResults = $state<Character[]>([]);
 	let networkResults = $state<Character[]>([]);
-	let searching = $state(false);
-	let searchedQuery = $state("");
 
 	const myCharacters = $derived(
 		getMyCharacters().filter((c) => !c.deleted),
@@ -35,39 +37,10 @@
 		});
 	});
 
-	function addTagToQuery(tag: string) {
-		query = query.trim() ? `${query.trim()} ${tag}` : tag;
-	}
-
-	async function handleSearch(event: SubmitEvent) {
-		event.preventDefault();
-		const q = query.trim();
-		if (!q) {
-			remoteResults = [];
-			searchedQuery = "";
-			return;
-		}
-		searching = true;
-		try {
-			if (q.startsWith("@")) {
-				remoteResults = await browseByAuthor(q.slice(1));
-			} else {
-				const [byName, byTag] = await Promise.all([
-					browseByName(q),
-					browseByTag(q),
-				]);
-				const merged = new Map(
-					[...byName, ...byTag].map((c) => [c.id, c]),
-				);
-				remoteResults = [...merged.values()];
-			}
-			searchedQuery = q;
-		} finally {
-			searching = false;
-		}
-	}
-
 	const results = $derived.by(() => {
+		const query = getSearchQuery();
+		const remoteResults = getRemoteResults();
+		const searchedQuery = getSearchedQuery();
 		const trimmed = query.trim();
 		const isAuthorQuery = trimmed.startsWith("@");
 		const q = trimmed.toLowerCase();
@@ -115,23 +88,6 @@
 
 <div class="p-4">
 	<div class="mb-6 flex flex-col items-center gap-3">
-		<form
-			class="flex w-full max-w-md gap-2"
-			onsubmit={handleSearch}
-		>
-			<input
-				class="input input-bordered w-full"
-				placeholder="Search by name, tag, or @username/@pubkey…"
-				bind:value={query}
-			/>
-			<button
-				class="btn btn-primary"
-				type="submit"
-				disabled={searching}
-			>
-				{searching ? "Searching…" : "Search"}
-			</button>
-		</form>
 		<TagCarousel onpick={addTagToQuery} />
 		<div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-1">
 			<label class="label cursor-pointer gap-2 py-0">
@@ -169,7 +125,7 @@
 		<p>Loading…</p>
 	{:else if results.length === 0}
 		<p class="opacity-70">
-			{#if mineOnly && !query.trim()}
+			{#if mineOnly && !getSearchQuery().trim()}
 				You haven't created any characters yet.
 			{:else}
 				No characters found.
