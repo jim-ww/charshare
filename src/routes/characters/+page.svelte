@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from "svelte";
+	import { page } from "$app/state";
 	import type { Character } from "$lib/types";
 	import {
 		getMyCharacters,
@@ -19,12 +20,18 @@
 		getRemoteResults,
 		getSearchQuery,
 		getSearchedQuery,
+		runSearch,
+		setSearchQuery,
 	} from "$lib/state/search.svelte";
 
 	let mineOnly = $state(false);
 	let showHidden = $state(false);
 	const showNsfw = $derived(getPreferences().showNsfw);
 	let networkResults = $state<Character[]>([]);
+	// Tracks the last "?q=" we actually ran a search for, so navigating here
+	// with a new query (e.g. from the NavBar on another page) re-triggers the
+	// search exactly once instead of looping against the shared search state.
+	let lastRunQuery: string | null = $state(null);
 
 	const myCharacters = $derived(
 		getMyCharacters().filter((c) => !c.deleted),
@@ -35,6 +42,15 @@
 		browseNetwork().then((results) => {
 			networkResults = results;
 		});
+	});
+
+	$effect(() => {
+		const q = page.url.searchParams.get("q") ?? "";
+		if (q !== lastRunQuery) {
+			lastRunQuery = q;
+			setSearchQuery(q);
+			runSearch();
+		}
 	});
 
 	const results = $derived.by(() => {
