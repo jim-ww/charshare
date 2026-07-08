@@ -39,12 +39,24 @@ export function isCharactersReady(): boolean {
 	return ready;
 }
 
+/** Backfills fields added after some local-only characters were already
+ *  saved to IndexedDB, so old entries don't crash on the newer field being
+ *  undefined. */
+function normalizeLocalCharacter(character: Character): Character {
+	return {
+		...character,
+		example_dialogues: character.example_dialogues ?? []
+	};
+}
+
 async function refresh(): Promise<void> {
 	const entries = await loadMyCharacterEntries();
 	const resolved = await Promise.all(
 		entries.map(async (entry) => {
 			if (!entry.published) {
-				return entry.character ? { character: entry.character, published: false } : null;
+				return entry.character
+					? { character: normalizeLocalCharacter(entry.character), published: false }
+					: null;
 			}
 			const result = await getCharacter(entry.id);
 			return result.ok ? { character: result.doc, published: true } : null;
