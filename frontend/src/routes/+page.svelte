@@ -170,6 +170,64 @@
 
 	<section class="py-12">
 		<h2 class="pb-2 text-center text-2xl font-bold tracking-tight">
+			Install
+		</h2>
+		<p class="pb-8 text-center text-base-content/70">
+			Run Charshare as a desktop app, or just use it in your
+			browser at <a href="/characters" class="link"
+				>/characters</a
+			> above — no install required either way.
+		</p>
+
+		<div class="mx-auto grid max-w-3xl gap-6 sm:grid-cols-2">
+			<div
+				class="card border-2 border-base-content/15 bg-base-100 shadow-sm"
+			>
+				<div class="card-body">
+					<h3 class="card-title text-base">
+						Download a binary
+					</h3>
+					<p class="text-base-content/70">
+						Prebuilt desktop binaries for Linux,
+						macOS, and Windows are published on
+						GitHub Releases.
+					</p>
+					<div class="card-actions pt-2">
+						<a
+							href="{REPO_URL}/releases"
+							class="btn btn-soft btn-sm"
+							target="_blank"
+							rel="noreferrer"
+						>
+							GitHub Releases
+						</a>
+					</div>
+				</div>
+			</div>
+
+			<div
+				class="card border-2 border-base-content/15 bg-base-100 shadow-sm"
+			>
+				<div class="card-body">
+					<h3 class="card-title text-base">
+						Nix
+					</h3>
+					<p class="text-base-content/70">
+						If you have Nix with flakes enabled,
+						you can run Charshare without
+						installing anything:
+					</p>
+					<pre
+						class="mt-1 overflow-x-auto rounded-box bg-base-200 p-3 text-sm"><code
+							>nix run github:jim-ww/charshare</code
+						></pre>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<section class="py-12">
+		<h2 class="pb-2 text-center text-2xl font-bold tracking-tight">
 			Getting started
 		</h2>
 		<p class="pb-8 text-center text-base-content/70">
