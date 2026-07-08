@@ -293,7 +293,7 @@
 					</div>
 					{#if character.tags.length || character.language}
 						<div
-							class="mt-1 flex flex-wrap gap-1"
+							class="mt-4 flex flex-wrap gap-1"
 						>
 							{#if character.language}
 								<span
@@ -481,7 +481,10 @@
 						>
 							{#each character.example_dialogues as dialogue, i (i)}
 								<p
-									class="whitespace-pre-wrap {i > 0 ? 'border-t border-base-content/10 pt-2' : ''}"
+									class="whitespace-pre-wrap {i >
+									0
+										? 'border-t border-base-content/10 pt-2'
+										: ''}"
 								>
 									{dialogue}
 								</p>
