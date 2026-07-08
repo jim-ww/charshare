@@ -253,7 +253,12 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 		event.preventDefault();
 		saving = true;
 		error = null;
+		const previousSnapshot = savedSnapshot;
 		try {
+			// Update the snapshot before submitting (not after) since
+			// onsubmit navigates away on success, and beforeNavigate would
+			// otherwise still see stale isDirty state from before this await.
+			savedSnapshot = snapshot();
 			await onsubmit({
 				id: initial?.id,
 				name,
@@ -279,8 +284,8 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 					.filter(Boolean),
 				comments_enabled: commentsEnabled,
 			});
-			savedSnapshot = snapshot();
 		} catch (err) {
+			savedSnapshot = previousSnapshot;
 			error =
 				err instanceof Error
 					? err.message

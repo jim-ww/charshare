@@ -1,6 +1,3 @@
-Avoid using `history.pushState(...)` and `history.replaceState(...)` as these will conflict with SvelteKit's router. Use the `pushState` and `replaceState` imports from `$app/navigation` instead.
-
-- character new/edit: dont trigger unsaved changes prompt, if user pressed 'create char'
 - save last viewed page in preferences? or change default page from landing to characters?
 - in account export file add account name in filename, date
 - create terms of service / legal page
