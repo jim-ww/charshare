@@ -68,29 +68,45 @@
 			</button>
 		</div>
 	{/if}
-	<figure class="aspect-[3/4] w-full overflow-hidden bg-base-300">
-		{#if imageUrl}
-			<img src={imageUrl} alt={character.name} class="h-full w-full object-cover" />
-		{:else}
-			<div class="flex h-full w-full items-center justify-center text-4xl opacity-30">
-				{character.name.charAt(0).toUpperCase()}
-			</div>
-		{/if}
-	</figure>
-	<div class="card-body p-4">
-		<h3 class:line-through={character.deleted} class="card-title text-base">
+	<div class="card-body items-center gap-1 p-3 text-center">
+		<figure class="h-44 w-44 overflow-hidden rounded-lg bg-base-300">
+			{#if imageUrl}
+				<img
+					src={imageUrl}
+					alt={character.name}
+					class="h-full w-full object-cover"
+				/>
+			{:else}
+				<div
+					class="flex h-full w-full items-center justify-center text-5xl opacity-30"
+				>
+					{character.name.charAt(0).toUpperCase()}
+				</div>
+			{/if}
+		</figure>
+		<h3
+			class:line-through={character.deleted}
+			class="mt-1 line-clamp-2 text-sm font-semibold"
+		>
 			{character.name}
-			<span class="badge badge-sm" class:badge-outline={localOnly} class:badge-primary={!localOnly}>
+		</h3>
+		{#if isMine}
+			<span
+				class="badge badge-xs"
+				class:badge-outline={localOnly}
+				class:badge-primary={!localOnly}
+			>
 				{localOnly ? "Local only" : "Published"}
 			</span>
-		</h3>
+		{/if}
 		{#if character.description}
-			<p class="line-clamp-3 text-sm opacity-80">
+			<p class="line-clamp-2 text-xs opacity-80">
 				{character.description}
 			</p>
 		{/if}
 		{#if character.tags.length}
-			<div class="flex flex-wrap gap-1">
+			<div class="divider my-1 w-full"></div>
+			<div class="flex flex-wrap justify-center gap-1">
 				{#each character.tags as tag (tag)}
 					<span class="badge badge-sm">{tag}</span>
 				{/each}

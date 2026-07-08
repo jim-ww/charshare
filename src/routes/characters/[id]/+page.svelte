@@ -262,15 +262,17 @@
 						class="text-2xl font-semibold"
 					>
 						{character.name}
-						<span
-							class="badge badge-sm align-middle"
-							class:badge-outline={localOnly}
-							class:badge-primary={!localOnly}
-						>
-							{localOnly
-								? "Local only"
-								: "Published"}
-						</span>
+						{#if isMine}
+							<span
+								class="badge badge-sm align-middle"
+								class:badge-outline={localOnly}
+								class:badge-primary={!localOnly}
+							>
+								{localOnly
+									? "Local only"
+									: "Published"}
+							</span>
+						{/if}
 					</h1>
 					<div
 						class="mt-1 flex items-center gap-1.5 text-sm opacity-70"

@@ -98,7 +98,7 @@
 			list = list.filter((c) => c.author === me || !isCharacterHidden(c.id));
 		}
 		if (!showNsfw) {
-			list = list.filter((c) => c.author === me || !c.nsfw);
+			list = list.filter((c) => !c.nsfw);
 		}
 		return list;
 	});
@@ -163,7 +163,7 @@
 		</p>
 	{:else}
 		<div
-			class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
+			class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6"
 		>
 			{#each results as character (character.id)}
 				<CharacterCard {character} />
