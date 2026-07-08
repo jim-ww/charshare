@@ -22,6 +22,18 @@
         pkgs.webkitgtk_4_1
       ];
 
+      # Lets Linux desktop environments (GNOME/KDE/etc.) show a launcher entry
+      # with an icon for `nix profile install`/systemPackages users — without
+      # this, only $out/bin/charshare would exist and no menu would pick it up.
+      desktopItem = pkgs.makeDesktopItem {
+        name = "charshare";
+        desktopName = "Charshare";
+        comment = "Decentralized, unmoderated platform to share and talk to AI characters";
+        exec = "charshare";
+        icon = "charshare";
+        categories = ["Network" "Chat"];
+      };
+
       frontendDist = pkgs.stdenv.mkDerivation (finalAttrs: {
         pname = "charshare-frontend";
         version = "0.0.1";
@@ -74,6 +86,16 @@
           cp -r ${frontendDist} frontend/dist
         '';
 
+        # Desktop-menu entry + icon, so package managers that aggregate
+        # share/{applications,icons} (NixOS, home-manager) surface a real
+        # launcher item instead of just a binary on PATH.
+        postInstall = ''
+          install -Dm644 ${desktopItem}/share/applications/*.desktop \
+            $out/share/applications/charshare.desktop
+          install -Dm644 frontend/static/logo.png \
+            $out/share/icons/hicolor/1024x1024/apps/charshare.png
+        '';
+
         # Same runtime env the devShell sets (fonts + TLS certs for the
         # webview) — needed here too since `nix run`/an installed binary
         # doesn't go through the devShell's shellHook.
@@ -100,6 +122,7 @@
             pkgs.pnpm
             pkgs.pkg-config
             pkgs.goreleaser
+            pkgs.ffmpeg
           ]
           ++ webkitDeps;
 

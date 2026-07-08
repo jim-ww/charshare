@@ -1,5 +1,6 @@
 - add custom logo: favicon and one for wails builds
 - add option to logout, but ask for confirmation, reminding to make account backup
+- change search token behavior: should only list character that has ALL tags from query
 - rating system for characters?
 - proper pagination in Characters browse page?
 - implement extension for scraping characters from other services?

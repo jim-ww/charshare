@@ -7,3 +7,4 @@ frontend/wailsjs
 Thumbs.db
 # Added by goreleaser init:
 dist/
+.env*
