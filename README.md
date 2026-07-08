@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="frontend/static/logo.png" width="160" alt="charshare logo" />
+
 # charshare
 
 **Decentralized, unmoderated platform to share and talk to AI characters.**
