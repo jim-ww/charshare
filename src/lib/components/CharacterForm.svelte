@@ -4,6 +4,7 @@
 	import CharacterImageViewer from "./CharacterImageViewer.svelte";
 	import { isAccountRegistered } from "$lib/state/auth.svelte";
 	import { openSettings } from "$lib/state/settingsModal.svelte";
+	import { LANGUAGES } from "$lib/languages";
 
 	interface Props {
 		initial?: Character;
@@ -199,11 +200,19 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 			</label>
 			<label class="form-control">
 				<span class="label-text">Language</span>
-				<input
-					class="input input-bordered w-full"
+				<select
+					class="select select-bordered w-full"
 					bind:value={language}
-					placeholder="en"
-				/>
+				>
+					{#if language && !LANGUAGES.some(([code]) => code === language)}
+						<option value={language}
+							>{language} (unrecognized)</option
+						>
+					{/if}
+					{#each LANGUAGES as [code, name] (code)}
+						<option value={code}>{name}</option>
+					{/each}
+				</select>
 			</label>
 			<label class="form-control">
 				<span class="label-text"

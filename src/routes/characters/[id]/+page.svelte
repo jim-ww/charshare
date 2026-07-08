@@ -4,8 +4,12 @@
 	import { goto } from "$app/navigation";
 	import type { Character, Comment } from "$lib/types";
 	import { subscribeCharacter } from "$lib/gun/characters";
-	import { getCurrentUser, isAccountRegistered } from "$lib/state/auth.svelte";
+	import {
+		getCurrentUser,
+		isAccountRegistered,
+	} from "$lib/state/auth.svelte";
 	import { openSettings } from "$lib/state/settingsModal.svelte";
+	import { languageName } from "$lib/languages";
 	import {
 		deleteMyCharacter,
 		exportCharacter,
@@ -268,25 +272,38 @@
 								: "Published"}
 						</span>
 					</h1>
-					<div class="mt-1 flex items-center gap-1.5 text-sm opacity-70">
+					<div
+						class="mt-1 flex items-center gap-1.5 text-sm opacity-70"
+					>
 						<span>By:</span>
 						<button
 							class="btn btn-xs btn-outline rounded-full"
 							type="button"
 							onclick={() =>
 								(profileModalPubkey =
-									character!.author)}
+									character!
+										.author)}
 						>
-							@{authorLabel(character.author)}
+							@{authorLabel(
+								character.author,
+							)}
 						</button>
 					</div>
-					{#if character.tags.length}
+					{#if character.tags.length || character.language}
 						<div
 							class="mt-1 flex flex-wrap gap-1"
 						>
+							{#if character.language}
+								<span
+									class="badge badge-sm badge-outline"
+									>{languageName(
+										character.language,
+									)}</span
+								>
+							{/if}
 							{#each character.tags as tag (tag)}
 								<span
-									class="badge badge-sm"
+									class="badge badge-sm badge-outline"
 									>{tag}</span
 								>
 							{/each}
@@ -514,8 +531,19 @@
 									: "Post comment"}
 							</button>
 							{#if !isAccountRegistered()}
-								<p class="text-xs opacity-60">
-									You'll need an account to post — click "Post comment" to create one.
+								<p
+									class="text-xs opacity-60"
+								>
+									You'll
+									need an
+									account
+									to post
+									— click
+									"Post
+									comment"
+									to
+									create
+									one.
 								</p>
 							{/if}
 						</form>
