@@ -34,6 +34,13 @@ jobs:
         working-directory: frontend
         run: pnpm install --frozen-lockfile
 
+      - name: Compile Paraglide messages
+        working-directory: frontend
+        # src/lib/paraglide is gitignored and normally generated as a side
+        # effect of Vite starting (dev/build), but svelte-check/vitest run
+        # without Vite, so it needs compiling explicitly first.
+        run: pnpm exec paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide
+
       - name: Type-check
         working-directory: frontend
         run: pnpm run check
