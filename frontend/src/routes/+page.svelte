@@ -52,7 +52,7 @@
 			id: "architecture",
 			label: "Architecture",
 			heading: "No backend, no server",
-			body: "Charshare ships as a static site — deployable from any CDN, with no server component at all. Anything you publish travels over GUN, a peer-to-peer graph database, through relays that anyone can run. When you chat, your browser talks directly to whichever AI provider you've configured — there's no proxy of ours in between.",
+			body: "Charshare has no server component at all — download it as a desktop app, or run the exact same code as a static site deployed from any CDN. Anything you publish travels over GUN, a peer-to-peer graph database, through relays that anyone can run. When you chat, your device talks directly to whichever AI provider you've configured — there's no proxy of ours in between.",
 		},
 		{
 			id: "identity",
@@ -70,7 +70,7 @@
 			id: "license",
 			label: "License",
 			heading: "AGPLv3, distributed as software",
-			body: "Charshare is licensed AGPLv3: free to run, study, modify, and redistribute. It's built and shipped as software you own a copy of, not a service you rent — there is no subscription, and there's nothing to cancel.",
+			body: "Charshare is licensed AGPLv3: free to run, study, modify, and redistribute. It's built and shipped as software you own a copy of — as a desktop binary or a static site you host yourself — not a service you rent. There is no subscription, and there's nothing to cancel.",
 		},
 	];
 
@@ -295,6 +295,7 @@
 			>
 				AGPLv3 License
 			</a>
+			<a href="/legal" class="link link-hover">Legal</a>
 			<a href="/characters" class="link link-hover"
 				>Open the app</a
 			>

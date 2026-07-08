@@ -1,8 +1,4 @@
-- save last viewed page in preferences? or change default page from landing to characters?
-- create terms of service / legal page
 - add option to logout, but ask for confirmation, reminding to make account backup
-- browse: hide block button, if its authors own characters
-- character new/edit page: add options to import from tavernAI character card
 - rating system for characters?
 - implement extension for scraping characters from other services?
 - proper pagination in Characters browse page?
