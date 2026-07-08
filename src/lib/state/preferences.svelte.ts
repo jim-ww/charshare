@@ -40,7 +40,7 @@ export const DEFAULT_OLLAMA_CONFIG: OllamaProviderConfig = {
 	repetition_penalty: 1,
 	frequency_penalty: 0,
 	forbidden_words: [],
-	disable_thinking: false,
+	disable_thinking: true,
 };
 
 export const DEFAULT_HUGGINGFACE_CONFIG: HuggingFaceProviderConfig = {
@@ -55,12 +55,12 @@ export const DEFAULT_HUGGINGFACE_CONFIG: HuggingFaceProviderConfig = {
 	repetition_penalty: 1,
 	frequency_penalty: 0,
 	forbidden_words: [],
-	disable_thinking: false,
+	disable_thinking: true,
 };
 
 export const DEFAULT_PREFERENCES: Preferences = {
 	gunRelays: DEFAULT_GUN_RELAYS,
-	theme: "dracula",
+	theme: "forest",
 	blockedTags: [],
 	blockedAuthors: [],
 	hiddenCharacterIds: [],

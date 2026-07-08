@@ -1,4 +1,5 @@
 - improve browse search: ui
+- character new/edit, view pages: make collapses separate
 - make proper language selector in new/edit character page
 - preferences set default thinking = false?
 - add example dialogs to character.
