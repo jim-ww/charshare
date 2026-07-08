@@ -1,5 +1,14 @@
 <script lang="ts">
 	const REPO_URL = "https://github.com/jim-ww/charshare";
+	const XMR_ADDRESS =
+		"83YGRqP8uHed6NeegZQeX9ccCxbzoRHHEEi7pTwk4aqdJZEVXXA6NWtetnsEM2v33zFBBt3Rp6DNhU9qhJEGPspU14yN8t7";
+
+	let copied = $state(false);
+	async function copyAddress() {
+		await navigator.clipboard.writeText(XMR_ADDRESS);
+		copied = true;
+		setTimeout(() => (copied = false), 1500);
+	}
 
 	const strengths = [
 		{
@@ -49,6 +58,49 @@
 
 	let activeTab = $state(techTabs[0].id);
 	const active = $derived(techTabs.find((t) => t.id === activeTab)!);
+
+	const providerTabs = [
+		{
+			id: "huggingface",
+			label: "Hugging Face",
+			heading: "Hugging Face",
+			steps: [
+				"Create a Hugging Face account and generate an access token with inference permissions.",
+				"In Charshare Settings → AI tab, select \"Hugging Face\" and paste in your token.",
+				"Enter the model id you want to use for inference.",
+				"Start chatting — calls go directly from your browser to Hugging Face's inference API.",
+			],
+		},
+		{
+			id: "openrouter",
+			label: "OpenRouter",
+			heading: "OpenRouter",
+			steps: [
+				"Create an account at openrouter.ai and generate an API key.",
+				"In Charshare, open Settings (your avatar, top right) → AI tab.",
+				"Select \"OpenRouter\" as the provider and paste in your API key.",
+				"Enter a model id, e.g. openai/gpt-4o or any model listed on OpenRouter.",
+				"Start chatting — requests go straight from your browser to OpenRouter; your key never leaves your device.",
+			],
+		},
+		{
+			id: "ollama",
+			label: "Ollama",
+			heading: "Ollama",
+			steps: [
+				"Install Ollama on your own machine (or a server you control) and pull a model, e.g. ollama pull llama3.",
+				"Make sure Ollama is running and reachable — by default at http://localhost:11434.",
+				"In Charshare Settings → AI tab, select \"Ollama\" and enter the server URL.",
+				"Enter the model name you pulled.",
+				"No API key needed — the model runs entirely on hardware you control.",
+			],
+		},
+	];
+
+	let activeProviderTab = $state(providerTabs[0].id);
+	const activeProvider = $derived(
+		providerTabs.find((t) => t.id === activeProviderTab)!,
+	);
 </script>
 
 <svelte:head>
@@ -100,6 +152,50 @@
 
 	<section class="py-12">
 		<h2 class="pb-2 text-center text-2xl font-bold tracking-tight">
+			Getting started
+		</h2>
+		<p class="pb-8 text-center text-base-content/70">
+			Charshare works with several AI providers — pick whichever fits how
+			you want to run it.
+		</p>
+
+		<div class="mx-auto flex max-w-3xl flex-col gap-6 sm:flex-row">
+			<div
+				role="tablist"
+				class="flex w-full shrink-0 flex-row gap-2 overflow-x-auto sm:w-40 sm:flex-col sm:overflow-visible"
+			>
+				{#each providerTabs as tab (tab.id)}
+					<button
+						role="tab"
+						type="button"
+						class="btn btn-soft btn-sm justify-start whitespace-nowrap {activeProviderTab ===
+						tab.id
+							? 'btn-primary'
+							: ''}"
+						onclick={() => (activeProviderTab = tab.id)}
+					>
+						{tab.label}
+					</button>
+				{/each}
+			</div>
+
+			<div
+				class="flex-1 rounded-box border border-base-300 bg-base-100 p-6"
+			>
+				<h3 class="pb-3 text-lg font-semibold">
+					{activeProvider.heading}
+				</h3>
+				<ol class="list-decimal space-y-2 pl-5 text-base-content/70">
+					{#each activeProvider.steps as step (step)}
+						<li>{step}</li>
+					{/each}
+				</ol>
+			</div>
+		</div>
+	</section>
+
+	<section class="py-12">
+		<h2 class="pb-2 text-center text-2xl font-bold tracking-tight">
 			How it works
 		</h2>
 		<p class="pb-8 text-center text-base-content/70">
@@ -127,6 +223,30 @@
 				{active.heading}
 			</h3>
 			<p class="text-base-content/70">{active.body}</p>
+		</div>
+	</section>
+
+	<section class="py-12">
+		<h2 class="pb-2 text-center text-2xl font-bold tracking-tight">
+			Support the project
+		</h2>
+		<p class="pb-6 text-center text-base-content/70">
+			Charshare has no subscription and no ads, and never will. If you'd
+			like to support it anyway, donations are welcome via Monero.
+		</p>
+
+		<div
+			class="mx-auto flex max-w-xl flex-col items-center gap-3 rounded-box border border-base-300 bg-base-100 p-6"
+		>
+			<span class="text-sm font-medium text-base-content/70">XMR address</span>
+			<code class="break-all text-center text-sm">{XMR_ADDRESS}</code>
+			<button
+				type="button"
+				class="btn btn-soft btn-sm"
+				onclick={copyAddress}
+			>
+				{copied ? "Copied!" : "Copy address"}
+			</button>
 		</div>
 	</section>
 
