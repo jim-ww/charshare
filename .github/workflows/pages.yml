@@ -30,13 +30,23 @@ jobs:
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
 
+      - name: Install dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Type-check
+        working-directory: frontend
+        run: pnpm run check
+
+      - name: Test
+        working-directory: frontend
+        run: pnpm run test
+
       - name: Build frontend
         working-directory: frontend
         env:
           BASE_PATH: /charshare
-        run: |
-          pnpm install --frozen-lockfile
-          pnpm run build
+        run: pnpm run build
 
       - name: Prepare Pages output
         run: |
