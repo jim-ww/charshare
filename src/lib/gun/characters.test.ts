@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { rmSync } from 'node:fs';
 import Gun from 'gun/gun.js';
 import { __setGunForTests } from './client';
 import { __setKeyringForTests } from '$lib/state/auth.svelte';
@@ -13,9 +14,19 @@ import {
 	publishLocalCharacter
 } from './characters';
 
+// Chained/linked GUN reads (ownNode/authorNode, which protected per-author
+// character storage relies on) only resolve when a storage adapter is
+// enabled — confirmed by isolated testing — so this needs radisk on, unlike
+// the in-memory-only config used before characters lived in gun.user() space.
+const RADATA_DIR = `test-radata-characters-${crypto.randomUUID()}`;
+
 beforeAll(async () => {
-	__setGunForTests(new Gun({ radisk: false, localStorage: false, peers: [], axe: false, multicast: false }));
+	__setGunForTests(new Gun({ radisk: true, localStorage: false, peers: [], axe: false, multicast: false, file: RADATA_DIR }));
 	__setKeyringForTests(await generateKeyring());
+});
+
+afterAll(() => {
+	rmSync(RADATA_DIR, { recursive: true, force: true });
 });
 
 const baseFields = {
@@ -33,16 +44,12 @@ const baseFields = {
 	comments_enabled: true
 };
 
-/** GUN's `.once()` never fires for a path that's never been written to, so
- *  getCharacter(id) would hang forever for a truly local-only id. Races it
- *  against a short timeout to confirm the read never resolves. */
+/** With a storage adapter enabled (required for the chained reads protected
+ *  per-author storage relies on — see client.ts), `.once()` resolves
+ *  promptly even for a path that was never written to, rather than hanging. */
 async function neverWrittenToGun(id: string): Promise<boolean> {
-	const timeout = Symbol('timeout');
-	const result = await Promise.race([
-		getCharacter(id),
-		new Promise((resolve) => setTimeout(() => resolve(timeout), 500))
-	]);
-	return result === timeout;
+	const result = await getCharacter(id);
+	return !result.ok;
 }
 
 describe('publishCharacter', () => {

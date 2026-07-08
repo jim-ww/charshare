@@ -1,7 +1,12 @@
 import type { PubKey } from "./user";
 import type { Signed, Tombstonable } from "./signed";
 
-export type CharacterId = string; // uuid
+/** `"{authorPubkey}:{uuid}"` — encodes the author so any holder of an id can
+ *  locate the character under that author's protected GUN user-space (see
+ *  gun/characters.ts) without a separate global lookup index. Opaque to
+ *  everything outside gun/characters.ts — routes, comments, chat state, etc.
+ *  just pass this string around. */
+export type CharacterId = string;
 
 export interface CharacterFields {
 	id: CharacterId;

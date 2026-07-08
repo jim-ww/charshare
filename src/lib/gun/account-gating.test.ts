@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { rmSync } from 'node:fs';
 import Gun from 'gun/gun.js';
 import { __setGunForTests } from './client';
 import { __setKeyringForTests, __setRegisteredForTests } from '$lib/state/auth.svelte';
@@ -6,9 +7,15 @@ import { generateKeyring } from '$lib/crypto/keys';
 import { publishCharacter, createLocalCharacter, publishLocalCharacter } from './characters';
 import { postComment } from './comments';
 
+const RADATA_DIR = `test-radata-account-gating-${crypto.randomUUID()}`;
+
 beforeAll(async () => {
-	__setGunForTests(new Gun({ radisk: false, localStorage: false, peers: [], axe: false, multicast: false }));
+	__setGunForTests(new Gun({ radisk: true, localStorage: false, peers: [], axe: false, multicast: false, file: RADATA_DIR }));
 	__setKeyringForTests(await generateKeyring());
+});
+
+afterAll(() => {
+	rmSync(RADATA_DIR, { recursive: true, force: true });
 });
 
 describe('guests (no registered account)', () => {

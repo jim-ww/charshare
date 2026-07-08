@@ -1,4 +1,7 @@
 - improve browse search: by char name, author name with @ or public key? or tags
+- improve browse search: ui
+- preferences set default thinking = false?
+- add example dialogs to character.
 - create landing page
 - create terms of service / legal page
 - create how-to-use page

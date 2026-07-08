@@ -89,7 +89,7 @@ async function addToCommentIndex(characterId: CharacterId, id: CommentId): Promi
 }
 
 export function getComment(id: CommentId): Promise<Verified<Comment>> {
-	return getDocument(commentPath(id), isComment, pubkeyOf);
+	return getDocument(gunPath(getGun(), commentPath(id)), isComment, pubkeyOf);
 }
 
 /** Fetches every non-tombstoned comment on `characterId`, dropping any that
@@ -108,7 +108,7 @@ async function signAndPublish(draft: Omit<Comment, 'signature' | 'updated_at'>, 
 	const withTimestamp = { ...draft, updated_at: Date.now(), signature: '' };
 	const signature = await signDocument(withTimestamp, keyring);
 	const doc: Comment = { ...withTimestamp, signature };
-	await putDocument(commentPath(doc.id), doc);
+	await putDocument(gunPath(getGun(), commentPath(doc.id)), doc);
 	return doc;
 }
 

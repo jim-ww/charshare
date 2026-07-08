@@ -3,8 +3,11 @@
 	import { isCharacterLocalOnly } from "$lib/state/characters.svelte";
 	import { getCurrentUser } from "$lib/state/auth.svelte";
 	import {
+		blockAuthor,
 		hideCharacter,
+		isAuthorBlocked,
 		isCharacterHidden,
+		unblockAuthor,
 		unhideCharacter,
 	} from "$lib/state/preferences.svelte";
 
@@ -17,6 +20,7 @@
 	const imageUrl = $derived(character.image_urls[0]);
 	const isMine = $derived(character.author === getCurrentUser());
 	const hidden = $derived(isCharacterHidden(character.id));
+	const authorBlocked = $derived(isAuthorBlocked(character.author));
 
 	function toggleHidden(event: MouseEvent) {
 		event.preventDefault();
@@ -27,6 +31,16 @@
 			hideCharacter(character.id);
 		}
 	}
+
+	function toggleAuthorBlocked(event: MouseEvent) {
+		event.preventDefault();
+		event.stopPropagation();
+		if (authorBlocked) {
+			unblockAuthor(character.author);
+		} else {
+			blockAuthor(character.author);
+		}
+	}
 </script>
 
 <a
@@ -35,14 +49,24 @@
 	class:opacity-60={character.deleted || hidden}
 >
 	{#if !isMine}
-		<button
-			type="button"
-			class="btn btn-xs btn-circle absolute right-2 top-2 z-10"
-			title={hidden ? "Unhide character" : "Hide character"}
-			onclick={toggleHidden}
-		>
-			{hidden ? "🙈" : "👁"}
-		</button>
+		<div class="absolute right-2 top-2 z-10 flex gap-1">
+			<button
+				type="button"
+				class="btn btn-xs btn-circle"
+				title={hidden ? "Unhide character" : "Hide character"}
+				onclick={toggleHidden}
+			>
+				{hidden ? "🙈" : "👁"}
+			</button>
+			<button
+				type="button"
+				class="btn btn-xs btn-circle"
+				title={authorBlocked ? "Unblock author" : "Block author"}
+				onclick={toggleAuthorBlocked}
+			>
+				{authorBlocked ? "🔓" : "🚫"}
+			</button>
+		</div>
 	{/if}
 	<figure class="aspect-[3/4] w-full overflow-hidden bg-base-300">
 		{#if imageUrl}

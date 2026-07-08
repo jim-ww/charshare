@@ -2,11 +2,10 @@ import type { Character, CharacterDraft, CharacterId, Keyring, PubKey, Verified 
 import { signDocument } from '$lib/crypto/sign';
 import { getKeyring, requireAccount } from '$lib/state/auth.svelte';
 import { getDocument, putDocument, subscribeDocument, type Validator } from './document';
+import { authorNode, ensureGunUserAuth, getGun, ownNode } from './client';
 import { addToTagIndex, NETWORK_INDEX_TAG } from './tags';
-
-function characterPath(id: CharacterId): string {
-	return `characters/${id}`;
-}
+import { addToNameIndex } from './names';
+import { makeCharacterId, parseCharacterId } from './characterId';
 
 const isCharacter: Validator<Character> = (data): data is Character => {
 	if (!data || typeof data !== 'object') return false;
@@ -47,29 +46,35 @@ async function sign(draft: Omit<Character, 'signature' | 'updated_at'>, keyring:
 	return { ...withTimestamp, signature };
 }
 
-/** Writes an already-signed character to GUN and indexes its tags. Used both
- *  for normal publish/edit flows and for promoting a local-only character
- *  (see publishLocalCharacter). */
-async function writeToGun(doc: Character): Promise<Character> {
-	await putDocument(characterPath(doc.id), doc);
+/** Writes an already-signed character into its author's protected GUN
+ *  user-space and indexes its tags. Only the author's own session can write
+ *  here (see client.ts:ownNode) — used both for normal publish/edit flows
+ *  and for promoting a local-only character (see publishLocalCharacter). */
+async function writeToGun(doc: Character, keyring: Keyring): Promise<Character> {
+	const { uuid } = parseCharacterId(doc.id);
+	await ensureGunUserAuth(keyring.pair);
+	await putDocument(ownNode(getGun(), ['characters', uuid]), doc);
 	await Promise.all([
-		...doc.tags.map((tag) => addToTagIndex(tag, doc.id)),
-		addToTagIndex(NETWORK_INDEX_TAG, doc.id)
+		...doc.tags.map((tag) => addToTagIndex(tag, doc.id, keyring)),
+		addToTagIndex(NETWORK_INDEX_TAG, doc.id, keyring),
+		addToNameIndex(doc.name, doc.id, keyring)
 	]);
 	return doc;
 }
 
 async function signAndPublish(draft: Omit<Character, 'signature' | 'updated_at'>, keyring: Keyring): Promise<Character> {
 	const doc = await sign(draft, keyring);
-	return writeToGun(doc);
+	return writeToGun(doc, keyring);
 }
 
 export function getCharacter(id: CharacterId): Promise<Verified<Character>> {
-	return getDocument(characterPath(id), isCharacter, pubkeyOf);
+	const { author, uuid } = parseCharacterId(id);
+	return getDocument(authorNode(getGun(), author, ['characters', uuid]), isCharacter, pubkeyOf);
 }
 
 export function subscribeCharacter(id: CharacterId, onUpdate: (result: Verified<Character>) => void): () => void {
-	return subscribeDocument(characterPath(id), isCharacter, pubkeyOf, onUpdate);
+	const { author, uuid } = parseCharacterId(id);
+	return subscribeDocument(authorNode(getGun(), author, ['characters', uuid]), isCharacter, pubkeyOf, onUpdate);
 }
 
 /** Creates (no `draft.id`) or edits (with `draft.id`) a character. Editing is
@@ -84,7 +89,7 @@ export async function publishCharacter(draft: CharacterDraft): Promise<Character
 		return signAndPublish(
 			{
 				...draft,
-				id: crypto.randomUUID(),
+				id: makeCharacterId(keyring.publicKey),
 				version: 1,
 				forked_from: null,
 				author: keyring.publicKey,
@@ -151,7 +156,7 @@ export async function forkCharacter(id: CharacterId): Promise<Character> {
 	return sign(
 		{
 			...fields,
-			id: crypto.randomUUID(),
+			id: makeCharacterId(keyring.publicKey),
 			version: 1,
 			forked_from: existing.doc.id,
 			author: keyring.publicKey,
@@ -174,7 +179,7 @@ export async function createLocalCharacter(draft: CharacterDraft): Promise<Chara
 	return sign(
 		{
 			...draft,
-			id: crypto.randomUUID(),
+			id: makeCharacterId(keyring.publicKey),
 			version: 1,
 			forked_from: null,
 			author: keyring.publicKey,
@@ -210,5 +215,7 @@ export async function editLocalCharacter(existing: Character, draft: CharacterDr
 /** Promotes an already-signed local-only character to the network as-is. */
 export function publishLocalCharacter(character: Character): Promise<Character> {
 	requireAccount();
-	return writeToGun(character);
+	const keyring = getKeyring();
+	if (!keyring) throw new Error('No identity available yet — call initAuth() first.');
+	return writeToGun(character, keyring);
 }

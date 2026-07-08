@@ -1,6 +1,6 @@
 import type { PubKey, Verified } from '$lib/types';
 import { verifyDocument } from '$lib/crypto/sign';
-import { getGun, gunPath } from './client';
+import type { GunNode } from './client';
 
 /** Caller-supplied type guard — schema validation happens per document type
  *  (User/Character/Comment), not generically here. Invalid or unverifiable
@@ -55,10 +55,12 @@ async function parseAndVerify<T extends Signable>(
  *  an ack that does arrive with an error still rejects immediately. */
 const PUT_ACK_TIMEOUT_MS = 3000;
 
-/** Writes an already-signed document to `path`. Callers are responsible for
- *  signing it first (see signDocument) — this function does not sign. */
-export function putDocument<T extends Signable>(path: string, doc: T): Promise<void> {
-	const node = gunPath(getGun(), path);
+/** Writes an already-signed document to `node`. Callers are responsible for
+ *  signing it first (see signDocument) — this function does not sign. `node`
+ *  is caller-resolved (see client.ts: gunPath/ownNode/authorNode) since where
+ *  a document lives — shared index, the author's own protected space, or
+ *  another author's public space — depends on what's being written. */
+export function putDocument<T extends Signable>(node: GunNode, doc: T): Promise<void> {
 	return new Promise((resolve, reject) => {
 		let settled = false;
 		const timer = setTimeout(() => {
@@ -77,14 +79,13 @@ export function putDocument<T extends Signable>(path: string, doc: T): Promise<v
 	});
 }
 
-/** One-shot read of `path`, validated against `validate` and signature-checked
+/** One-shot read of `node`, validated against `validate` and signature-checked
  *  against the pubkey `pubkeyOf` extracts from the parsed document. */
 export function getDocument<T extends Signable>(
-	path: string,
+	node: GunNode,
 	validate: Validator<T>,
 	pubkeyOf: (doc: T) => PubKey
 ): Promise<Verified<T>> {
-	const node = gunPath(getGun(), path);
 	return new Promise((resolve) => {
 		node.once((data: unknown) => {
 			resolve(parseAndVerify(data, validate, pubkeyOf));
@@ -92,16 +93,15 @@ export function getDocument<T extends Signable>(
 	});
 }
 
-/** Subscribes to `path`, calling `onUpdate` with a validated+verified result
+/** Subscribes to `node`, calling `onUpdate` with a validated+verified result
  *  every time the underlying data changes (including the initial value).
  *  Returns an unsubscribe function. */
 export function subscribeDocument<T extends Signable>(
-	path: string,
+	node: GunNode,
 	validate: Validator<T>,
 	pubkeyOf: (doc: T) => PubKey,
 	onUpdate: (result: Verified<T>) => void
 ): () => void {
-	const node = gunPath(getGun(), path);
 	const handler = (data: unknown) => {
 		void parseAndVerify(data, validate, pubkeyOf).then(onUpdate);
 	};

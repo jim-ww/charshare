@@ -134,7 +134,7 @@ function detectCategory(filename: string, parsed: unknown): DataCategory | null 
 	}
 	if (parsed && typeof parsed === 'object') {
 		const obj = parsed as Record<string, unknown>;
-		if ('privateKey' in obj && 'publicKey' in obj) return 'account';
+		if ('pair' in obj && obj.pair && typeof (obj.pair as { pub?: unknown }).pub === 'string') return 'account';
 		if ('providerConfigs' in obj || 'theme' in obj) return 'preferences';
 	}
 	return null;

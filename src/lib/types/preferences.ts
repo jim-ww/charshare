@@ -83,6 +83,7 @@ export interface Preferences {
   gunRelays: string[]; // includes the default, user can add/remove
   theme: ThemeMode;
   blockedTags: string[];
+  blockedAuthors: string[]; // author pubkeys whose characters are excluded from Browse, this browser only
   hiddenCharacterIds: string[]; // other users' characters hidden locally, not deleted
   personaSelections: Record<string, string>; // characterId -> personaId, remembers the last mask used per character
   provider: ProviderConfig; // the currently active provider's config

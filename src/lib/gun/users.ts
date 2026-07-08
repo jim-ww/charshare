@@ -2,10 +2,8 @@ import type { Keyring, PubKey, User, Verified } from '$lib/types';
 import { signDocument } from '$lib/crypto/sign';
 import { getKeyring } from '$lib/state/auth.svelte';
 import { getDocument, putDocument, subscribeDocument, type Validator } from './document';
-
-function profilePath(pubkey: PubKey): string {
-	return `users/${pubkey}/profile`;
-}
+import { authorNode, ensureGunUserAuth, getGun, ownNode } from './client';
+import { claimUsername, normalizeUsername, releaseUsername } from './usernames';
 
 const isUser: Validator<User> = (data): data is User => {
 	if (!data || typeof data !== 'object') return false;
@@ -32,19 +30,20 @@ async function signAndPublish(draft: Omit<User, 'signature' | 'updated_at'>, key
 	const withTimestamp = { ...draft, updated_at: Date.now(), signature: '' };
 	const signature = await signDocument(withTimestamp, keyring);
 	const doc: User = { ...withTimestamp, signature };
-	await putDocument(profilePath(doc.id), doc);
+	await ensureGunUserAuth(keyring.pair);
+	await putDocument(ownNode(getGun(), ['profile']), doc);
 	return doc;
 }
 
 /** Reads the published profile at `pubkey`, or `{ok:false}` if none exists yet,
  *  fails validation, or fails signature verification. */
 export function getProfile(pubkey: PubKey): Promise<Verified<User>> {
-	return getDocument(profilePath(pubkey), isUser, pubkeyOf);
+	return getDocument(authorNode(getGun(), pubkey, ['profile']), isUser, pubkeyOf);
 }
 
 /** Subscribes to the profile at `pubkey`. Returns an unsubscribe function. */
 export function subscribeProfile(pubkey: PubKey, onUpdate: (result: Verified<User>) => void): () => void {
-	return subscribeDocument(profilePath(pubkey), isUser, pubkeyOf, onUpdate);
+	return subscribeDocument(authorNode(getGun(), pubkey, ['profile']), isUser, pubkeyOf, onUpdate);
 }
 
 /** Signs and publishes the current user's profile. Preserves `created_at`
@@ -57,6 +56,17 @@ export async function publishProfile(fields: {
 	const keyring = getKeyring();
 	if (!keyring) throw new Error('No identity available yet — call initAuth() first.');
 	const existing = await getProfile(keyring.publicKey);
+	const previousUsername = existing.ok ? existing.doc.username : null;
+
+	if (normalizeUsername(fields.username) !== (previousUsername ? normalizeUsername(previousUsername) : '')) {
+		if (normalizeUsername(fields.username)) {
+			await claimUsername(fields.username, keyring);
+		}
+		if (previousUsername) {
+			await releaseUsername(previousUsername, keyring);
+		}
+	}
+
 	return signAndPublish(
 		{
 			id: keyring.publicKey,

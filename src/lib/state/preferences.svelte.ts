@@ -62,6 +62,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
 	gunRelays: DEFAULT_GUN_RELAYS,
 	theme: "dracula",
 	blockedTags: [],
+	blockedAuthors: [],
 	hiddenCharacterIds: [],
 	personaSelections: {},
 	defaultBackground: "",
@@ -112,6 +113,7 @@ export function initPreferences(): Promise<void> {
 				// providers) existed, backfilling anything missing with defaults.
 				preferences = {
 					...preferences,
+					blockedAuthors: preferences.blockedAuthors ?? [],
 					hiddenCharacterIds: preferences.hiddenCharacterIds ?? [],
 					personaSelections: preferences.personaSelections ?? {},
 					defaultBackground: preferences.defaultBackground ?? "",
@@ -179,6 +181,36 @@ export async function unhideCharacter(characterId: string): Promise<void> {
 			(id) => id !== characterId,
 		),
 	});
+}
+
+export function isAuthorBlocked(authorPubkey: string): boolean {
+	return preferences.blockedAuthors.includes(authorPubkey);
+}
+
+/** Blocks an author locally — their characters stop showing up in Browse for
+ *  this browser only (see gun/browse.ts). Not a network action: the author
+ *  isn't notified and can still publish; nothing prevents them from being
+ *  unblocked and reappearing later. */
+export async function blockAuthor(authorPubkey: string): Promise<void> {
+	if (preferences.blockedAuthors.includes(authorPubkey)) return;
+	await updatePreferences({
+		blockedAuthors: [...preferences.blockedAuthors, authorPubkey],
+	});
+}
+
+export async function unblockAuthor(authorPubkey: string): Promise<void> {
+	await updatePreferences({
+		blockedAuthors: preferences.blockedAuthors.filter(
+			(pub) => pub !== authorPubkey,
+		),
+	});
+}
+
+/** Test-only escape hatch: sets preferences directly, bypassing the
+ *  IndexedDB-backed persistence in updatePreferences (unavailable under
+ *  plain Node/vitest). */
+export function __setPreferencesForTests(patch: Partial<Preferences>): void {
+	preferences = { ...preferences, ...patch };
 }
 
 /** Resets only the nerdy/advanced fields of the active provider back to

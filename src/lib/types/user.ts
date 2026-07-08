@@ -1,6 +1,7 @@
+import type { ISEAPair } from 'gun';
 import type { Tombstonable } from './signed';
 
-/** Base64-encoded Ed25519 public key. Doubles as the canonical identifier
+/** A GUN SEA (ECDSA P-256) public key. Doubles as the canonical identifier
  *  for both users and characters — there is no separate UUID for identity. */
 export type PubKey = string;
 
@@ -21,8 +22,11 @@ export type User = UserFields &
     updated_at: number; // unix ms
   };
 
-/** Fields the current user's client alone has access to. Never sent over GUN. */
+/** Fields the current user's client alone has access to. Never sent over GUN.
+ *  `pair` is the full SEA keypair (includes the private signing and
+ *  encryption keys) — it's what's used both to sign documents and to
+ *  authenticate a `gun.user()` session for protected per-author storage. */
 export interface Keyring {
   publicKey: PubKey;
-  privateKey: Uint8Array; // stored in IndexedDB only, never serialized to GUN
+  pair: ISEAPair; // stored in IndexedDB only, never serialized to GUN
 }

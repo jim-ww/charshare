@@ -6,7 +6,7 @@
 		isCharactersReady,
 	} from "$lib/state/characters.svelte";
 	import { getCurrentUser } from "$lib/state/auth.svelte";
-	import { browseByTag, browseNetwork } from "$lib/gun/browse";
+	import { browseByTag, browseNetwork, browseByName, browseByAuthor } from "$lib/gun/browse";
 	import CharacterCard from "$lib/components/CharacterCard.svelte";
 	import { isCharacterHidden } from "$lib/state/preferences.svelte";
 
@@ -16,7 +16,7 @@
 	let remoteResults = $state<Character[]>([]);
 	let networkResults = $state<Character[]>([]);
 	let searching = $state(false);
-	let searchedTag = $state("");
+	let searchedQuery = $state("");
 
 	const myCharacters = $derived(
 		getMyCharacters().filter((c) => !c.deleted),
@@ -31,44 +31,61 @@
 
 	async function handleSearch(event: SubmitEvent) {
 		event.preventDefault();
-		const tag = query.trim();
-		if (!tag) {
+		const q = query.trim();
+		if (!q) {
 			remoteResults = [];
-			searchedTag = "";
+			searchedQuery = "";
 			return;
 		}
 		searching = true;
 		try {
-			remoteResults = await browseByTag(tag);
-			searchedTag = tag;
+			if (q.startsWith("@")) {
+				remoteResults = await browseByAuthor(q.slice(1));
+			} else {
+				const [byName, byTag] = await Promise.all([
+					browseByName(q),
+					browseByTag(q),
+				]);
+				const merged = new Map(
+					[...byName, ...byTag].map((c) => [c.id, c]),
+				);
+				remoteResults = [...merged.values()];
+			}
+			searchedQuery = q;
 		} finally {
 			searching = false;
 		}
 	}
 
 	const results = $derived.by(() => {
-		const q = query.trim().toLowerCase();
+		const trimmed = query.trim();
+		const isAuthorQuery = trimmed.startsWith("@");
+		const q = trimmed.toLowerCase();
 		const me = getCurrentUser();
 
-		const localMatches = myCharacters.filter(
-			(c) =>
-				!q ||
-				c.name.toLowerCase().includes(q) ||
-				c.tags.some((t) => t.toLowerCase().includes(q)),
-		);
-
 		const combined = new Map<string, Character>();
-		for (const c of localMatches) combined.set(c.id, c);
-		for (const c of networkResults) {
-			if (
-				!q ||
-				c.name.toLowerCase().includes(q) ||
-				c.tags.some((t) => t.toLowerCase().includes(q))
-			) {
-				if (!combined.has(c.id)) combined.set(c.id, c);
+
+		// "@name"/"@pubkey" author search has no meaningful local text-match
+		// equivalent — remoteResults (browseByAuthor) is the whole answer.
+		if (!isAuthorQuery) {
+			const localMatches = myCharacters.filter(
+				(c) =>
+					!q ||
+					c.name.toLowerCase().includes(q) ||
+					c.tags.some((t) => t.toLowerCase().includes(q)),
+			);
+			for (const c of localMatches) combined.set(c.id, c);
+			for (const c of networkResults) {
+				if (
+					!q ||
+					c.name.toLowerCase().includes(q) ||
+					c.tags.some((t) => t.toLowerCase().includes(q))
+				) {
+					if (!combined.has(c.id)) combined.set(c.id, c);
+				}
 			}
 		}
-		if (searchedTag) {
+		if (searchedQuery) {
 			for (const c of remoteResults) {
 				if (!combined.has(c.id)) combined.set(c.id, c);
 			}
@@ -91,7 +108,7 @@
 		>
 			<input
 				class="input input-bordered w-full"
-				placeholder="Search by name or tag…"
+				placeholder="Search by name, tag, or @username/@pubkey…"
 				bind:value={query}
 			/>
 			<button

@@ -1,9 +1,10 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { rmSync } from 'node:fs';
 // 'gun's Node main entry pulls in axe/multicast networking (lib/server); the
 // browser build the app actually ships doesn't have that. Import the bare
-// graph engine instead, so tests stay in-memory and don't try to hit a network.
+// graph engine instead, so tests stay off the network (a real relay/peer).
 import Gun from 'gun/gun.js';
-import { __setGunForTests } from './client';
+import { __setGunForTests, gunPath, getGun } from './client';
 import { putDocument, getDocument, subscribeDocument, type Validator } from './document';
 import { generateKeyring } from '$lib/crypto/keys';
 import { signDocument } from '$lib/crypto/sign';
@@ -19,9 +20,18 @@ const isTestDoc: Validator<TestDoc> = (data): data is TestDoc => {
 	return !!d && typeof d.id === 'string' && typeof d.msg === 'string' && typeof d.signature === 'string';
 };
 
+// Chained/linked GUN reads (which ownNode/authorNode rely on, elsewhere) only
+// resolve when a storage adapter is enabled — confirmed by isolated testing —
+// so tests need radisk on, not the in-memory-only config used before SEA/
+// protected-space storage existed. Each test file gets its own on-disk dir.
+const RADATA_DIR = `test-radata-document-${crypto.randomUUID()}`;
+
 beforeAll(() => {
-	// In-memory only — no radisk/peers — so tests don't touch disk or network.
-	__setGunForTests(new Gun({ radisk: false, localStorage: false, peers: [] }));
+	__setGunForTests(new Gun({ radisk: true, localStorage: false, peers: [], file: RADATA_DIR }));
+});
+
+afterAll(() => {
+	rmSync(RADATA_DIR, { recursive: true, force: true });
 });
 
 async function signedDoc(id: string, msg: string) {
@@ -36,8 +46,8 @@ describe('putDocument / getDocument', () => {
 		const { doc, pubkey } = await signedDoc('a', 'hello');
 		const path = `test/${crypto.randomUUID()}`;
 
-		await putDocument(path, doc);
-		const result = await getDocument(path, isTestDoc, () => pubkey);
+		await putDocument(gunPath(getGun(), path), doc);
+		const result = await getDocument(gunPath(getGun(), path), isTestDoc, () => pubkey);
 
 		expect(result).toEqual({ ok: true, doc });
 	});
@@ -47,8 +57,8 @@ describe('putDocument / getDocument', () => {
 		const path = `test/${crypto.randomUUID()}`;
 		const tampered = { ...doc, msg: 'mallory' };
 
-		await putDocument(path, tampered);
-		const result = await getDocument(path, isTestDoc, () => pubkey);
+		await putDocument(gunPath(getGun(), path), tampered);
+		const result = await getDocument(gunPath(getGun(), path), isTestDoc, () => pubkey);
 
 		expect(result).toEqual({ ok: false, reason: 'bad_signature' });
 	});
@@ -58,10 +68,10 @@ describe('subscribeDocument', () => {
 	it('notifies on the current value', async () => {
 		const { doc, pubkey } = await signedDoc('a', 'hello');
 		const path = `test/${crypto.randomUUID()}`;
-		await putDocument(path, doc);
+		await putDocument(gunPath(getGun(), path), doc);
 
 		const received = await new Promise((resolve) => {
-			const unsubscribe = subscribeDocument(path, isTestDoc, () => pubkey, (result) => {
+			const unsubscribe = subscribeDocument(gunPath(getGun(), path), isTestDoc, () => pubkey, (result) => {
 				unsubscribe();
 				resolve(result);
 			});
