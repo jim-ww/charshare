@@ -7,7 +7,6 @@
 		isCharactersReady,
 	} from "$lib/state/characters.svelte";
 	import { getCurrentUser } from "$lib/state/auth.svelte";
-	import { browseNetwork } from "$lib/gun/browse";
 	import CharacterCard from "$lib/components/CharacterCard.svelte";
 	import TagCarousel from "$lib/components/TagCarousel.svelte";
 	import {
@@ -17,9 +16,11 @@
 	} from "$lib/state/preferences.svelte";
 	import {
 		addTagToQuery,
+		getNetworkResults,
 		getRemoteResults,
 		getSearchQuery,
 		getSearchedQuery,
+		refreshNetwork,
 		runSearch,
 		setSearchQuery,
 	} from "$lib/state/search.svelte";
@@ -27,7 +28,7 @@
 	let mineOnly = $state(false);
 	let showHidden = $state(false);
 	const showNsfw = $derived(getPreferences().showNsfw);
-	let networkResults = $state<Character[]>([]);
+	const networkResults = $derived(getNetworkResults());
 	// Tracks the last "?q=" we actually ran a search for, so navigating here
 	// with a new query (e.g. from the NavBar on another page) re-triggers the
 	// search exactly once instead of looping against the shared search state.
@@ -39,9 +40,7 @@
 	const ready = $derived(isCharactersReady());
 
 	onMount(() => {
-		browseNetwork().then((results) => {
-			networkResults = results;
-		});
+		refreshNetwork();
 	});
 
 	$effect(() => {

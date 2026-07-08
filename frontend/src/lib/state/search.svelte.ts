@@ -1,8 +1,14 @@
 import type { Character } from "$lib/types";
-import { browseByAuthor, browseByName, browseByTag } from "$lib/gun/browse";
+import {
+	browseByAuthor,
+	browseByName,
+	browseByTag,
+	browseNetwork,
+} from "$lib/gun/browse";
 
 let query = $state("");
 let remoteResults = $state<Character[]>([]);
+let networkResults = $state<Character[]>([]);
 let searching = $state(false);
 let searchedQuery = $state("");
 
@@ -16,6 +22,14 @@ export function setSearchQuery(value: string): void {
 
 export function getRemoteResults(): Character[] {
 	return remoteResults;
+}
+
+export function getNetworkResults(): Character[] {
+	return networkResults;
+}
+
+export async function refreshNetwork(): Promise<void> {
+	networkResults = await browseNetwork();
 }
 
 export function isSearching(): boolean {
@@ -35,6 +49,12 @@ export async function runSearch(): Promise<void> {
 	if (!q) {
 		remoteResults = [];
 		searchedQuery = "";
+		searching = true;
+		try {
+			await refreshNetwork();
+		} finally {
+			searching = false;
+		}
 		return;
 	}
 	searching = true;

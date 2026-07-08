@@ -7,6 +7,7 @@
 	import {
 		getSearchQuery,
 		isSearching,
+		runSearch,
 		setSearchQuery,
 	} from "$lib/state/search.svelte";
 
@@ -30,7 +31,14 @@
 		event.preventDefault();
 		const q = getSearchQuery().trim();
 		const params = new URLSearchParams(q ? { q } : {});
-		goto(`/characters${params.toString() ? `?${params}` : ""}`);
+		const target = `/characters${params.toString() ? `?${params}` : ""}`;
+		if (page.url.pathname === "/characters" && page.url.search === (params.toString() ? `?${params}` : "")) {
+			// Already on this exact search URL — goto() wouldn't navigate, so
+			// re-run explicitly to let "Search" also act as a reload button.
+			runSearch();
+		} else {
+			goto(target);
+		}
 	}
 </script>
 
