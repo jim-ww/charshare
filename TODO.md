@@ -1,6 +1,3 @@
-- improve browse search: ui
-- make proper language selector in new/edit character page
-- preferences set default thinking = false?
 - add example dialogs to character.
 - create landing page
 - create terms of service / legal page

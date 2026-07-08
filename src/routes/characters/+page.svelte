@@ -12,6 +12,7 @@
 
 	let mineOnly = $state(false);
 	let showHidden = $state(false);
+	let showNsfw = $state(false);
 	let query = $state("");
 	let remoteResults = $state<Character[]>([]);
 	let networkResults = $state<Character[]>([]);
@@ -96,12 +97,15 @@
 		if (!showHidden) {
 			list = list.filter((c) => c.author === me || !isCharacterHidden(c.id));
 		}
+		if (!showNsfw) {
+			list = list.filter((c) => c.author === me || !c.nsfw);
+		}
 		return list;
 	});
 </script>
 
 <div class="p-4">
-	<div class="mb-4 flex flex-col items-center gap-3">
+	<div class="mb-6 flex flex-col items-center gap-3">
 		<form
 			class="flex w-full max-w-md gap-2"
 			onsubmit={handleSearch}
@@ -119,22 +123,32 @@
 				{searching ? "Searching…" : "Search"}
 			</button>
 		</form>
-		<label class="label cursor-pointer gap-2">
-			<input
-				type="checkbox"
-				class="checkbox"
-				bind:checked={mineOnly}
-			/>
-			<span class="label-text">Mine only</span>
-		</label>
-		<label class="label cursor-pointer gap-2">
-			<input
-				type="checkbox"
-				class="checkbox"
-				bind:checked={showHidden}
-			/>
-			<span class="label-text">Show hidden</span>
-		</label>
+		<div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-1">
+			<label class="label cursor-pointer gap-2 py-0">
+				<input
+					type="checkbox"
+					class="toggle toggle-sm"
+					bind:checked={mineOnly}
+				/>
+				<span class="label-text">Mine only</span>
+			</label>
+			<label class="label cursor-pointer gap-2 py-0">
+				<input
+					type="checkbox"
+					class="toggle toggle-sm"
+					bind:checked={showHidden}
+				/>
+				<span class="label-text">Show hidden</span>
+			</label>
+			<label class="label cursor-pointer gap-2 py-0">
+				<input
+					type="checkbox"
+					class="toggle toggle-sm toggle-warning"
+					bind:checked={showNsfw}
+				/>
+				<span class="label-text">Show NSFW</span>
+			</label>
+		</div>
 	</div>
 
 	{#if !ready}
