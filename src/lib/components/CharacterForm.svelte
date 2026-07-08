@@ -275,10 +275,9 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 					class="collapse-arrow bg-base-200 border-base-300 join-item collapse border"
 				>
 					<input
-						type="radio"
-						name="character-form-accordion"
+						type="checkbox"
 						checked
-					/>
+						/>
 					<div
 						class="collapse-title label-text font-medium"
 					>
@@ -296,9 +295,8 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 					class="collapse-arrow bg-base-200 border-base-300 join-item collapse border"
 				>
 					<input
-						type="radio"
-						name="character-form-accordion"
-					/>
+						type="checkbox"
+						/>
 					<div
 						class="collapse-title label-text font-medium"
 					>
@@ -397,9 +395,8 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 					class="collapse-arrow bg-base-200 border-base-300 join-item collapse border"
 				>
 					<input
-						type="radio"
-						name="character-form-accordion"
-					/>
+						type="checkbox"
+						/>
 					<div
 						class="collapse-title label-text font-medium"
 					>
@@ -417,9 +414,8 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 					class="collapse-arrow bg-base-200 border-base-300 join-item collapse border"
 				>
 					<input
-						type="radio"
-						name="character-form-accordion"
-					/>
+						type="checkbox"
+						/>
 					<div
 						class="collapse-title label-text font-medium"
 					>
@@ -438,9 +434,8 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 					class="collapse-arrow bg-base-200 border-base-300 join-item collapse border"
 				>
 					<input
-						type="radio"
-						name="character-form-accordion"
-					/>
+						type="checkbox"
+						/>
 					<div
 						class="collapse-title label-text font-medium"
 					>
@@ -461,9 +456,8 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 					class="collapse-arrow bg-base-200 border-base-300 join-item collapse border"
 				>
 					<input
-						type="radio"
-						name="character-form-accordion"
-					/>
+						type="checkbox"
+						/>
 					<div
 						class="collapse-title label-text font-medium"
 					>
@@ -519,27 +513,25 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 							{/each}
 						</div>
 					</div>
+				</div>
+
+				<div
+					class="collapse-arrow bg-base-200 border-base-300 join-item collapse border"
+				>
+					<input type="checkbox" />
 					<div
-						class="collapse-arrow bg-base-200 border-base-300 join-item collapse border"
+						class="collapse-title label-text font-medium"
 					>
-						<input
-							type="radio"
-							name="character-form-accordion"
-						/>
-						<div
-							class="collapse-title label-text font-medium"
-						>
-							System prompt
-						</div>
-						<div class="collapse-content">
-							<textarea
-								class="textarea textarea-bordered field-sizing-content min-h-32 w-full"
-								bind:value={
-									systemPrompt
-								}
-								placeholder="Instructions sent to the AI describing how to roleplay this character…"
-							></textarea>
-						</div>
+						System prompt
+					</div>
+					<div class="collapse-content">
+						<textarea
+							class="textarea textarea-bordered field-sizing-content min-h-32 w-full"
+							bind:value={
+								systemPrompt
+							}
+							placeholder="Instructions sent to the AI describing how to roleplay this character…"
+						></textarea>
 					</div>
 				</div>
 			</div>
