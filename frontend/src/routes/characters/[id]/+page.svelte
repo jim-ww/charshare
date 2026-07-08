@@ -329,7 +329,7 @@
 					{#if latestChat}
 						<a
 							class="btn btn-soft btn-block"
-							href={`/chats/${latestChat.id}`}
+							href={`${base}/chats/${latestChat.id}`}
 							>Continue latest chat</a
 						>
 					{/if}
@@ -369,7 +369,7 @@
 					{#if isMine}
 						<a
 							class="btn btn-sm btn-ghost"
-							href={`/characters/${character.id}/edit`}
+							href={`${base}/characters/${character.id}/edit`}
 							>Edit</a
 						>
 						{#if localOnly}
@@ -419,7 +419,7 @@
 								<li>
 									<a
 										class="link link-hover text-sm"
-										href={`/chats/${chat.id}`}
+										href={`${base}/chats/${chat.id}`}
 									>
 										{chat.name}
 									</a>

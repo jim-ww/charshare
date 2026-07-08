@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { base } from '$app/paths';
 	import type { Chat, Character, Message } from '$lib/types';
 	import { deleteMessage, editMessage, getSiblings, switchBranch } from '$lib/state/chats.svelte';
 	import { regenerateMessage } from '$lib/ai/chat';
@@ -92,7 +93,7 @@
 >
 	<div class="chat-image">
 		{#if message.role === 'character'}
-			<a href={`/characters/${character.id}`}>
+			<a href={`${base}/characters/${character.id}`}>
 				<Avatar name={character.name} imageUrl={character.image_urls[0]} />
 			</a>
 		{:else}
