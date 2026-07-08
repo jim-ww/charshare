@@ -190,6 +190,22 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 		alternateGreetings.splice(index, 1);
 	}
 
+	let exampleDialogues = $state<string[]>(
+		untrack(() =>
+			(initial ?? draft)?.example_dialogues.length
+				? [...(initial ?? draft)!.example_dialogues]
+				: [],
+		),
+	);
+
+	function addExampleDialogue() {
+		exampleDialogues.push("");
+	}
+
+	function removeExampleDialogue(index: number) {
+		exampleDialogues.splice(index, 1);
+	}
+
 	let saving = $state(false);
 	let error = $state<string | null>(null);
 
@@ -208,6 +224,7 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 			systemPrompt,
 			firstMessage,
 			alternateGreetings,
+			exampleDialogues,
 			commentsEnabled,
 		});
 	}
@@ -255,6 +272,9 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 				system_prompt: systemPrompt,
 				first_message: firstMessage,
 				alternate_greetings: alternateGreetings
+					.map((g) => g.trim())
+					.filter(Boolean),
+				example_dialogues: exampleDialogues
 					.map((g) => g.trim())
 					.filter(Boolean),
 				comments_enabled: commentsEnabled,
@@ -684,6 +704,72 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 										aria-label="Remove greeting"
 										onclick={() =>
 											removeGreeting(
+												i,
+											)}
+									>
+										✕
+									</button>
+								</div>
+							{/each}
+						</div>
+					</div>
+				</div>
+
+				<div
+					class="collapse-arrow bg-base-200 border-base-300 join-item collapse border"
+				>
+					<input
+						type="checkbox"
+						/>
+					<div
+						class="collapse-title label-text font-medium"
+					>
+						Example dialogues{exampleDialogues.length
+							? ` (${exampleDialogues.length})`
+							: ""}
+					</div>
+					<div class="collapse-content">
+						<div class="form-control gap-2">
+							<div
+								class="flex items-center justify-between"
+							>
+								<span
+									class="label-text"
+									>Example
+									exchanges
+									showing
+									how
+									{'{{char}}'}
+									talks</span
+								>
+								<button
+									type="button"
+									class="btn btn-ghost btn-sm"
+									onclick={addExampleDialogue}
+								>
+									+ Add
+									example
+								</button>
+							</div>
+							{#each exampleDialogues as _, i}
+								<div
+									class="flex gap-2"
+								>
+									<textarea
+										class="textarea textarea-bordered field-sizing-content min-h-24 w-full"
+										bind:value={
+											exampleDialogues[
+												i
+											]
+										}
+										placeholder={"{{user}}: What are you doing here?\n{{char}}: *glances over* Waiting for you, obviously."}
+									></textarea>
+									<button
+										type="button"
+										class="btn btn-ghost btn-sm"
+										aria-label="Remove example dialogue"
+										onclick={() =>
+											removeExampleDialogue(
 												i,
 											)}
 									>

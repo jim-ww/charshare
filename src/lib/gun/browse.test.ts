@@ -21,6 +21,7 @@ const baseFields = {
 	system_prompt: '',
 	first_message: '',
 	alternate_greetings: [],
+	example_dialogues: [],
 	comments_enabled: true
 };
 

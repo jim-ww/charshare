@@ -17,6 +17,7 @@ const character: Character = {
 	system_prompt: 'Stay in character.',
 	first_message: '',
 	alternate_greetings: [],
+	example_dialogues: [],
 	comments_enabled: true,
 	author: 'pubkey',
 	forked_from: null,

@@ -34,6 +34,7 @@ describe('guests (no registered account)', () => {
 				system_prompt: '',
 				first_message: '',
 				alternate_greetings: [],
+				example_dialogues: [],
 				comments_enabled: true
 			})
 		).rejects.toThrow('Create an account to do this.');
@@ -53,6 +54,7 @@ describe('guests (no registered account)', () => {
 			system_prompt: '',
 			first_message: '',
 			alternate_greetings: [],
+			example_dialogues: [],
 			comments_enabled: true
 		});
 		expect(local.name).toBe('Local Only');
@@ -73,6 +75,7 @@ describe('guests (no registered account)', () => {
 			system_prompt: '',
 			first_message: '',
 			alternate_greetings: [],
+			example_dialogues: [],
 			comments_enabled: true
 		});
 		expect(() => publishLocalCharacter(local)).toThrow('Create an account to do this.');
@@ -101,6 +104,7 @@ describe('registered accounts', () => {
 			system_prompt: '',
 			first_message: '',
 			alternate_greetings: [],
+			example_dialogues: [],
 			comments_enabled: true
 		});
 		expect(published.name).toBe('Published Character');

@@ -73,6 +73,8 @@ function systemPrompt(character: Character): string {
 		character.system_prompt && `<SystemPrompt>\n${character.system_prompt}\n</SystemPrompt>`,
 		character.personality && `<Personality>\n${character.personality}\n</Personality>`,
 		character.scenario && `<Scenario>\n${character.scenario}\n</Scenario>`,
+		character.example_dialogues.length &&
+			`<ExampleDialogues>\n${character.example_dialogues.join('\n---\n')}\n</ExampleDialogues>`,
 		PARENTHETICAL_INSTRUCTION
 	]
 		.filter(Boolean)

@@ -22,6 +22,7 @@ export interface CharacterFields {
 	system_prompt: string;
 	first_message: string;
 	alternate_greetings: string[];
+	example_dialogues: string[];
 	comments_enabled: boolean;
 	forked_from: CharacterId | null;
 }

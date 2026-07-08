@@ -27,6 +27,8 @@ const isCharacter: Validator<Character> = (data): data is Character => {
 		typeof d.first_message === 'string' &&
 		Array.isArray(d.alternate_greetings) &&
 		d.alternate_greetings.every((g) => typeof g === 'string') &&
+		Array.isArray(d.example_dialogues) &&
+		d.example_dialogues.every((g) => typeof g === 'string') &&
 		typeof d.comments_enabled === 'boolean' &&
 		(d.forked_from === null || typeof d.forked_from === 'string') &&
 		typeof d.author === 'string' &&
