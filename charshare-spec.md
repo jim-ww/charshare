@@ -6,44 +6,47 @@ Decentralized, unmoderated platform to share and talk to AI characters.
 
 - No backend/server. Only a CDN serving static files (SvelteKit with static adapter — see Stack).
 - **Local-first**: every feature is designed from the local perspective first. All user data lives on the client; only some of it is optionally propagated to the GUN network. AI chat history is always local-only. Profile data is stored locally and also uploaded (published) to GUN.
-- **Identity = keypair, not a separate ID.** Users and characters are identified by their Ed25519 public key (base64-encoded), not a separate UUID. One canonical identifier, no risk of the two disagreeing.
+- **Publishing an account is optional.** A user can generate a local identity and create local-only characters/chats without ever registering a username or publishing anything to the network. `Preferences`/keyring track "has a local identity" separately from "has claimed/published a network account."
+- **Identity = keypair, not a separate ID.** Users and characters are identified by their public key (base64-encoded), not a separate UUID. One canonical identifier, no risk of the two disagreeing.
 - All models received from the network are validated against a schema before use. Invalid documents are silently skipped — this is the main defense against malformed data from untrusted peers. Fields like tags, usernames, image URLs, and other format-sensitive fields get strict format validation on top of shape validation.
 - All fields are non-null by default. Only fields with an explicit reason to be nullable are nullable. Strings are always present but may be empty — unless a field is specifically required to be non-empty or match a format.
 - As the data model evolves, documents carry a schema `version` field so old/new clients can coexist.
 
 ## Signing
 
-- **Algorithm: Ed25519** (via `@noble/ed25519` or `tweetnacl`). Small signatures (64 bytes), fast, broadly supported in JS. Not using WebCrypto's native `SubtleCrypto` since Ed25519 browser support is inconsistent (notably Safari).
-- **No JWT/JWS.** JWT's own serialization format and algorithm-negotiation flexibility solve problems we don't have (auth tokens with expiry, multi-algorithm interop) and get in the way of the one we do have (plain, field-accessible JSON documents living in GUN's graph). Instead:
-  1. Canonicalize the document (stable recursive key ordering, no whitespace ambiguity).
-  2. Sign the canonical bytes with Ed25519.
-  3. Store the result as sibling fields on the document: `signature` (base64) alongside the author's pubkey (already present as `author`/`id`).
-  4. To verify: strip `signature`, re-canonicalize, verify against the claimed author's pubkey.
-  - Reference point if useful: Nostr's event-signing spec (NIP-01) solves a near-identical problem (decentralized, signed, gossiped JSON) with this same approach.
-- **Key storage**: private keys and API keys stored in IndexedDB, not `localStorage` (sync/blocking, weaker for structured secrets). No key recovery mechanism is planned — losing local storage means losing the identity permanently. This should be communicated clearly to users (e.g. a backup/export reminder on first run), since it's a deliberate tradeoff of the decentralized model, not an oversight.
-- Multi-identity/profile support and private-key export/import flow still need to be speced out in detail.
+- **Algorithm: GUN SEA (ECDSA P-256)**, via GUN's built-in `SEA` module (`src/lib/gun/sea.ts`), not Ed25519. Chosen because the same SEA keypair both signs documents and authenticates a `gun.user()` session for author-protected storage (see GUN Implementation Details) — using a separate signing library would mean juggling two keypairs.
+- **No JWT/JWS.** Instead:
+  1. Canonicalize the document (stable recursive key ordering, no whitespace ambiguity) — `src/lib/crypto/canonicalize.ts`.
+  2. Sign the canonical bytes with `SEA.sign` — `src/lib/crypto/sign.ts`.
+  3. Store the result as a sibling `signature` field (base64) alongside the author's pubkey (`author`/`id`).
+  4. To verify: strip `signature`, re-canonicalize, verify against the claimed author's pubkey with `SEA.verify`.
+- **Key storage**: keyrings (SEA pair + pubkey) stored in IndexedDB via `idb-keyval` (`src/lib/db/keyring.ts`), not `localStorage`.
+- **Backup/export/switch**: implemented. `src/lib/identity/backup.ts` exports/imports a versioned account backup (`AccountBackupV1`) framed to users as "back up this account" / "use an existing account." Switching the active local identity (`setKeyring` in `src/lib/state/auth.svelte.ts`) is supported. There is still no recovery mechanism if a backup was never taken — losing local storage without a backup means losing the identity permanently; this should be communicated clearly on first run.
 
 ## Features
 
 ### Browse
 
-- Search, browse character cards; filter by tags, by `verified`, by `published`; option to show only the current user's own creations.
-- Users can add blocked tags — characters carrying a blocked tag are excluded from results.
-- (Tag indexing/query strategy over GUN to be revisited later — see GUN Implementation.)
+- A single search box matches character name/tags, or an `@username`/`@pubkey` author search (resolves via username claims — see User Profiles).
+- Clickable predefined tag carousel plus autosuggest from existing tags (see Character Management) — both feed the same search.
+- NSFW toggle, persisted to `Preferences.showNsfw`; off by default, applies to both network and local-only characters.
+- Users can block tags (`Preferences.blockedTags`) and block specific authors (`Preferences.blockedAuthors`) — matching characters/authors are excluded from results.
+- Local-only characters are not part of Browse (Browse only surfaces published, network-discoverable docs); the user's own characters (published or local-only) are listed separately in a "my characters" view.
 
 ### Character Management
 
 - Create, edit, publish character cards.
-  - Public key signs the card to prove authorship (see Signing).
+  - Keypair signs the card to prove authorship (see Signing).
   - **Editing** = publishing a new signed snapshot of the full document under the same `id`, with an incremented `version` and updated `updated_at`. Clients keep whichever snapshot verifies and has the higher version.
   - **Deletion is a tombstone, not a hard delete** (peers who already synced the data can't be forced to erase it). A delete is a new signed snapshot with `deleted: true, deleted_at`. Clients hide anything tombstoned from Browse — *unless* the user explicitly pressed "save character locally," in which case it stays visible to that user (marked deleted), remains usable to start new chats, and all of that user's existing local chats with it are preserved regardless.
   - **Conflict resolution**: if two snapshots claim the same `version`/`updated_at`, last-write-wins by timestamp; ties broken deterministically (e.g. by signature byte comparison).
   - Only the author can edit/delete their own character. Non-authors instead see a **Fork** button.
-  - **Fork**: copies the character's fields into a new document with a new `id`, `author` set to the forking user's pubkey, signed by them, and `comments` reset to empty. The new doc carries `forked_from: {original_id}` for provenance.
-    - Discovery of forks: `/characters/{original_id}/forks/{fork_id}: true` acts as an index pointer, written by the forking user. Since this pointer isn't signed by the original author, it's treated only as a hint — the "remixes of this character" UI fetches each pointed-to character and confirms its `forked_from` field actually matches before displaying it, so a forged/spammed pointer is self-filtering.
-  - Characters are either **local-only** (never published) or **published** (written to GUN, discoverable by anyone).
+  - **Fork**: copies the character's fields into a new document with a new `id`, `author` set to the forking user's pubkey, signed by them, and `comments` reset to empty. The new doc carries `forked_from: {original_id}` for provenance. *Fork itself is implemented; discovery of forks (a "remixes of this character" index/UI) is not — see Open/Deferred.*
+  - Characters are either **local-only** (never published) or **published** (written to GUN, discoverable by anyone). Local-only characters go through their own create/edit/sign flow with their own version chain (`createLocalCharacter`/`editLocalCharacter`), and can later be promoted to published (`publishLocalCharacter`).
   - Users (subject to `comments_enabled`) can post/edit/delete comments; changes propagate the same way as character edits (signed snapshots, tombstones for delete).
-- Create/edit screen supports **import** (our own exported JSON, versioned) and **adapters for other formats** (e.g. TavernAI-style PNG-with-embedded-JSON) and **export** (our JSON format first, other formats later).
+  - Unsaved edits in the create/edit form warn before navigating away or closing the tab.
+- Create/edit screen supports **import** (our own exported JSON, versioned). Adapters for other formats (e.g. TavernAI-style PNG-with-embedded-JSON) and export to other formats are not implemented — deferred, see Open/Deferred Items.
+- **Tags**: free-form, autosuggested from existing tags, plus a curated predefined tag list (`src/lib/data/tags.ts`) shown as a clickable carousel in both the editor and Browse.
 
 ### Chat Management
 
@@ -53,23 +56,33 @@ Decentralized, unmoderated platform to share and talk to AI characters.
 #### Chat with Characters
 
 - Create a new chat with any character; send, edit, and delete messages.
-- **Message versioning**: each message keeps a history of edited versions, with one marked active — the UI lets the user swap between them (see updated Message model below).
+- **Message model is a branching tree, not linear per-message versions.** Each `Message` has a single `content` and a `parent_id` (null for a root message). Editing a message or regenerating a response adds a new sibling node under the same parent rather than mutating the original — `Chat.active_child` (a map from parent message id to the currently-selected child id) determines which branch is "the" visible conversation at each fork point; `Chat.root_id` points at the currently-selected root (usually there's only one, but regenerating the very first message can add another). The UI lets the user swap the active branch at any fork.
 - Can edit both the user's own messages and the AI's messages.
 - "Generate response for me" — lets the AI draft the user's next line when they're unsure what to say; implemented as the same completion call with a different prompt framing (writing as the user, in-context, rather than as the character).
 - Messenger-style bubble UI.
+- Each chat remembers: which persona the user was playing as when the chat was created (`persona_id`, fixed for the chat's lifetime — see Personas), unsent composer text (`draft`), the selected character-image-viewer index (`image_index`), and a per-chat set of background images (`backgrounds`) with one active (`active_background`).
+
+### Personas
+
+- A **persona** is a local-only "mask" the user can wear while chatting — never published, signed, or synced to GUN.
+- Fields: `name` (ignored for display while `auto_name` is true, in which case the displayed name tracks the user's live profile username instead), `description`, `auto_name`, `created_at`.
+- `Preferences.personaSelections` remembers the last persona used per character (`characterId -> personaId`), so switching back to a character defaults to the persona last used there.
 
 ### User Profiles
 
-- Create, edit, delete profiles; changes propagate to peers via GUN.
+- Create, edit, delete profiles; changes propagate to peers via GUN using the same signed-snapshot/tombstone mechanics as characters.
+- **Username claims**: a separate first-come-wins signed claim (`src/lib/gun/usernames.ts`) mapping a normalized `@username` to a pubkey, enabling `@username` search/display. Uniqueness is only client-side-enforced — GUN has no consensus, so a race between two clients claiming the same name simultaneously is possible and undetected; documented as a known limitation.
+- **Name search index**: every published character's name is tokenized and indexed (`src/lib/gun/names.ts`) via the same generalized signed pointer-index mechanism used for tags (see GUN Implementation Details), powering Browse's name search.
 - Profile data is easily exportable/importable as JSON.
 
 ### Preferences
 
 - Configurable GUN relay instances (sensible default provided, user can override).
-- Theme: dark/light.
-- **AI provider config**: OpenAI-compatible proxy support, starting with OpenRouter (user supplies their own API key, stored locally/IndexedDB only). OpenRouter's `/api/v1/chat/completions` supports CORS for direct browser calls, so no proxy server is needed for this provider. (Note for later: providers like Anthropic/OpenAI block direct browser calls by default and would need a proxy if added — not a concern for the OpenRouter-only MVP.)
+- Theme: any of DaisyUI's built-in themes (see Stack).
+- **AI provider config**: OpenAI-compatible proxy support. Three providers implemented — OpenRouter, Ollama (local, no key), and Hugging Face — each with its own independently-persisted config (`ProviderConfigMap`) so switching providers doesn't clobber the others' settings. OpenRouter/Hugging Face keys are user-supplied, stored locally/IndexedDB only. (Providers like Anthropic/OpenAI that block direct browser calls by default would need a proxy if ever added — not needed for the current providers.)
   - Standard sampling settings where the provider allows them: temperature, max_tokens, context_size.
-  - Advanced settings: top-K, top-P, repetition penalty, frequency penalty, forbidden words/phrases.
+  - Advanced settings: top-K, top-P, repetition penalty, frequency penalty, forbidden words/phrases, disable-thinking toggle.
+- Additional preferences beyond provider/theme/relays: `blockedTags`, `blockedAuthors`, `hiddenCharacterIds` (other users' characters hidden locally without being deleted), `personaSelections`, `defaultBackground` (applied to newly-created chats), `chatOpacity` (message bubble/composer opacity over the chat background), `showNsfw`.
 - All preferences are exportable/importable as JSON.
 
 ## Data Model
@@ -77,22 +90,27 @@ Decentralized, unmoderated platform to share and talk to AI characters.
 ### User
 | Field | Type | Notes |
 |---|---|---|
-| `id` | base64 Ed25519 pubkey | **is** the identifier; no separate UUID |
-| `username` | string, optional | visible to anyone |
-| `description` | string, optional | visible to anyone |
+| `id` | base64 pubkey | **is** the identifier; no separate UUID |
+| `username` | string, required (can be empty) | visible to anyone |
+| `description` | string, required (can be empty) | visible to anyone |
+| `image_url` | string (url), optional | |
+| `signature` | base64, required | signature over the canonicalized document minus this field |
+| `deleted` | bool, required, default `false` | tombstone flag |
+| `deleted_at` | timestamp, optional | set when `deleted: true` |
 | `created_at` | timestamp, required | |
+| `updated_at` | timestamp, required | |
 
 ### Character
 | Field | Type | Notes |
 |---|---|---|
-| `id` | uuid, required | |
+| `id` | string, required | `"{authorPubkey}:{uuid}"` — encodes the author so the doc can be located under that author's protected GUN user-space without a separate global lookup index |
 | `version` | int, required | schema/edit version, incremented on each signed snapshot |
 | `name` | string, required | |
-| `image_url` | string (url), optional | user's responsibility that it's browser-accessible |
+| `image_urls` | string array | `[]` if none; first is shown by default |
 | `description` | string, optional | visible to users |
 | `personality` | string, optional | speech patterns, behavior, appearance, etc. |
 | `scenario` | string, optional | extra context for the AI |
-| `tags` | string array, required | autosuggested from existing tags to reduce duplicates |
+| `tags` | string array, required | autosuggested from existing tags plus a curated predefined list, to reduce duplicates |
 | `nsfw` | bool, required, default `false` | explicit boolean flag rather than tag convention, so it isn't easily forgotten |
 | `language` | string, optional | for future filtering/search |
 | `system_prompt` | string, optional | placeholder text should nudge staying in character, marking actions with `**asterisks**`, not speaking for `{{user}}` |
@@ -107,28 +125,46 @@ Decentralized, unmoderated platform to share and talk to AI characters.
 | `created_at` | timestamp, required | |
 | `updated_at` | timestamp, required | |
 
+### Persona (local only)
+| Field | Type | Notes |
+|---|---|---|
+| `id` | uuid, required | |
+| `name` | string | ignored for display while `auto_name` is true |
+| `description` | string, optional | |
+| `auto_name` | bool, required | while true, displayed name tracks the live profile username instead of `name` |
+| `created_at` | timestamp, required | |
+
 ### Chat (local only)
 | Field | Type | Notes |
 |---|---|---|
 | `id` | uuid, required | |
 | `character_id` | character id, required | |
+| `persona_id` | persona id, optional (null pre-personas) | which persona the user was playing when the chat was created; fixed for the chat's lifetime |
 | `name` | string, required | defaults to character name, user-editable |
-| `messages` | array of Message, required | |
+| `messages` | array of Message, required | every message node ever created in this chat, across every branch — a tree, not just the visible conversation |
+| `root_id` | message id, optional | root message currently selected (usually only one exists) |
+| `active_child` | map: message id -> message id | for every message with multiple children, which child is on the active/visible path |
+| `draft` | string | unsent composer text, preserved across navigation |
+| `image_index` | int | selected index in the character image viewer |
+| `backgrounds` | string array | background image URLs the user added as selectable for this chat |
+| `active_background` | string, optional | currently-applied background; falls back to none if no longer in `backgrounds` |
 | `created_at` | timestamp, required | |
 
 ### Message (local only)
 | Field | Type | Notes |
 |---|---|---|
 | `id` | uuid, required | |
+| `parent_id` | message id, optional | message this one replies to; null for a root message. Editing or regenerating adds a new sibling under the same parent instead of overwriting |
 | `role` | enum: `user` \| `character`, required | who sent it |
-| `versions` | array of `{ content, created_at }`, required | edit history; `content` may be empty string but must exist |
-| `active_version_index` | int, required | which version is currently displayed/used |
+| `content` | string, required | may be empty |
+| `created_at` | timestamp, required | |
 | `updated_at` | timestamp, required | |
 
 ### Comment
 | Field | Type | Notes |
 |---|---|---|
 | `id` | uuid, required | |
+| `character_id` | character id, required | |
 | `author` | base64 pubkey, required | |
 | `content` | string, required, non-empty | |
 | `deleted` | bool, required, default `false` | tombstone flag |
@@ -139,48 +175,41 @@ Decentralized, unmoderated platform to share and talk to AI characters.
 Notes:
 - Marked `verified` implicitly by having a valid signature/pubkey.
 - If a comment's `author` pubkey equals the character's `author` pubkey, the client shows an "author" badge.
+- Comments currently use a different storage scheme than tags/names (see GUN Implementation Details) — a single unsigned index blob per character rather than per-pointer signed keys, which is race-prone under concurrent writers. Known limitation, not yet unified with the generalized signed pointer index.
 
 ## Stack
 
-- **GUN** (https://gun.eco/docs) for data transmission/sync.
-- **SvelteKit**, static adapter (`@sveltejs/adapter-static`) — outputs plain static files, so it stays deployable as CDN-only with no backend, while giving real component structure for stateful pieces (message-version swapper, tag autosuggest, chat bubble editor) that would get unwieldy in a directive-only approach.
-- CSS/UI library: **undecided** — see below.
-
-### Open question: CSS / UI library
-
-Not yet settled. Tailwind + DaisyUI was the earlier leaning (DaisyUI is CSS-only, no JS bloat, fast to write, friendly for a backend-leaning dev), but now that Alpine is off the table in favor of Svelte, this deserves a fresh look:
-
-- Svelte's scoped `<style>` blocks and reactive class bindings already solve a lot of what Tailwind exists to solve (avoiding global CSS collisions, colocating styling with markup) — so the case for Tailwind is weaker here than it was under a plain-HTML/Alpine approach.
-- Tailwind's utility-class-in-markup style is a legitimate readability tradeoff — dense `class="flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm ..."` strings can be harder to scan than plain CSS, especially if that's not a style that clicks for you.
-- Options worth weighing: (1) Tailwind + DaisyUI anyway, for speed and prebuilt components; (2) plain scoped Svelte `<style>` per component, no utility framework, more verbose but easier to read at a glance; (3) a lighter component-focused CSS approach (e.g. open-props for design tokens + hand-written scoped styles) as a middle ground.
-- No strong technical blocker either way — this is a personal-fit/taste decision more than an architecture one. Worth just trying a couple of real components (e.g. the chat bubble list) in each style and seeing which is less friction before committing.
+- **GUN** (https://gun.eco/docs) for data transmission/sync, including GUN SEA for signing/auth.
+- **SvelteKit**, static adapter (`@sveltejs/adapter-static`) — outputs plain static files, so it stays deployable as CDN-only with no backend, while giving real component structure for stateful pieces (message-tree navigation, tag autosuggest, chat bubble editor) that would get unwieldy in a directive-only approach.
+- **Tailwind + DaisyUI** for styling — settled; DaisyUI's theme set (`DAISYUI_THEMES`) drives the theme selector.
 
 ## GUN Implementation Details
 
 ### Data Storage
 
-All user-created data is stored as directories under the app's own namespace, starting with `APP_ID` and a schema version. Example paths:
+User-created data is stored under the app's own namespace (`APP_ID`/schema version, e.g. `charshare/v1`), inside each author's protected GUN user-space rather than a flat app-level path — writes are restricted to that pubkey's authenticated SEA session (`ownNode`/`authorNode` in `src/lib/gun/client.ts`). Example paths:
 
 ```
-/users/{pubkey}/profile
-/characters/{char_id}                      -> character document (see model above)
-/characters/{char_id}/forks/{fork_id}: true -> unsigned index pointer, self-verified by checking forked_from
-/characters/{char_id}/comments/{comment_id} -> comment document
+~{pubkey}/charshare/v1/profile
+~{authorPubkey}/charshare/v1/characters/{uuid}          -> character document (id = "{authorPubkey}:{uuid}")
+~{authorPubkey}/charshare/v1/characters/{uuid}/comments -> unsigned comment-index blob (see Comment notes above)
 ```
 
-### Tag indexing (many-to-many)
+### Tag and name indexing (many-to-many)
 
-Characters can carry many tags, and each tag can index many characters — GUN has no query engine, only graph traversal from known paths, so this needs a manually maintained index rather than a query. Direction to revisit:
+Implemented, not deferred: a generalized **signed pointer index** (`createSignedPointerIndex`, `src/lib/gun/signedIndex.ts`), used identically for tags (`gun/tags.ts`) and character-name search tokens (`gun/names.ts`).
 
-- Store the character once at `/characters/{id}` (full document).
-- Maintain lightweight pointer sets per tag: `/tags/{tagname}/index/{char_id}: true` — just the id, not a duplicated copy of the character.
-- Browsing by tag walks the tag's pointer set, then fetches each character doc by id.
-- The same pattern likely applies to other indexes: by author, by `verified`, by `published`.
-- Free-text search has no native GUN equivalent either — it'll end up being a client-side filter over some bounded working set (a synced index, not the full network). Exact indexing/query approach still to be designed in detail.
+- Each pointer is its own signed document at its own graph key — `tags/{namespace}/{key}/{monthBucket}/{encodeURIComponent(charId)}` — not a shared read-modify-write JSON blob, avoiding races between concurrent publishers indexing under the same tag/token.
+- A pointer is locally self-verifying without fetching the character: its signature must verify against `authorPub`, and `authorPub` must match the author encoded in the character's own `id` (`"{author}:{uuid}"`) — so a pointer can't be forged for a character the signer doesn't own.
+- Time-bucketed by month; reads scan the last 24 months. Bounds read cost at the expense of very old entries aging out of discovery — acceptable since Browse is discovery, not an archive.
+- Every published character automatically gets a pseudo-tag `__network__` (`NETWORK_INDEX_TAG`), giving a global "browse everything" feed without a real tag.
+- Username claims (`gun/usernames.ts`) are a related but distinct pattern — one live claim per key, not a many-to-many pointer set.
+- Free-text search beyond name/tag tokens has no native GUN equivalent and isn't otherwise implemented.
 
 ## Open / Deferred Items
 
 - Spam and abuse mitigation for an unmoderated, backend-less network (mass-published garbage characters/comments) — explicitly deferred for now.
-- Tag/author/verified/published GUN indexing scheme — deferred, to be designed once the data volume and query patterns are clearer.
-- Multi-identity support and private-key backup/export UX.
-- CSS/UI library choice (see above).
+- Fork discovery UI/index (`.../forks/{fork_id}` pointers, "remixes of this character") — forking itself works; discovering forks of a given character does not exist yet.
+- TavernAI-PNG (and other third-party format) import/export adapters — not implemented; only our own versioned JSON format is supported today.
+- Comment storage still uses a race-prone unsigned index blob rather than the signed pointer-index pattern used for tags/names — worth unifying eventually.
+- True multi-identity-active-at-once-in-one-session (as opposed to switching the single active local identity) is not implemented.
