@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { untrack } from "svelte";
+	import { onMount, untrack } from "svelte";
+	import { beforeNavigate } from "$app/navigation";
 	import type { Character, CharacterDraft } from "$lib/types";
 	import CharacterImageViewer from "./CharacterImageViewer.svelte";
 	import { isAccountRegistered } from "$lib/state/auth.svelte";
@@ -192,6 +193,45 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 	let saving = $state(false);
 	let error = $state<string | null>(null);
 
+	// Snapshot of every editable field, used to detect unsaved changes so we
+	// can warn before the user navigates away or closes the tab.
+	function snapshot(): string {
+		return JSON.stringify({
+			name,
+			imageUrls,
+			description,
+			personality,
+			scenario,
+			tagsText,
+			nsfw,
+			language,
+			systemPrompt,
+			firstMessage,
+			alternateGreetings,
+			commentsEnabled,
+		});
+	}
+
+	let savedSnapshot = untrack(() => snapshot());
+	const isDirty = $derived(snapshot() !== savedSnapshot);
+
+	beforeNavigate((navigation) => {
+		if (!isDirty) return;
+		if (!confirm("You have unsaved changes. Leave this page anyway?")) {
+			navigation.cancel();
+		}
+	});
+
+	onMount(() => {
+		function handleBeforeUnload(event: BeforeUnloadEvent) {
+			if (!isDirty) return;
+			event.preventDefault();
+		}
+		window.addEventListener("beforeunload", handleBeforeUnload);
+		return () =>
+			window.removeEventListener("beforeunload", handleBeforeUnload);
+	});
+
 	async function handleSubmit(event: SubmitEvent) {
 		event.preventDefault();
 		saving = true;
@@ -219,6 +259,7 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 					.filter(Boolean),
 				comments_enabled: commentsEnabled,
 			});
+			savedSnapshot = snapshot();
 		} catch (err) {
 			error =
 				err instanceof Error
