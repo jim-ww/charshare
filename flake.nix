@@ -99,6 +99,7 @@
             pkgs.nodejs
             pkgs.pnpm
             pkgs.pkg-config
+            pkgs.goreleaser
           ]
           ++ webkitDeps;
 

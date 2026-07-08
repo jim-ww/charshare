@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+# vim: set ts=2 sw=2 tw=0 fo=cnqoj
+#
+# Wails apps use cgo (webkit2gtk on Linux, WebView2 on Windows, WebKit.framework
+# on macOS), so a single machine can't cross-compile all three OSes. CI (see
+# .github/workflows/release.yml) instead runs `goreleaser build --single-target`
+# natively on an ubuntu/windows/macos runner per OS/arch — this file is only the
+# shared build config (tags/env), not a `goreleaser release` invocation.
+# Archiving and the actual GitHub Release are handled in the workflow directly.
+#
+# main.go embeds frontend/dist at compile time, so the frontend must already be
+# built (pnpm --dir frontend run build) before goreleaser runs.
+
+version: 2
+
+builds:
+  - id: linux
+    main: .
+    binary: charshare
+    goos: [linux]
+    goarch: [amd64, arm64]
+    env:
+      - CGO_ENABLED=1
+    # "desktop"/"production" mirror what `wails build` passes itself; without
+    # them the binary panics at startup. webkit2_41 selects the webkit2gtk
+    # ABI this nixpkgs/most current distros ship (see flake.nix).
+    tags:
+      - desktop
+      - production
+      - webkit2_41
+
+  - id: windows
+    main: .
+    binary: charshare
+    goos: [windows]
+    goarch: [amd64]
+    env:
+      - CGO_ENABLED=1
+    tags:
+      - desktop
+      - production
+
+  - id: darwin
+    main: .
+    binary: charshare
+    goos: [darwin]
+    goarch: [amd64, arm64]
+    env:
+      - CGO_ENABLED=1
+    tags:
+      - desktop
+      - production
