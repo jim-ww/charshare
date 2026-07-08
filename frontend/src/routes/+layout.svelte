@@ -11,10 +11,12 @@
 	import { initChats } from '$lib/state/chats.svelte';
 	import NavBar from '$lib/components/NavBar.svelte';
 	import SettingsModal from '$lib/components/SettingsModal.svelte';
+	import { installWailsConsoleForward } from '$lib/wailsConsoleForward';
 
 	let { children } = $props();
 
 	onMount(() => {
+		installWailsConsoleForward();
 		initPreferences();
 		initAuth();
 		initProfile();

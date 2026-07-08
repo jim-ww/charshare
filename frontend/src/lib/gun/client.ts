@@ -44,6 +44,11 @@ export function getGun(relays: string[] = DEFAULT_GUN_RELAYS): IGunInstance {
 		file: `${APP_ID}-${SCHEMA_VERSION}`
 	});
 	instanceRelayKey = relayKey;
+	// Gun's WebSocket wire swallows connection errors internally and just
+	// silently retries (see node_modules/gun/gun.js, wire.onerror), so this is
+	// the only visibility we get into whether any relay peer ever connects.
+	instance.on('hi', (peer: { url?: string }) => console.log('[gun] peer connected', peer?.url));
+	instance.on('bye', (peer: { url?: string }) => console.warn('[gun] peer disconnected', peer?.url));
 	return instance;
 }
 

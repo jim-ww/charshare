@@ -13,7 +13,7 @@ const config = {
 			return isExternalLibrary ? undefined : true;
 		}
 	},
-	kit: { adapter: adapter({ fallback: '200.html' }) }
+	kit: { adapter: adapter({ pages: 'dist', assets: 'dist', fallback: '200.html' }) }
 };
 
 export default config;
