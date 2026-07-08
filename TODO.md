@@ -1,4 +1,5 @@
+- add custom logo: favicon and one for wails builds
 - add option to logout, but ask for confirmation, reminding to make account backup
 - rating system for characters?
-- implement extension for scraping characters from other services?
 - proper pagination in Characters browse page?
+- implement extension for scraping characters from other services?
