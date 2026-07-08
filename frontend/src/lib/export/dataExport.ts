@@ -10,6 +10,7 @@ import {
 import { getPersonas, createPersona, importPersonaDraft } from '$lib/state/personas.svelte';
 import { getChats, importChat } from '$lib/state/chats.svelte';
 import { getPreferences, updatePreferences } from '$lib/state/preferences.svelte';
+import { getMyProfile } from '$lib/state/profile.svelte';
 import type { Preferences } from '$lib/types';
 
 export type DataCategory = 'account' | 'characters' | 'personas' | 'chats' | 'preferences';
@@ -40,7 +41,18 @@ function dateStamp(): string {
 	return new Date().toISOString().slice(0, 10);
 }
 
+/** Sanitizes a username for use in a filename — strips anything that isn't
+ *  alphanumeric, a dash, or an underscore. */
+function sanitizeForFilename(name: string): string {
+	return name.trim().replace(/[^a-zA-Z0-9-_]+/g, '_');
+}
+
 export function categoryFilename(category: DataCategory): string {
+	if (category === 'account') {
+		const username = getMyProfile()?.username;
+		const suffix = username ? `-${sanitizeForFilename(username)}` : '';
+		return `${APP_NAME}-${category}${suffix}-${dateStamp()}.json`;
+	}
 	return `${APP_NAME}-${category}-${dateStamp()}.json`;
 }
 

@@ -8,6 +8,7 @@
 	} from '$lib/state/profile.svelte';
 	import { getKeyring, isAccountRegistered, setKeyring } from '$lib/state/auth.svelte';
 	import { exportAccountBackup, parseAccountBackup } from '$lib/identity/backup';
+	import { categoryFilename } from '$lib/export/dataExport';
 
 	const profileReady = $derived(isProfileReady());
 	const registered = $derived(isAccountRegistered());
@@ -76,7 +77,7 @@
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement('a');
 		a.href = url;
-		a.download = 'charshare-account-backup.json';
+		a.download = categoryFilename('account');
 		a.click();
 		URL.revokeObjectURL(url);
 	}
