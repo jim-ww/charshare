@@ -15,6 +15,10 @@
 	function handleChatOpacityChange(event: Event) {
 		updatePreferences({ chatOpacity: Number((event.currentTarget as HTMLInputElement).value) });
 	}
+
+	function handleShowNsfwChange(event: Event) {
+		updatePreferences({ showNsfw: (event.currentTarget as HTMLInputElement).checked });
+	}
 </script>
 
 <div class="flex flex-col gap-4">
@@ -105,5 +109,15 @@
 		<span class="mt-1 text-sm opacity-70">
 			Fades chat bubbles and the composer so a chat background shows through.
 		</span>
+	</label>
+
+	<label class="label w-fit cursor-pointer gap-2">
+		<input
+			type="checkbox"
+			class="toggle toggle-warning"
+			checked={preferences.showNsfw}
+			onchange={handleShowNsfwChange}
+		/>
+		<span class="label-text">Show NSFW characters in Browse</span>
 	</label>
 </div>

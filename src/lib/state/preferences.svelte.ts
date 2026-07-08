@@ -67,6 +67,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
 	personaSelections: {},
 	defaultBackground: "",
 	chatOpacity: 100,
+	showNsfw: false,
 	provider: DEFAULT_HUGGINGFACE_CONFIG,
 	providerConfigs: {
 		openrouter: DEFAULT_OPENROUTER_CONFIG,
@@ -118,6 +119,7 @@ export function initPreferences(): Promise<void> {
 					personaSelections: preferences.personaSelections ?? {},
 					defaultBackground: preferences.defaultBackground ?? "",
 					chatOpacity: preferences.chatOpacity ?? 100,
+					showNsfw: preferences.showNsfw ?? false,
 					providerConfigs: {
 						...DEFAULT_PREFERENCES.providerConfigs,
 						...preferences.providerConfigs,

@@ -45,7 +45,7 @@
 
 <a
 	href={`/characters/${character.id}`}
-	class="card relative bg-base-200 shadow-sm transition-shadow hover:shadow-md"
+	class="card relative bg-base-200 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:scale-[1.02] hover:shadow-lg"
 	class:opacity-60={character.deleted || hidden}
 >
 	{#if !isMine}

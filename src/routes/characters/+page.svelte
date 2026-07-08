@@ -8,11 +8,15 @@
 	import { getCurrentUser } from "$lib/state/auth.svelte";
 	import { browseByTag, browseNetwork, browseByName, browseByAuthor } from "$lib/gun/browse";
 	import CharacterCard from "$lib/components/CharacterCard.svelte";
-	import { isCharacterHidden } from "$lib/state/preferences.svelte";
+	import {
+		getPreferences,
+		isCharacterHidden,
+		updatePreferences,
+	} from "$lib/state/preferences.svelte";
 
 	let mineOnly = $state(false);
 	let showHidden = $state(false);
-	let showNsfw = $state(false);
+	const showNsfw = $derived(getPreferences().showNsfw);
 	let query = $state("");
 	let remoteResults = $state<Character[]>([]);
 	let networkResults = $state<Character[]>([]);
@@ -144,7 +148,11 @@
 				<input
 					type="checkbox"
 					class="toggle toggle-sm toggle-warning"
-					bind:checked={showNsfw}
+					checked={showNsfw}
+					onchange={(e) =>
+						updatePreferences({
+							showNsfw: e.currentTarget.checked,
+						})}
 				/>
 				<span class="label-text">Show NSFW</span>
 			</label>
