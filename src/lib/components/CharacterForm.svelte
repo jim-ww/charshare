@@ -5,6 +5,7 @@
 	import { isAccountRegistered } from "$lib/state/auth.svelte";
 	import { openSettings } from "$lib/state/settingsModal.svelte";
 	import { LANGUAGES } from "$lib/languages";
+	import { PREDEFINED_TAGS } from "$lib/data/tags";
 
 	interface Props {
 		initial?: Character;
@@ -94,6 +95,61 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 	let tagsText = $state(
 		untrack(() => (initial ?? draft)?.tags.join(", ") ?? ""),
 	);
+	let tagsInputEl = $state<HTMLInputElement>();
+	let tagSuggestionsOpen = $state(false);
+	let tagSuggestionsHighlight = $state(-1);
+	let tagGuidelinesEl = $state<HTMLDialogElement>();
+
+	const currentTagFragment = $derived(
+		tagsText.slice(tagsText.lastIndexOf(",") + 1).trim().toLowerCase(),
+	);
+	const tagSuggestions = $derived.by(() => {
+		if (!currentTagFragment) return [];
+		const existing = new Set(
+			tagsText
+				.split(",")
+				.map((t) => t.trim().toLowerCase())
+				.filter(Boolean),
+		);
+		return PREDEFINED_TAGS.filter(
+			(t) =>
+				t.name.toLowerCase().includes(currentTagFragment) &&
+				!existing.has(t.name.toLowerCase()),
+		).slice(0, 8);
+	});
+
+	$effect(() => {
+		// Reset the highlight whenever the suggestion list itself changes,
+		// so an old index doesn't point at an unrelated tag.
+		tagSuggestions;
+		tagSuggestionsHighlight = -1;
+	});
+
+	function handleTagsKeydown(event: KeyboardEvent) {
+		if (!tagSuggestionsOpen || !tagSuggestions.length) return;
+		if (event.key === "ArrowDown") {
+			event.preventDefault();
+			tagSuggestionsHighlight =
+				(tagSuggestionsHighlight + 1) % tagSuggestions.length;
+		} else if (event.key === "ArrowUp") {
+			event.preventDefault();
+			tagSuggestionsHighlight =
+				(tagSuggestionsHighlight - 1 + tagSuggestions.length) %
+				tagSuggestions.length;
+		} else if (event.key === "Enter" && tagSuggestionsHighlight >= 0) {
+			event.preventDefault();
+			pickTagSuggestion(tagSuggestions[tagSuggestionsHighlight].name);
+		} else if (event.key === "Escape") {
+			tagSuggestionsOpen = false;
+		}
+	}
+
+	function pickTagSuggestion(name: string) {
+		const upToLastComma = tagsText.slice(0, tagsText.lastIndexOf(",") + 1);
+		const prefix = upToLastComma ? `${upToLastComma} ` : "";
+		tagsText = `${prefix}${name}, `;
+		tagsInputEl?.focus();
+	}
 	let nsfw = $state(untrack(() => initial?.nsfw ?? draft?.nsfw ?? false));
 	let language = $state(
 		untrack(
@@ -215,15 +271,89 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 				</select>
 			</label>
 			<label class="form-control">
-				<span class="label-text"
-					>Tags (comma-separated)</span
-				>
-				<input
-					class="input input-bordered w-full"
-					bind:value={tagsText}
-					placeholder="fantasy, adventurer, tsundere"
-				/>
+				<span class="label-text flex items-center gap-1.5">
+					Tags (comma-separated)
+					<button
+						type="button"
+						class="btn btn-circle btn-ghost btn-xs"
+						title="Tag guidelines"
+						onclick={() => tagGuidelinesEl?.showModal()}
+					>
+						?
+					</button>
+				</span>
+				<div class="dropdown w-full">
+					<input
+						bind:this={tagsInputEl}
+						class="input input-bordered w-full"
+						bind:value={tagsText}
+						autocomplete="off"
+						placeholder="fantasy, adventurer, tsundere"
+						onfocus={() => (tagSuggestionsOpen = true)}
+						onblur={() =>
+							setTimeout(() => (tagSuggestionsOpen = false), 150)}
+						onkeydown={handleTagsKeydown}
+					/>
+					{#if tagSuggestionsOpen && tagSuggestions.length}
+						<ul
+							class="dropdown-content menu bg-base-200 rounded-box z-10 mt-1 w-full flex-nowrap gap-0.5 overflow-y-auto p-2 shadow-xl"
+						>
+							{#each tagSuggestions as tag, index (tag.name)}
+								<li>
+									<button
+										type="button"
+										class:menu-active={index === tagSuggestionsHighlight}
+										title={tag.description ?? tag.name}
+										onmousedown={(e) => e.preventDefault()}
+										onmouseenter={() => (tagSuggestionsHighlight = index)}
+										onclick={() => pickTagSuggestion(tag.name)}
+									>
+										{tag.name}
+										{#if tag.description}
+											<span
+												class="text-xs opacity-60"
+												>{tag.description}</span
+											>
+										{/if}
+									</button>
+								</li>
+							{/each}
+						</ul>
+					{/if}
+				</div>
 			</label>
+			<dialog bind:this={tagGuidelinesEl} class="modal">
+				<div class="modal-box">
+					<h3 class="text-lg font-bold">Tag guidelines</h3>
+					<ul class="mt-2 list-disc pl-5 text-sm opacity-80">
+						<li>Lowercase only, e.g. <code>fantasy</code>, not <code>Fantasy</code>.</li>
+						<li>
+							Use hyphens instead of spaces, e.g. <code>monster-girl</code>,
+							not <code>monster girl</code>.
+						</li>
+						<li>Separate multiple tags with commas.</li>
+						<li>
+							Pick from the suggestions where possible so the same concept
+							isn't spelled differently across characters.
+						</li>
+					</ul>
+					<div class="modal-action">
+						<button
+							type="button"
+							class="btn"
+							onclick={() => tagGuidelinesEl?.close()}
+						>
+							Got it
+						</button>
+					</div>
+				</div>
+				<button
+					type="button"
+					class="modal-backdrop"
+					aria-label="Close"
+					onclick={() => tagGuidelinesEl?.close()}
+				></button>
+			</dialog>
 			<label class="flex items-center gap-2">
 				<input
 					type="checkbox"

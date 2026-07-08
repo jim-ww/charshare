@@ -2,3 +2,5 @@
 - create landing page
 - create terms of service / legal page
 - create how-to-use page
+- character new/edit page: add options to import from tavernAI character card, option to scrape from janitorAI by url
+- use compacted pubkeys in urls?
