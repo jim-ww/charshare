@@ -13,7 +13,12 @@ const config = {
 			return isExternalLibrary ? undefined : true;
 		}
 	},
-	kit: { adapter: adapter({ pages: 'dist', assets: 'dist', fallback: '200.html' }) }
+	kit: {
+		adapter: adapter({ pages: 'dist', assets: 'dist', fallback: '200.html' }),
+		// Wails/Cloudflare Pages serve at the root; GitHub Pages project sites
+		// serve at github.io/<repo>/, so the build sets BASE_PATH for that case.
+		paths: { base: process.env.BASE_PATH ?? '' }
+	}
 };
 
 export default config;

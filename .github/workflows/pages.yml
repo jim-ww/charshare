@@ -1,0 +1,63 @@
+name: pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Build frontend
+        working-directory: frontend
+        env:
+          BASE_PATH: /charshare
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run build
+
+      - name: Prepare Pages output
+        run: |
+          # GitHub Pages has no native SPA fallback — reusing the adapter's
+          # 200.html as 404.html makes any unmatched path (e.g. a direct
+          # load of /chats/<id>) serve the app shell instead of a real 404.
+          cp frontend/dist/200.html frontend/dist/404.html
+          # Without this, GitHub Pages runs content through Jekyll, which
+          # ignores/breaks the _app directory (leading underscore).
+          touch frontend/dist/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

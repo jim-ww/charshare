@@ -2,6 +2,7 @@
 	import { untrack } from "svelte";
 	import { page } from "$app/state";
 	import { goto } from "$app/navigation";
+	import { base } from "$app/paths";
 	import type { Character, Comment } from "$lib/types";
 	import { subscribeCharacter } from "$lib/gun/characters";
 	import {
@@ -152,7 +153,7 @@
 			character.name,
 			getSelectedPersonaId(character.id) ?? null,
 		);
-		await goto(`/chats/${chat.id}`);
+		await goto(`${base}/chats/${chat.id}`);
 	}
 
 	let importInput = $state<HTMLInputElement>();
@@ -170,7 +171,7 @@
 				await file.text(),
 				getSelectedPersonaId(character.id) ?? null,
 			);
-			await goto(`/chats/${chat.id}`);
+			await goto(`${base}/chats/${chat.id}`);
 		} catch (err) {
 			importError =
 				err instanceof Error
@@ -184,7 +185,7 @@
 	async function handleFork() {
 		if (!character) return;
 		const fork = await forkCharacter(character.id);
-		await goto(`/characters/${fork.id}/edit`);
+		await goto(`${base}/characters/${fork.id}/edit`);
 	}
 
 	async function handlePublish() {
@@ -217,7 +218,7 @@
 	async function handleDelete() {
 		if (!character) return;
 		await deleteMyCharacter(character.id);
-		await goto("/characters");
+		await goto(`${base}/characters`);
 	}
 
 	async function handlePostComment(event: SubmitEvent) {

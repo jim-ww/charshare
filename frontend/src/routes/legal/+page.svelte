@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { base } from "$app/paths";
 	const REPO_URL = "https://github.com/jim-ww/charshare";
 </script>
 
@@ -92,6 +93,6 @@
 	</div>
 
 	<div class="pt-12">
-		<a href="/" class="link link-hover">&larr; Back home</a>
+		<a href={base || "/"} class="link link-hover">&larr; Back home</a>
 	</div>
 </div>

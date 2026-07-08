@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { goto } from "$app/navigation";
+	import { base } from "$app/paths";
 
 	// In the Wails desktop build, skip the marketing landing page on first
 	// launch and go straight into the app. `window.runtime` only exists in
@@ -13,7 +14,7 @@
 			!localStorage.getItem(SKIP_LANDING_KEY)
 		) {
 			localStorage.setItem(SKIP_LANDING_KEY, "true");
-			goto("/characters", { replaceState: true });
+			goto(`${base}/characters`, { replaceState: true });
 		}
 	});
 
@@ -139,7 +140,7 @@
 		<div
 			class="flex flex-wrap items-center justify-center gap-3 pt-2"
 		>
-			<a href="/characters" class="btn btn-primary btn-lg"
+			<a href="{base}/characters" class="btn btn-primary btn-lg"
 				>Chat with characters</a
 			>
 			<a
@@ -174,7 +175,7 @@
 		</h2>
 		<p class="pb-8 text-center text-base-content/70">
 			Run Charshare as a desktop app, or just use it in your
-			browser at <a href="/characters" class="link"
+			browser at <a href="{base}/characters" class="link"
 				>/characters</a
 			> above — no install required either way.
 		</p>
@@ -353,8 +354,8 @@
 			>
 				AGPLv3 License
 			</a>
-			<a href="/legal" class="link link-hover">Legal</a>
-			<a href="/characters" class="link link-hover"
+			<a href="{base}/legal" class="link link-hover">Legal</a>
+			<a href="{base}/characters" class="link link-hover"
 				>Open the app</a
 			>
 		</div>

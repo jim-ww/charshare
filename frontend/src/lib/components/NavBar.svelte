@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from "$app/state";
 	import { goto } from "$app/navigation";
+	import { base } from "$app/paths";
 	import { getCurrentUser, isAccountRegistered } from "$lib/state/auth.svelte";
 	import { getMyProfile } from "$lib/state/profile.svelte";
 	import { openSettings } from "$lib/state/settingsModal.svelte";
@@ -22,8 +23,8 @@
 	);
 
 	const navLinks = [
-		{ href: "/characters", label: "Characters" },
-		{ href: "/chats", label: "Chats" },
+		{ href: `${base}/characters`, label: "Characters" },
+		{ href: `${base}/chats`, label: "Chats" },
 	];
 	const isActive = (href: string) => page.url.pathname.startsWith(href);
 
@@ -31,8 +32,8 @@
 		event.preventDefault();
 		const q = getSearchQuery().trim();
 		const params = new URLSearchParams(q ? { q } : {});
-		const target = `/characters${params.toString() ? `?${params}` : ""}`;
-		if (page.url.pathname === "/characters" && page.url.search === (params.toString() ? `?${params}` : "")) {
+		const target = `${base}/characters${params.toString() ? `?${params}` : ""}`;
+		if (page.url.pathname === `${base}/characters` && page.url.search === (params.toString() ? `?${params}` : "")) {
 			// Already on this exact search URL — goto() wouldn't navigate, so
 			// re-run explicitly to let "Search" also act as a reload button.
 			runSearch();
@@ -46,7 +47,7 @@
 	class="navbar sticky top-0 z-30 flex items-center border-b border-base-300 bg-base-100/80 px-4 backdrop-blur"
 >
 	<div class="flex flex-1 items-center gap-6">
-		<a href="/" class="text-xl font-bold leading-none tracking-tight"
+		<a href={base || "/"} class="text-xl font-bold leading-none tracking-tight"
 			>charshare</a
 		>
 		{#each navLinks as { href, label } (href)}
@@ -76,7 +77,7 @@
 		</button>
 	</form>
 	<div class="flex flex-1 items-center justify-end gap-2">
-		<a href="/characters/new" class="btn btn-sm btn-primary">
+		<a href="{base}/characters/new" class="btn btn-sm btn-primary">
 			+ New Character
 		</a>
 		<button
