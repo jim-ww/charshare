@@ -8,6 +8,7 @@
 	import { getCurrentUser } from "$lib/state/auth.svelte";
 	import { browseByTag, browseNetwork, browseByName, browseByAuthor } from "$lib/gun/browse";
 	import CharacterCard from "$lib/components/CharacterCard.svelte";
+	import TagCarousel from "$lib/components/TagCarousel.svelte";
 	import {
 		getPreferences,
 		isCharacterHidden,
@@ -33,6 +34,10 @@
 			networkResults = results;
 		});
 	});
+
+	function addTagToQuery(tag: string) {
+		query = query.trim() ? `${query.trim()} ${tag}` : tag;
+	}
 
 	async function handleSearch(event: SubmitEvent) {
 		event.preventDefault();
@@ -127,6 +132,7 @@
 				{searching ? "Searching…" : "Search"}
 			</button>
 		</form>
+		<TagCarousel onpick={addTagToQuery} />
 		<div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-1">
 			<label class="label cursor-pointer gap-2 py-0">
 				<input
