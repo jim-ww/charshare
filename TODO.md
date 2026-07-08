@@ -1,4 +1,5 @@
-- add custom logo: favicon and one for wails builds
+- cannot select json files in wails file selector
+- wails build ignores linux prefer dark setting
 - add option to logout, but ask for confirmation, reminding to make account backup
 - change search token behavior: should only list character that has ALL tags from query
 - rating system for characters?

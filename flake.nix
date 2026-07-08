@@ -76,7 +76,7 @@
         # "Wails applications will not build without the correct build tags".
         tags = ["desktop" "production" "webkit2_41"];
 
-        nativeBuildInputs = [pkgs.pkg-config pkgs.makeWrapper];
+        nativeBuildInputs = [pkgs.pkg-config pkgs.makeWrapper pkgs.ffmpeg];
         buildInputs = webkitDeps;
 
         # main.go embeds frontend/dist at compile time, so the prebuilt
@@ -89,11 +89,17 @@
         # Desktop-menu entry + icon, so package managers that aggregate
         # share/{applications,icons} (NixOS, home-manager) surface a real
         # launcher item instead of just a binary on PATH.
+        #
+        # 512x512 (not the raw 1024 source) because hicolor's index.theme
+        # only declares a fixed set of standard size directories — a
+        # non-standard size dir like 1024x1024 can be silently skipped by
+        # spec-following icon lookups.
         postInstall = ''
           install -Dm644 ${desktopItem}/share/applications/*.desktop \
             $out/share/applications/charshare.desktop
-          install -Dm644 frontend/static/logo.png \
-            $out/share/icons/hicolor/1024x1024/apps/charshare.png
+          mkdir -p $out/share/icons/hicolor/512x512/apps
+          ffmpeg -y -i frontend/static/logo.png -vf scale=512:512 \
+            $out/share/icons/hicolor/512x512/apps/charshare.png
         '';
 
         # Same runtime env the devShell sets (fonts + TLS certs for the
