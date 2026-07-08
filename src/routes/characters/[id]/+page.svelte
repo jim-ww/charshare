@@ -31,6 +31,7 @@
 	import { getProfile } from "$lib/gun/users";
 	import CharacterImageViewer from "$lib/components/CharacterImageViewer.svelte";
 	import PersonaSelectorButton from "$lib/components/PersonaSelectorButton.svelte";
+	import UserProfileModal from "$lib/components/UserProfileModal.svelte";
 	import {
 		getSelectedPersonaId,
 		initPersonas,
@@ -117,14 +118,17 @@
 	let publishing = $state(false);
 
 	$effect(() => {
-		for (const c of comments) {
-			if (c.author in authorNames) continue;
-			authorNames = { ...authorNames, [c.author]: "" };
-			getProfile(c.author).then((result) => {
+		const authors = character
+			? [character.author, ...comments.map((c) => c.author)]
+			: comments.map((c) => c.author);
+		for (const author of authors) {
+			if (author in authorNames) continue;
+			authorNames = { ...authorNames, [author]: "" };
+			getProfile(author).then((result) => {
 				if (result.ok)
 					authorNames = {
 						...authorNames,
-						[c.author]: result.doc.username,
+						[author]: result.doc.username,
 					};
 			});
 		}
@@ -133,6 +137,8 @@
 	function authorLabel(pubkey: string): string {
 		return authorNames[pubkey] || `${pubkey.slice(0, 8)}…`;
 	}
+
+	let profileModalPubkey = $state<string | null>(null);
 
 	async function handleStartChat() {
 		if (!character) return;
@@ -262,6 +268,18 @@
 								: "Published"}
 						</span>
 					</h1>
+					<div class="mt-1 flex items-center gap-1.5 text-sm opacity-70">
+						<span>By:</span>
+						<button
+							class="btn btn-xs btn-outline rounded-full"
+							type="button"
+							onclick={() =>
+								(profileModalPubkey =
+									character!.author)}
+						>
+							@{authorLabel(character.author)}
+						</button>
+					</div>
 					{#if character.tags.length}
 						<div
 							class="mt-1 flex flex-wrap gap-1"
@@ -571,4 +589,10 @@
 			</div>
 		</div>
 	{/if}
+
+	<UserProfileModal
+		open={profileModalPubkey !== null}
+		pubkey={profileModalPubkey}
+		onclose={() => (profileModalPubkey = null)}
+	/>
 </div>
