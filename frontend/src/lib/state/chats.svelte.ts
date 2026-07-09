@@ -79,6 +79,17 @@ export async function renameChat(id: ChatId, name: string): Promise<void> {
 	await persist();
 }
 
+/** Re-points a chat at a different character — recovery path for when the
+ *  original character can no longer be loaded (deleted upstream, relay
+ *  unreachable, etc.), letting the chat history survive by attaching it to a
+ *  replacement instead of being stuck unusable forever. */
+export async function setChatCharacter(id: ChatId, characterId: CharacterId): Promise<void> {
+	const chat = chats[id];
+	if (!chat) throw new Error('Chat not found.');
+	chats = { ...chats, [id]: { ...chat, character_id: characterId } };
+	await persist();
+}
+
 // Shared by setChatDraft and setChatImageIndex — both debounce into the same
 // full-snapshot persist(), so one pending timer covers whichever fired last.
 let draftPersistTimer: ReturnType<typeof setTimeout> | null = null;

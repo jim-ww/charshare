@@ -89,9 +89,12 @@
 		>
 			⋮
 		</button>
-		<ul class="menu dropdown-content menu-sm z-10 w-32 rounded-box bg-base-200 p-1 shadow">
+		<ul class="menu dropdown-content menu-sm z-10 w-40 rounded-box bg-base-200 p-1 shadow">
 			<li><button type="button" onclick={() => handleExport(chat)}>Export</button></li>
 			<li><button type="button" onclick={() => handleRename(chat)}>Rename</button></li>
+			<li>
+				<a href={`${base}/chats/${chat.id}?pick-character`}>Choose character</a>
+			</li>
 			<li><button type="button" class="text-error" onclick={() => handleDelete(chat)}>Delete</button></li>
 		</ul>
 	</div>

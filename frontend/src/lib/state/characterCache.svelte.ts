@@ -8,19 +8,58 @@ import { subscribeCharacter } from '$lib/gun/characters';
 let cache = $state<Record<CharacterId, Character>>({});
 const subscribed = new Set<CharacterId>();
 
+/** ids that have waited past their timeout without resolving — surfaced so
+ *  the UI can offer recovery (pick a different character / import a backup)
+ *  instead of showing "Loading…" forever when the network genuinely doesn't
+ *  have this character (deleted upstream, no reachable relay, bad id, etc). */
+let failed = $state<Record<CharacterId, boolean>>({});
+/** How long each id's current wait is — starts at LOAD_TIMEOUT_MS and doubles
+ *  every time the user asks to wait longer (see retryCharacterLoad), rather
+ *  than being a fixed cutoff for every id forever. */
+const timeoutMs: Record<CharacterId, number> = {};
+const LOAD_TIMEOUT_MS = 8000;
+
 export function resolveCharacter(id: CharacterId): Character | undefined {
 	return getMyCharacters().find((c) => c.id === id) ?? cache[id];
+}
+
+export function isCharacterLoadFailed(id: CharacterId): boolean {
+	return failed[id] === true;
+}
+
+function armTimeout(id: CharacterId): void {
+	const ms = timeoutMs[id] ?? LOAD_TIMEOUT_MS;
+	timeoutMs[id] = ms;
+	setTimeout(() => {
+		if (!resolveCharacter(id)) failed = { ...failed, [id]: true };
+	}, ms);
 }
 
 /** Subscribes (once per id) rather than doing a single one-shot read — GUN's
  *  local read can momentarily miss data that hasn't synced from a relay yet,
  *  so a plain one-shot get can silently never resolve the character. The
  *  subscription keeps listening and fills in the cache whenever real data
- *  arrives, without an arbitrary delay/retry. */
+ *  arrives, without an arbitrary delay/retry. A timeout separately flags the
+ *  id as failed so the UI can stop waiting and offer recovery — the
+ *  subscription itself is left running in case data does eventually arrive. */
 export function ensureCharacterLoaded(id: CharacterId): void {
 	if (resolveCharacter(id) || subscribed.has(id)) return;
 	subscribed.add(id);
 	subscribeCharacter(id, (result) => {
-		if (result.ok) cache = { ...cache, [id]: result.doc };
+		if (result.ok) {
+			cache = { ...cache, [id]: result.doc };
+			if (failed[id]) failed = { ...failed, [id]: false };
+		}
 	});
+	armTimeout(id);
+}
+
+/** Gives a failed load more time instead of offering recovery immediately —
+ *  each retry doubles the previous wait (see timeoutMs), only for this id, so
+ *  a slow relay gets more patience without changing the default timeout for
+ *  every other character. */
+export function retryCharacterLoad(id: CharacterId): void {
+	failed = { ...failed, [id]: false };
+	timeoutMs[id] = (timeoutMs[id] ?? LOAD_TIMEOUT_MS) * 2;
+	armTimeout(id);
 }

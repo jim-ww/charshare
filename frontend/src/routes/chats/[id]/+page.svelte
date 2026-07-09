@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { untrack } from "svelte";
 	import { page } from "$app/state";
+	import { goto } from "$app/navigation";
+	import { base } from "$app/paths";
 	import {
 		getChat,
 		addMessage,
@@ -9,12 +11,14 @@
 	import {
 		resolveCharacter,
 		ensureCharacterLoaded,
+		isCharacterLoadFailed,
 	} from "$lib/state/characterCache.svelte";
 	import ChatThreadSwitcher from "$lib/components/ChatThreadSwitcher.svelte";
 	import ChatBubble from "$lib/components/ChatBubble.svelte";
 	import ChatComposer from "$lib/components/ChatComposer.svelte";
 	import ChatCharacterImage from "$lib/components/ChatCharacterImage.svelte";
 	import ChatSettingsSidebar from "$lib/components/ChatSettingsSidebar.svelte";
+	import ChatCharacterRecovery from "$lib/components/ChatCharacterRecovery.svelte";
 	import { getPreferences } from "$lib/state/preferences.svelte";
 	import { initPersonas } from "$lib/state/personas.svelte";
 
@@ -46,6 +50,13 @@
 	const character = $derived(
 		chat ? resolveCharacter(chat.character_id) : undefined,
 	);
+	const characterLoadFailed = $derived(
+		chat ? isCharacterLoadFailed(chat.character_id) : false,
+	);
+	const manualPickCharacter = $derived(page.url.searchParams.has("pick-character"));
+	function closeManualPick() {
+		void goto(`${base}/chats/${chatId}`);
+	}
 	const chatOpacity = $derived(getPreferences().chatOpacity / 100);
 
 	// A brand-new chat has no messages yet — post one of the character's
@@ -80,6 +91,16 @@
 	<div class="flex h-full items-center justify-center text-sm opacity-70">
 		Chat not found.
 	</div>
+{:else if !character && characterLoadFailed}
+	<ChatCharacterRecovery chatId={chat.id} missingCharacterId={chat.character_id} mode="error" />
+{:else if manualPickCharacter}
+	<ChatCharacterRecovery
+		chatId={chat.id}
+		missingCharacterId={chat.character_id}
+		mode="manual"
+		oncancel={closeManualPick}
+		onpicked={closeManualPick}
+	/>
 {:else}
 	<div class="flex h-full">
 		<div class="flex h-full min-w-0 flex-1 flex-col">
