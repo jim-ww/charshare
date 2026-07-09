@@ -48,7 +48,9 @@
 	function showInViewer(index: number) {
 		const url = imageUrls[index]?.trim();
 		if (!url) return;
-		viewerIndex = imageUrls.slice(0, index).filter((u) => u.trim()).length;
+		viewerIndex = imageUrls
+			.slice(0, index)
+			.filter((u) => u.trim()).length;
 	}
 
 	let draggedImageIndex = $state<number | null>(null);
@@ -97,7 +99,10 @@
 	let tagGuidelinesEl = $state<HTMLDialogElement>();
 
 	const currentTagFragment = $derived(
-		tagsText.slice(tagsText.lastIndexOf(",") + 1).trim().toLowerCase(),
+		tagsText
+			.slice(tagsText.lastIndexOf(",") + 1)
+			.trim()
+			.toLowerCase(),
 	);
 	const tagSuggestions = $derived.by(() => {
 		if (!currentTagFragment) return [];
@@ -109,7 +114,9 @@
 		);
 		return PREDEFINED_TAGS.filter(
 			(t) =>
-				t.name.toLowerCase().includes(currentTagFragment) &&
+				t.name
+					.toLowerCase()
+					.includes(currentTagFragment) &&
 				!existing.has(t.name.toLowerCase()),
 		).slice(0, 8);
 	});
@@ -126,22 +133,33 @@
 		if (event.key === "ArrowDown") {
 			event.preventDefault();
 			tagSuggestionsHighlight =
-				(tagSuggestionsHighlight + 1) % tagSuggestions.length;
+				(tagSuggestionsHighlight + 1) %
+				tagSuggestions.length;
 		} else if (event.key === "ArrowUp") {
 			event.preventDefault();
 			tagSuggestionsHighlight =
-				(tagSuggestionsHighlight - 1 + tagSuggestions.length) %
+				(tagSuggestionsHighlight -
+					1 +
+					tagSuggestions.length) %
 				tagSuggestions.length;
-		} else if (event.key === "Enter" && tagSuggestionsHighlight >= 0) {
+		} else if (
+			event.key === "Enter" &&
+			tagSuggestionsHighlight >= 0
+		) {
 			event.preventDefault();
-			pickTagSuggestion(tagSuggestions[tagSuggestionsHighlight].name);
+			pickTagSuggestion(
+				tagSuggestions[tagSuggestionsHighlight].name,
+			);
 		} else if (event.key === "Escape") {
 			tagSuggestionsOpen = false;
 		}
 	}
 
 	function pickTagSuggestion(name: string) {
-		const upToLastComma = tagsText.slice(0, tagsText.lastIndexOf(",") + 1);
+		const upToLastComma = tagsText.slice(
+			0,
+			tagsText.lastIndexOf(",") + 1,
+		);
 		const prefix = upToLastComma ? `${upToLastComma} ` : "";
 		tagsText = `${prefix}${name}, `;
 		tagsInputEl?.focus();
@@ -151,10 +169,20 @@
 		untrack(() => initial?.language || draft?.language || "en"),
 	);
 	let systemPrompt = $state(
-		untrack(() => initial?.system_prompt ?? draft?.system_prompt ?? ""),
+		untrack(
+			() =>
+				initial?.system_prompt ??
+				draft?.system_prompt ??
+				"",
+		),
 	);
 	let firstMessage = $state(
-		untrack(() => initial?.first_message ?? draft?.first_message ?? ""),
+		untrack(
+			() =>
+				initial?.first_message ??
+				draft?.first_message ??
+				"",
+		),
 	);
 	let alternateGreetings = $state<string[]>(
 		untrack(() =>
@@ -164,7 +192,12 @@
 		),
 	);
 	let commentsEnabled = $state(
-		untrack(() => initial?.comments_enabled ?? draft?.comments_enabled ?? true),
+		untrack(
+			() =>
+				initial?.comments_enabled ??
+				draft?.comments_enabled ??
+				true,
+		),
 	);
 
 	function addGreeting() {
@@ -190,6 +223,10 @@
 	function removeExampleDialogue(index: number) {
 		exampleDialogues.splice(index, 1);
 	}
+
+	// Generous cap on the whole published character record, mainly to catch
+	// someone pasting a novel into a text field — not a fine-grained budget.
+	const MAX_CHARACTER_JSON_BYTES = 50_000;
 
 	let saving = $state(false);
 	let error = $state<string | null>(null);
@@ -219,7 +256,11 @@
 
 	beforeNavigate((navigation) => {
 		if (!isDirty) return;
-		if (!confirm("You have unsaved changes. Leave this page anyway?")) {
+		if (
+			!confirm(
+				"You have unsaved changes. Leave this page anyway?",
+			)
+		) {
 			navigation.cancel();
 		}
 	});
@@ -231,7 +272,10 @@
 		}
 		window.addEventListener("beforeunload", handleBeforeUnload);
 		return () =>
-			window.removeEventListener("beforeunload", handleBeforeUnload);
+			window.removeEventListener(
+				"beforeunload",
+				handleBeforeUnload,
+			);
 	});
 
 	async function handleSubmit(event: SubmitEvent) {
@@ -240,16 +284,22 @@
 		error = null;
 		const previousSnapshot = savedSnapshot;
 		try {
-			// Update the snapshot before submitting (not after) since
-			// onsubmit navigates away on success, and beforeNavigate would
-			// otherwise still see stale isDirty state from before this await.
-			savedSnapshot = snapshot();
-			await onsubmit({
+			const trimmedImageUrls = imageUrls
+				.map((u) => u.trim())
+				.filter(Boolean);
+			const invalidImageUrl = trimmedImageUrls.find(
+				(u) => !/^https?:\/\//i.test(u),
+			);
+			if (invalidImageUrl) {
+				throw new Error(
+					`Image URLs must link to an image hosted elsewhere (starting with http:// or https://) — got "${invalidImageUrl.slice(0, 60)}"`,
+				);
+			}
+
+			const payload: CharacterDraft = {
 				id: initial?.id,
 				name,
-				image_urls: imageUrls
-					.map((u) => u.trim())
-					.filter(Boolean),
+				image_urls: trimmedImageUrls,
 				description,
 				personality,
 				scenario,
@@ -268,7 +318,22 @@
 					.map((g) => g.trim())
 					.filter(Boolean),
 				comments_enabled: commentsEnabled,
-			});
+			};
+
+			const payloadBytes = new TextEncoder().encode(
+				JSON.stringify(payload),
+			).length;
+			if (payloadBytes > MAX_CHARACTER_JSON_BYTES) {
+				throw new Error(
+					`Character data is too large (${Math.round(payloadBytes / 1000)}KB, limit ${Math.round(MAX_CHARACTER_JSON_BYTES / 1000)}KB). Trim down the description, dialogues, or greetings.`,
+				);
+			}
+
+			// Update the snapshot before submitting (not after) since
+			// onsubmit navigates away on success, and beforeNavigate would
+			// otherwise still see stale isDirty state from before this await.
+			savedSnapshot = snapshot();
+			await onsubmit(payload);
 		} catch (err) {
 			savedSnapshot = previousSnapshot;
 			error =
@@ -318,18 +383,23 @@
 						>
 					{/if}
 					{#each LANGUAGES as [code, name] (code)}
-						<option value={code}>{name}</option>
+						<option value={code}
+							>{name}</option
+						>
 					{/each}
 				</select>
 			</label>
 			<label class="form-control">
-				<span class="label-text flex items-center gap-1.5">
+				<span
+					class="label-text flex items-center gap-1.5"
+				>
 					Tags (comma-separated)
 					<button
 						type="button"
 						class="btn btn-circle btn-ghost btn-xs"
 						title="Tag guidelines"
-						onclick={() => tagGuidelinesEl?.showModal()}
+						onclick={() =>
+							tagGuidelinesEl?.showModal()}
 					>
 						?
 					</button>
@@ -341,9 +411,14 @@
 						bind:value={tagsText}
 						autocomplete="off"
 						placeholder="fantasy, adventurer, tsundere"
-						onfocus={() => (tagSuggestionsOpen = true)}
+						onfocus={() =>
+							(tagSuggestionsOpen = true)}
 						onblur={() =>
-							setTimeout(() => (tagSuggestionsOpen = false), 150)}
+							setTimeout(
+								() =>
+									(tagSuggestionsOpen = false),
+								150,
+							)}
 						onkeydown={handleTagsKeydown}
 					/>
 					{#if tagSuggestionsOpen && tagSuggestions.length}
@@ -354,11 +429,21 @@
 								<li>
 									<button
 										type="button"
-										class:menu-active={index === tagSuggestionsHighlight}
-										title={tag.description ?? tag.name}
-										onmousedown={(e) => e.preventDefault()}
-										onmouseenter={() => (tagSuggestionsHighlight = index)}
-										onclick={() => pickTagSuggestion(tag.name)}
+										class:menu-active={index ===
+											tagSuggestionsHighlight}
+										title={tag.description ??
+											tag.name}
+										onmousedown={(
+											e,
+										) =>
+											e.preventDefault()}
+										onmouseenter={() =>
+											(tagSuggestionsHighlight =
+												index)}
+										onclick={() =>
+											pickTagSuggestion(
+												tag.name,
+											)}
 									>
 										{tag.name}
 										{#if tag.description}
@@ -376,24 +461,45 @@
 			</label>
 			<dialog bind:this={tagGuidelinesEl} class="modal">
 				<div class="modal-box">
-					<h3 class="text-lg font-bold">Tag guidelines</h3>
-					<ul class="mt-2 list-disc pl-5 text-sm opacity-80">
-						<li>Lowercase only, e.g. <code>fantasy</code>, not <code>Fantasy</code>.</li>
+					<h3 class="text-lg font-bold">
+						Tag guidelines
+					</h3>
+					<ul
+						class="mt-2 list-disc pl-5 text-sm opacity-80"
+					>
 						<li>
-							Use hyphens instead of spaces, e.g. <code>monster-girl</code>,
-							not <code>monster girl</code>.
+							Lowercase only, e.g. <code
+								>fantasy</code
+							>, not
+							<code>Fantasy</code>.
 						</li>
-						<li>Separate multiple tags with commas.</li>
 						<li>
-							Pick from the suggestions where possible so the same concept
-							isn't spelled differently across characters.
+							Use hyphens instead of
+							spaces, e.g. <code
+								>monster-girl</code
+							>, not
+							<code>monster girl</code
+							>.
+						</li>
+						<li>
+							Separate multiple tags
+							with commas.
+						</li>
+						<li>
+							Pick from the
+							suggestions where
+							possible so the same
+							concept isn't spelled
+							differently across
+							characters.
 						</li>
 					</ul>
 					<div class="modal-action">
 						<button
 							type="button"
 							class="btn"
-							onclick={() => tagGuidelinesEl?.close()}
+							onclick={() =>
+								tagGuidelinesEl?.close()}
 						>
 							Got it
 						</button>
@@ -429,7 +535,8 @@
 					<input
 						type="checkbox"
 						class="checkbox"
-						checked={localOnly || !registered}
+						checked={localOnly ||
+							!registered}
 						disabled={!registered}
 						onchange={(e) =>
 							(localOnly = (
@@ -444,13 +551,15 @@
 				</label>
 				{#if !registered}
 					<p class="text-xs opacity-60">
-						You're browsing as a guest, so new
-						characters stay local-only.
+						You're browsing as a guest, so
+						new characters stay local-only.
 						<button
 							type="button"
 							class="link"
 							onclick={() =>
-								openSettings("account")}
+								openSettings(
+									"account",
+								)}
 							>Create an account</button
 						> to publish to the network.
 					</p>
@@ -465,10 +574,7 @@
 				<div
 					class="collapse-arrow bg-base-200 border-base-300 join-item collapse border"
 				>
-					<input
-						type="checkbox"
-						checked
-						/>
+					<input type="checkbox" checked />
 					<div
 						class="collapse-title label-text font-medium"
 					>
@@ -485,9 +591,7 @@
 				<div
 					class="collapse-arrow bg-base-200 border-base-300 join-item collapse border"
 				>
-					<input
-						type="checkbox"
-						/>
+					<input type="checkbox" />
 					<div
 						class="collapse-title label-text font-medium"
 					>
@@ -497,6 +601,17 @@
 					</div>
 					<div class="collapse-content">
 						<div class="form-control gap-2">
+							<p class="text-sm opacity-70">
+								Links to images hosted
+								elsewhere only (e.g. <code
+									>https://example.com/image.png</code
+								>) — there's no upload; the
+								character record is small
+								text data that's copied to
+								every peer on the network,
+								so images have to stay
+								externally hosted.
+							</p>
 							<div
 								class="flex items-center justify-end"
 							>
@@ -585,9 +700,7 @@
 				<div
 					class="collapse-arrow bg-base-200 border-base-300 join-item collapse border"
 				>
-					<input
-						type="checkbox"
-						/>
+					<input type="checkbox" />
 					<div
 						class="collapse-title label-text font-medium"
 					>
@@ -604,9 +717,7 @@
 				<div
 					class="collapse-arrow bg-base-200 border-base-300 join-item collapse border"
 				>
-					<input
-						type="checkbox"
-						/>
+					<input type="checkbox" />
 					<div
 						class="collapse-title label-text font-medium"
 					>
@@ -624,9 +735,7 @@
 				<div
 					class="collapse-arrow bg-base-200 border-base-300 join-item collapse border"
 				>
-					<input
-						type="checkbox"
-						/>
+					<input type="checkbox" />
 					<div
 						class="collapse-title label-text font-medium"
 					>
@@ -646,9 +755,7 @@
 				<div
 					class="collapse-arrow bg-base-200 border-base-300 join-item collapse border"
 				>
-					<input
-						type="checkbox"
-						/>
+					<input type="checkbox" />
 					<div
 						class="collapse-title label-text font-medium"
 					>
@@ -709,9 +816,7 @@
 				<div
 					class="collapse-arrow bg-base-200 border-base-300 join-item collapse border"
 				>
-					<input
-						type="checkbox"
-						/>
+					<input type="checkbox" />
 					<div
 						class="collapse-title label-text font-medium"
 					>
@@ -730,7 +835,7 @@
 									exchanges
 									showing
 									how
-									{'{{char}}'}
+									{"{{char}}"}
 									talks</span
 								>
 								<button
@@ -754,6 +859,7 @@
 											]
 										}
 										placeholder={"{{user}}: What are you doing here?\n{{char}}: *glances over* Waiting for you, obviously."}
+
 									></textarea>
 									<button
 										type="button"
@@ -781,10 +887,15 @@
 					>
 						Custom system prompt
 					</div>
-					<div class="collapse-content flex flex-col gap-2">
+					<div
+						class="collapse-content flex flex-col gap-2"
+					>
 						<p class="text-sm opacity-70">
-							Leave blank to use the default roleplay instructions. Only
-							set this to override that default, e.g.:
+							Leave blank to use the
+							default roleplay
+							instructions. Only set
+							this to override that
+							default, e.g.:
 						</p>
 						<p
 							class="whitespace-pre-wrap rounded-box bg-base-300 p-2 text-xs opacity-60"

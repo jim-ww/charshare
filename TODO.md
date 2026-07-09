@@ -1,5 +1,5 @@
 - feat(chat): resend message history to AI on user message edit. change text to 'send', instead of 'save'
-- feat(image urls): create base64 image decoder (for image_url's) in characters, to allow store images in gun? compress, optimize image before saving
+- check if we store signature correctly, for local/published characters
 - feat(comments): allow author to hide them? but also add option to see hidden (for users)
 - fix(characters page): initial fetch only fetches local characters
 - feat: proper pagination in Characters browse page?
