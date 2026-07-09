@@ -7,7 +7,8 @@ import (
 
 // App struct
 type App struct {
-	ctx context.Context
+	ctx         context.Context
+	proxyImport proxyImportServer
 }
 
 // NewApp creates a new App application struct
@@ -19,6 +20,12 @@ func NewApp() *App {
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+}
+
+// shutdown is called when the app closes, so a running import server
+// doesn't outlive the window.
+func (a *App) shutdown(ctx context.Context) {
+	a.proxyImport.Stop()
 }
 
 // Greet returns a greeting for the given name

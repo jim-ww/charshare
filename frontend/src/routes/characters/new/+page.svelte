@@ -4,6 +4,7 @@
 	import type { CharacterDraft } from '$lib/types';
 	import { createOrEditCharacter, importCharacterDraft } from '$lib/state/characters.svelte';
 	import CharacterForm from '$lib/components/CharacterForm.svelte';
+	import ChatSiteImportPanel from '$lib/components/ChatSiteImportPanel.svelte';
 
 	let localOnly = $state(true);
 	let importedDraft = $state<CharacterDraft | undefined>(undefined);
@@ -29,12 +30,19 @@
 			if (importInput) importInput.value = '';
 		}
 	}
+
+	function handleChatSiteImport(draft: CharacterDraft) {
+		importError = '';
+		importedDraft = draft;
+		formKey += 1;
+	}
 </script>
 
 <div class="p-4">
 	<div class="mx-auto mb-4 flex max-w-6xl items-center justify-between">
 		<h1 class="text-xl font-semibold">New character</h1>
 		<div class="flex items-center gap-2">
+			<ChatSiteImportPanel onimport={handleChatSiteImport} />
 			<button class="btn btn-sm" type="button" onclick={() => importInput?.click()}>
 				Import from JSON
 			</button>

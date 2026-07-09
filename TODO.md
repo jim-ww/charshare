@@ -1,3 +1,9 @@
+- landing(wails): show source button doesnt work
+- add gears icon next to profile icon in navbar?
+- check that currently selected user persona is included in messages sent to AI, but, persona name in both Name and Description must be replaced with {{user}}
+- in system prompt, specify to always address user as {{user}}? as if its his name (unless stated to address other way by user)
+- fix theme selector being activated in collapsed state, ALSO make changing theme simpler? maybe add arrow keys for selection ?
+- transcribe text & read aloud (with local models) (whisper?). and then add "call mode"?
 - cannot select json files in wails file selector
 - wails build ignores linux prefer dark setting
 - add option to logout, but ask for confirmation, reminding to make account backup
