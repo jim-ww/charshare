@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { base } from "$app/paths";
+	import { externalLink } from "$lib/wails";
 	const REPO_URL = "https://github.com/jim-ww/charshare";
 </script>
 
@@ -83,6 +84,7 @@
 					href="{REPO_URL}/blob/main/LICENSE"
 					target="_blank"
 					rel="noreferrer"
+					use:externalLink
 					class="link">AGPLv3</a
 				>, which provides the software "as is," without
 				warranty of any kind, and disclaims liability to the

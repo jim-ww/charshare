@@ -21,6 +21,7 @@ interface WailsRuntime {
 		eventName: string,
 		callback: (...data: unknown[]) => void
 	): () => void;
+	BrowserOpenURL(url: string): void;
 }
 
 function wailsApp(): WailsApp | undefined {
@@ -50,6 +51,30 @@ export function stopProxyImportServer(): Promise<string> {
  *  message on failure, or "" on success/cancel. */
 export function saveFile(filename: string, base64Data: string): Promise<string> {
 	return wailsApp()!.SaveFile(filename, base64Data);
+}
+
+/** Opens a URL in the user's default system browser. Plain `<a
+ *  target="_blank">` clicks don't reliably escape Wails' webview (notably
+ *  webkitgtk on Linux), so external links must go through this instead. */
+export function openURL(url: string): void {
+	wailsRuntime()!.BrowserOpenURL(url);
+}
+
+/** Svelte action for `<a target="_blank">` links to external sites: routes
+ *  the click through {@link openURL} inside the Wails desktop build, and is
+ *  a no-op everywhere else (the browser's normal navigation handles it). */
+export function externalLink(node: HTMLAnchorElement) {
+	if (!isWailsDesktop()) return;
+	function onClick(e: MouseEvent) {
+		e.preventDefault();
+		openURL(node.href);
+	}
+	node.addEventListener("click", onClick);
+	return {
+		destroy() {
+			node.removeEventListener("click", onClick);
+		},
+	};
 }
 
 /** Subscribes to raw chat-completion request bodies forwarded by the local

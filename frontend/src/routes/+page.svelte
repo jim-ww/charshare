@@ -2,6 +2,7 @@
 	import { onMount } from "svelte";
 	import { goto } from "$app/navigation";
 	import { base } from "$app/paths";
+	import { externalLink } from "$lib/wails";
 
 	// In the Wails desktop build, skip the marketing landing page on first
 	// launch and go straight into the app. `window.runtime` only exists in
@@ -148,6 +149,7 @@
 				class="btn btn-lg btn-outline"
 				target="_blank"
 				rel="noreferrer"
+				use:externalLink
 			>
 				View source
 			</a>
@@ -199,6 +201,7 @@
 							class="btn btn-soft btn-sm"
 							target="_blank"
 							rel="noreferrer"
+							use:externalLink
 						>
 							GitHub Releases
 						</a>
@@ -344,12 +347,14 @@
 				href={REPO_URL}
 				target="_blank"
 				rel="noreferrer"
+				use:externalLink
 				class="link link-hover">GitHub</a
 			>
 			<a
 				href="{REPO_URL}/blob/main/LICENSE"
 				target="_blank"
 				rel="noreferrer"
+				use:externalLink
 				class="link link-hover"
 			>
 				AGPLv3 License
