@@ -2,7 +2,7 @@
 	import { untrack } from 'svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { base } from '$app/paths';
+	import { resolve } from '$app/paths';
 	import type { Character, CharacterDraft } from '$lib/types';
 	import { subscribeCharacter } from '$lib/gun/characters';
 	import { createOrEditCharacter, getMyCharacters, isCharacterLocalOnly } from '$lib/state/characters.svelte';
@@ -44,7 +44,7 @@
 
 	async function handleSubmit(draft: CharacterDraft) {
 		await createOrEditCharacter(draft, { localOnly: isCharacterLocalOnly(id) });
-		await goto(`${base}/characters`);
+		await goto(resolve('/characters'));
 	}
 </script>
 

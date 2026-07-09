@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { base } from '$app/paths';
+	import { resolve } from '$app/paths';
 	import { locales, localizeHref } from '$lib/paraglide/runtime';
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
@@ -30,7 +30,7 @@
 		document.documentElement.dataset.theme = getPreferences().theme;
 	});
 
-	const pageOrder = [`${base}/characters`, `${base}/chats`];
+	const pageOrder = [resolve('/characters'), resolve('/chats')];
 
 	function isEditableTarget(target: EventTarget | null) {
 		if (!(target instanceof HTMLElement)) return false;

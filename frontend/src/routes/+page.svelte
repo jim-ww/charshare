@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { goto } from "$app/navigation";
-	import { base } from "$app/paths";
+	import { asset, resolve } from "$app/paths";
 	import { externalLink } from "$lib/wails";
 
 	// In the Wails desktop build, skip the marketing landing page on first
@@ -17,7 +17,7 @@
 			!sessionStorage.getItem(SKIP_LANDING_KEY)
 		) {
 			sessionStorage.setItem(SKIP_LANDING_KEY, "true");
-			goto(`${base}/characters`, { replaceState: true });
+			goto(resolve("/characters"), { replaceState: true });
 		}
 	});
 
@@ -131,7 +131,7 @@
 
 <div class="mx-auto max-w-5xl px-6 py-16">
 	<section class="flex flex-col items-center gap-6 py-16 text-center">
-		<img src="{base}/icon-192.png" alt="Charshare" class="h-32 w-32 rounded-2xl shadow-sm" />
+		<img src={asset("/icon-192.png")} alt="Charshare" class="h-32 w-32 rounded-2xl shadow-sm" />
 		<h1 class="text-4xl font-bold tracking-tight sm:text-5xl">
 			Your characters. Your chats. Your rules.
 		</h1>
@@ -144,7 +144,7 @@
 		<div
 			class="flex flex-wrap items-center justify-center gap-3 pt-2"
 		>
-			<a href="{base}/characters" class="btn btn-primary btn-lg"
+			<a href={resolve("/characters")} class="btn btn-primary btn-lg"
 				>Chat with characters</a
 			>
 			<a
@@ -180,7 +180,7 @@
 		</h2>
 		<p class="pb-8 text-center text-base-content/70">
 			Run Charshare as a desktop app, or just use it in your
-			browser at <a href="{base}/characters" class="link"
+			browser at <a href={resolve("/characters")} class="link"
 				>/characters</a
 			> above — no install required either way.
 		</p>
@@ -362,8 +362,8 @@
 			>
 				AGPLv3 License
 			</a>
-			<a href="{base}/legal" class="link link-hover">Legal</a>
-			<a href="{base}/characters" class="link link-hover"
+			<a href={resolve("/legal")} class="link link-hover">Legal</a>
+			<a href={resolve("/characters")} class="link link-hover"
 				>Open the app</a
 			>
 		</div>

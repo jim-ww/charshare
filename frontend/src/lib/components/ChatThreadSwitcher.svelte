@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { base } from '$app/paths';
+	import { resolve } from '$app/paths';
 	import type { Chat } from '$lib/types';
 	import { getChats } from '$lib/state/chats.svelte';
 
@@ -22,7 +22,7 @@
 
 	function go(delta: number) {
 		const next = siblings[index + delta];
-		if (next) goto(`${base}/chats/${next.id}`);
+		if (next) goto(resolve('/chats/[id]', { id: next.id }));
 	}
 </script>
 
@@ -31,7 +31,7 @@
 		<button
 			class="btn btn-xs"
 			type="button"
-			onclick={() => goto(`${base}/characters/${chat.character_id}`)}
+			onclick={() => goto(resolve('/characters/[id]', { id: chat.character_id }))}
 		>
 			Back
 		</button>

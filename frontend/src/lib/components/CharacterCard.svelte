@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { base } from "$app/paths";
+	import { resolve } from "$app/paths";
 	import type { Character } from "$lib/types";
 	import { isCharacterLocalOnly } from "$lib/state/characters.svelte";
 	import { getCurrentUser } from "$lib/state/auth.svelte";
@@ -45,7 +45,7 @@
 </script>
 
 <a
-	href={`${base}/characters/${character.id}`}
+	href={resolve('/characters/[id]', { id: character.id })}
 	class="card relative bg-base-200 shadow-sm [content-visibility:auto] [contain-intrinsic-size:0_320px] hover:bg-base-300"
 	class:opacity-60={character.deleted || hidden}
 >

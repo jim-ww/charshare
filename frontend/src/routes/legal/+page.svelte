@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { base } from "$app/paths";
+	import { resolve } from "$app/paths";
 	import { externalLink } from "$lib/wails";
 	const REPO_URL = "https://github.com/jim-ww/charshare";
 </script>
@@ -95,6 +95,6 @@
 	</div>
 
 	<div class="pt-12">
-		<a href={base || "/"} class="link link-hover">&larr; Back home</a>
+		<a href={resolve("/")} class="link link-hover">&larr; Back home</a>
 	</div>
 </div>

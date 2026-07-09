@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { base } from '$app/paths';
+	import { resolve } from '$app/paths';
 	import type { Chat, CharacterId } from '$lib/types';
 	import { getChats, deleteChat, renameChat, exportChat } from '$lib/state/chats.svelte';
 	import { resolveCharacter, ensureCharacterLoaded } from '$lib/state/characterCache.svelte';
@@ -52,7 +52,7 @@
 		if (!deleteTarget) return;
 		const chat = deleteTarget;
 		deleteTarget = null;
-		if (activeId === chat.id) await goto(`${base}/chats`);
+		if (activeId === chat.id) await goto(resolve('/chats'));
 		await deleteChat(chat.id);
 	}
 
@@ -93,7 +93,7 @@
 			<li><button type="button" onclick={() => handleExport(chat)}>Export</button></li>
 			<li><button type="button" onclick={() => handleRename(chat)}>Rename</button></li>
 			<li>
-				<a href={`${base}/chats/${chat.id}?pick-character`}>Choose character</a>
+				<a href={`${resolve('/chats/[id]', { id: chat.id })}?pick-character`}>Choose character</a>
 			</li>
 			<li><button type="button" class="text-error" onclick={() => handleDelete(chat)}>Delete</button></li>
 		</ul>
@@ -106,14 +106,14 @@
 		{@const latest = characterChats[0]}
 		<div class="rounded-box" class:bg-base-200={activeId === latest.id && !expanded[characterId]}>
 			<div class="group flex items-center gap-2 rounded-box p-1.5 hover:bg-base-200">
-				<a href={`${base}/chats/${latest.id}`} class="shrink-0">
+				<a href={resolve('/chats/[id]', { id: latest.id })} class="shrink-0">
 					<Avatar
 						name={character?.name ?? '?'}
 						imageUrl={character?.image_urls[0]}
 						class="w-9"
 					/>
 				</a>
-				<a href={`${base}/chats/${latest.id}`} class="min-w-0 flex-1">
+				<a href={resolve('/chats/[id]', { id: latest.id })} class="min-w-0 flex-1">
 					<div class="truncate text-base font-medium">
 						{character?.name ?? 'Unknown character'}
 					</div>
@@ -142,7 +142,7 @@
 							<div class="group flex items-center gap-1 rounded-box" class:bg-base-200={activeId === chat.id}>
 								<a
 									class="min-w-0 flex-1 truncate rounded-box px-2 py-1 text-sm hover:bg-base-200"
-									href={`${base}/chats/${chat.id}`}
+									href={resolve('/chats/[id]', { id: chat.id })}
 								>
 									{chat.name}
 								</a>

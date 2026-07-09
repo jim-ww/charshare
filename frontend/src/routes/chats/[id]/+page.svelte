@@ -2,7 +2,7 @@
 	import { untrack } from "svelte";
 	import { page } from "$app/state";
 	import { goto } from "$app/navigation";
-	import { base } from "$app/paths";
+	import { resolve } from "$app/paths";
 	import {
 		getChat,
 		addMessage,
@@ -55,7 +55,7 @@
 	);
 	const manualPickCharacter = $derived(page.url.searchParams.has("pick-character"));
 	function closeManualPick() {
-		void goto(`${base}/chats/${chatId}`);
+		void goto(resolve('/chats/[id]', { id: chatId }));
 	}
 	const chatOpacity = $derived(getPreferences().chatOpacity / 100);
 

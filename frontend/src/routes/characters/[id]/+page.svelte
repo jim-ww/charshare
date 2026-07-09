@@ -2,7 +2,7 @@
 	import { untrack } from "svelte";
 	import { page } from "$app/state";
 	import { goto } from "$app/navigation";
-	import { base } from "$app/paths";
+	import { resolve } from "$app/paths";
 	import type { Character, Comment } from "$lib/types";
 	import { subscribeCharacter } from "$lib/gun/characters";
 	import {
@@ -164,7 +164,7 @@
 			character.name,
 			getSelectedPersonaId(character.id) ?? null,
 		);
-		await goto(`${base}/chats/${chat.id}`);
+		await goto(resolve('/chats/[id]', { id: chat.id }));
 	}
 
 	let importInput = $state<HTMLInputElement>();
@@ -182,7 +182,7 @@
 				await file.text(),
 				getSelectedPersonaId(character.id) ?? null,
 			);
-			await goto(`${base}/chats/${chat.id}`);
+			await goto(resolve('/chats/[id]', { id: chat.id }));
 		} catch (err) {
 			importError =
 				err instanceof Error
@@ -196,7 +196,7 @@
 	async function handleFork() {
 		if (!character) return;
 		const fork = await forkCharacter(character.id);
-		await goto(`${base}/characters/${fork.id}/edit`);
+		await goto(resolve('/characters/[id]/edit', { id: fork.id }));
 	}
 
 	async function handlePublish() {
@@ -229,7 +229,7 @@
 	async function handleDelete() {
 		if (!character) return;
 		await deleteMyCharacter(character.id);
-		await goto(`${base}/characters`);
+		await goto(resolve('/characters'));
 	}
 
 	async function handlePostComment(event: SubmitEvent) {
@@ -276,7 +276,7 @@
 </script>
 
 <div class="mx-auto max-w-5xl p-4">
-	<a href={`${base}/characters`} class="btn btn-ghost btn-sm mb-4">
+	<a href={resolve('/characters')} class="btn btn-ghost btn-sm mb-4">
 		&larr; Back
 	</a>
 	{#if notFound}
@@ -388,7 +388,7 @@
 					{#if latestChat}
 						<a
 							class="btn btn-soft btn-block"
-							href={`${base}/chats/${latestChat.id}`}
+							href={resolve('/chats/[id]', { id: latestChat.id })}
 							>Continue latest chat</a
 						>
 					{/if}
@@ -428,7 +428,7 @@
 					{#if isMine}
 						<a
 							class="btn btn-sm btn-ghost"
-							href={`${base}/characters/${character.id}/edit`}
+							href={resolve('/characters/[id]/edit', { id: character.id })}
 							>Edit</a
 						>
 						{#if localOnly}
@@ -478,7 +478,7 @@
 								<li>
 									<a
 										class="link link-hover text-sm"
-										href={`${base}/chats/${chat.id}`}
+										href={resolve('/chats/[id]', { id: chat.id })}
 									>
 										{chat.name}
 									</a>

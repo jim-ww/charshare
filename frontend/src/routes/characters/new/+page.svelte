@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { base } from '$app/paths';
+	import { resolve } from '$app/paths';
 	import type { CharacterDraft } from '$lib/types';
 	import { createOrEditCharacter, importCharacterDraft } from '$lib/state/characters.svelte';
 	import CharacterForm from '$lib/components/CharacterForm.svelte';
@@ -14,7 +14,7 @@
 
 	async function handleSubmit(draft: CharacterDraft) {
 		await createOrEditCharacter(draft, { localOnly });
-		await goto(`${base}/characters`);
+		await goto(resolve('/characters'));
 	}
 
 	async function handleImport(event: Event) {
