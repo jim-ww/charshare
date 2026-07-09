@@ -28,8 +28,21 @@ export function getNetworkResults(): Character[] {
 	return networkResults;
 }
 
+// A cold GUN client can have its WebSocket connected (see gunPeerReady) but
+// still not have synced the tag index data from the relay yet — the first
+// browseNetwork() of a session can come back empty even though the network
+// isn't actually empty. Retrying a couple times with a growing delay picks
+// up the data once it arrives, without the user having to notice and press
+// search themselves to force a second fetch.
+const NETWORK_RETRY_DELAYS_MS = [1500, 3000];
+
 export async function refreshNetwork(): Promise<void> {
 	networkResults = await browseNetwork();
+	for (const delay of NETWORK_RETRY_DELAYS_MS) {
+		if (networkResults.length > 0) return;
+		await new Promise((resolve) => setTimeout(resolve, delay));
+		networkResults = await browseNetwork();
+	}
 }
 
 export function isSearching(): boolean {

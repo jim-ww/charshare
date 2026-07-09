@@ -1,6 +1,6 @@
 import type { CharacterId, Keyring, PubKey } from '$lib/types';
 import { signDocument, verifyDocument } from '$lib/crypto/sign';
-import { getGun, gunPath, type GunNode } from './client';
+import { getGun, gunPath, gunPeerReady, type GunNode } from './client';
 import { putDocument, type Validator } from './document';
 import { parseCharacterId } from './characterId';
 
@@ -111,23 +111,29 @@ export function createSignedPointerIndex(namespace: string): SignedPointerIndex 
 		return new Promise((resolve) => {
 			const pending: Promise<CharacterId | null>[] = [];
 			let settled = false;
-			const timer = setTimeout(finish, ENUMERATE_TIMEOUT_MS);
 
 			function finish() {
 				if (settled) return;
 				settled = true;
-				clearTimeout(timer);
 				Promise.all(pending).then((results) => {
 					resolve(results.filter((id): id is CharacterId => id !== null));
 				});
 			}
 
-			bucketNode(key, bucket)
-				.map()
-				.once((data: unknown, childKey: string) => {
-					if (settled) return;
-					pending.push(verifyPointer(data, decodeURIComponent(childKey)));
-				});
+			// Give a cold-started client's WebSocket handshake a moment to finish
+			// before starting the fixed enumeration window below — otherwise the
+			// very first read after page load can settle with zero peers ever
+			// having been asked, and come back looking like an empty network.
+			gunPeerReady().then(() => {
+				if (settled) return;
+				setTimeout(finish, ENUMERATE_TIMEOUT_MS);
+				bucketNode(key, bucket)
+					.map()
+					.once((data: unknown, childKey: string) => {
+						if (settled) return;
+						pending.push(verifyPointer(data, decodeURIComponent(childKey)));
+					});
+			});
 		});
 	}
 

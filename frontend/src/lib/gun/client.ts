@@ -16,6 +16,8 @@ export type GunNode = IGunChain<any, any, any, any>;
 
 let instance: IGunInstance | null = null;
 let instanceRelayKey: string | null = null;
+let peerConnectedPromise: Promise<void> | null = null;
+let resolvePeerConnected: (() => void) | null = null;
 
 /** Lazily creates the singleton GUN instance, configured with the given relay
  *  peers (from Preferences — see getPreferences().gunRelays). Uses radisk
@@ -44,12 +46,32 @@ export function getGun(relays: string[] = DEFAULT_GUN_RELAYS): IGunInstance {
 		file: `${APP_ID}-${SCHEMA_VERSION}`
 	});
 	instanceRelayKey = relayKey;
+	peerConnectedPromise = new Promise((resolve) => {
+		resolvePeerConnected = resolve;
+	});
 	// Gun's WebSocket wire swallows connection errors internally and just
 	// silently retries (see node_modules/gun/gun.js, wire.onerror), so this is
 	// the only visibility we get into whether any relay peer ever connects.
-	instance.on('hi', (peer: { url?: string }) => console.log('[gun] peer connected', peer?.url));
+	instance.on('hi', (peer: { url?: string }) => {
+		console.log('[gun] peer connected', peer?.url);
+		resolvePeerConnected?.();
+	});
 	instance.on('bye', (peer: { url?: string }) => console.warn('[gun] peer disconnected', peer?.url));
 	return instance;
+}
+
+/** Resolves once a relay peer has connected (see the 'hi' handler above), or
+ *  after `timeoutMs`, whichever comes first — so a cold-started reader (e.g.
+ *  the very first browseNetwork() of a fresh page load) can give the
+ *  WebSocket handshake a moment to finish before starting a fixed-duration
+ *  enumeration window (see signedIndex.ts:readBucket), instead of racing it
+ *  and coming back empty just because no peer had connected yet. */
+export function gunPeerReady(timeoutMs = 1500): Promise<void> {
+	if (!peerConnectedPromise) return Promise.resolve();
+	return Promise.race([
+		peerConnectedPromise,
+		new Promise<void>((resolve) => setTimeout(resolve, timeoutMs))
+	]);
 }
 
 /** Test-only escape hatch: overrides the singleton so tests can use an
@@ -57,6 +79,8 @@ export function getGun(relays: string[] = DEFAULT_GUN_RELAYS): IGunInstance {
 export function __setGunForTests(gun: IGunInstance | null): void {
 	instance = gun;
 	instanceRelayKey = gun ? '__test__' : null;
+	peerConnectedPromise = null;
+	resolvePeerConnected = null;
 	authedPub = null;
 	authPromise = null;
 }
