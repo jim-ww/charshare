@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { base } from '$app/paths';
 	import type { Chat, Character, Message } from '$lib/types';
-	import { deleteMessage, editMessage, getSiblings, switchBranch } from '$lib/state/chats.svelte';
-	import { regenerateMessage } from '$lib/ai/chat';
+	import { deleteMessage, getSiblings, switchBranch, updateMessageContent } from '$lib/state/chats.svelte';
+	import { editUserMessage, regenerateMessage } from '$lib/ai/chat';
 	import { getMyProfile } from '$lib/state/profile.svelte';
 	import { getPersona, personaDisplayName } from '$lib/state/personas.svelte';
 	import Avatar from './Avatar.svelte';
@@ -70,9 +70,26 @@
 		editing = true;
 	}
 
-	async function saveEdit() {
-		await editMessage(chatId, message.id, draft);
+	/** Corrects the message content in place — no branching, no completion
+	 *  request. Unlike saveAndResend, this must leave whatever came after this
+	 *  message (replies, later turns) exactly where it was; branching via
+	 *  addMessage would switch the active path onto a new childless sibling
+	 *  and hide that history, which is wrong for a plain correction. */
+	async function saveEditOnly() {
+		await updateMessageContent(chatId, message.id, draft, { persist: true });
 		editing = false;
+	}
+
+	/** Edits the message and resends the conversation so the character
+	 *  reacts to the new wording — the common case for a user message edit. */
+	async function saveAndResend() {
+		editing = false;
+		regenerating = true;
+		try {
+			await editUserMessage(chat, character, message.id, draft);
+		} finally {
+			regenerating = false;
+		}
 	}
 
 	async function handleRegenerate() {
@@ -171,8 +188,17 @@
 				style="height: 12rem; max-height: 60vh; min-height: 5rem; resize: vertical;"
 				bind:value={draft}
 			></textarea>
-			<div class="mt-1 flex gap-1">
-				<button class="btn btn-xs" type="button" onclick={saveEdit}>Save</button>
+			<div class="mt-1 flex items-center gap-1">
+				{#if message.role === 'user'}
+					<button class="btn btn-xs btn-primary" type="button" onclick={saveAndResend}>
+						Send
+					</button>
+					<button class="btn btn-xs btn-ghost" type="button" onclick={saveEditOnly}>
+						Save only
+					</button>
+				{:else}
+					<button class="btn btn-xs" type="button" onclick={saveEditOnly}>Save</button>
+				{/if}
 				<button class="btn btn-xs" type="button" onclick={() => (editing = false)}>Cancel</button>
 			</div>
 		{:else if message.role === 'character' && message.content === ''}

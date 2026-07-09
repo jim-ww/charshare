@@ -1,4 +1,4 @@
-- feat(chat): resend message history to AI on user message edit. change text to 'send', instead of 'save'
+- fix: wails app should redirect users from landing 1 time per app start. currently it caches value between restarts. use session store?
 - feat(comments): allow author to hide them? but also add option to see hidden (for users)
 - fix(characters page): initial fetch only fetches local characters
 - feat: move all English text to paraglide translations

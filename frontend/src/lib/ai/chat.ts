@@ -1,6 +1,6 @@
 import type { Character, Chat, ChatId, Message, MessageId, ProviderConfig } from '$lib/types';
 import { getPreferences, initPreferences } from '$lib/state/preferences.svelte';
-import { addMessage, deleteMessage, getActivePath, updateMessageContent } from '$lib/state/chats.svelte';
+import { addMessage, deleteMessage, editMessage, getActivePath, updateMessageContent } from '$lib/state/chats.svelte';
 import { getPersona } from '$lib/state/personas.svelte';
 import { DEFAULT_SYSTEM_PROMPT } from '$lib/data/defaultSystemPrompt';
 import { requestCompletion, type CompletionMessage } from './index';
@@ -198,6 +198,40 @@ export async function regenerateMessage(
 		...historyToMessages(priorMessages)
 	];
 	await streamReply(chat.id, message.id, getPreferences().provider, messages, options);
+}
+
+/** Edits a user message and resends the conversation up to (and including)
+ *  the edited content, so the character actually reacts to the new wording
+ *  instead of the edit silently sitting there until the user separately
+ *  triggers a reply. Branches like editMessage/regenerateMessage — the old
+ *  message and whatever was built on it stay reachable via switchBranch.
+ *
+ *  If the content didn't actually change, editMessage no-ops (nothing to
+ *  branch) — but "Send" was still pressed, so this still generates a fresh
+ *  reply under the existing message rather than silently doing nothing. */
+export async function editUserMessage(
+	chat: Chat,
+	character: Character,
+	messageId: MessageId,
+	content: string,
+	options: { signal?: AbortSignal } = {}
+): Promise<void> {
+	await ensurePreferencesReady();
+	const edited = await editMessage(chat.id, messageId, content);
+	const parentId = edited?.id ?? messageId;
+
+	const activePath = getActivePath(chat);
+	const index = activePath.findIndex((m) => m.id === messageId);
+	const priorMessages = index === -1 ? activePath : activePath.slice(0, index);
+
+	const messages: CompletionMessage[] = [
+		{ role: 'system', content: systemPrompt(character, chat) },
+		...historyToMessages(priorMessages),
+		{ role: 'user', content }
+	];
+
+	const reply = await addMessage(chat.id, 'character', '', parentId);
+	await streamReply(chat.id, reply.id, getPreferences().provider, messages, options);
 }
 
 /** "Generate response for me" — the same completion call as sendMessage,

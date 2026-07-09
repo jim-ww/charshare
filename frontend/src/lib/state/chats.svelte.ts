@@ -351,12 +351,12 @@ export async function updateMessageContent(
  *  uses, so edits and regenerations show up as one unified set of branches
  *  rather than two separate mechanisms. No-ops if the content didn't
  *  actually change. */
-export async function editMessage(chatId: ChatId, messageId: MessageId, content: string): Promise<void> {
+export async function editMessage(chatId: ChatId, messageId: MessageId, content: string): Promise<Message | undefined> {
 	const chat = chats[chatId];
 	if (!chat) throw new Error('Chat not found.');
 	const message = chat.messages.find((m) => m.id === messageId);
-	if (!message || message.content === content) return;
-	await addMessage(chatId, message.role, content, message.parent_id);
+	if (!message || message.content === content) return undefined;
+	return addMessage(chatId, message.role, content, message.parent_id);
 }
 
 /** Deletes a message and everything built on top of it (its whole subtree),
