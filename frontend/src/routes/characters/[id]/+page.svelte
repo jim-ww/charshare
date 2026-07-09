@@ -470,33 +470,6 @@
 					</div>
 				{/if}
 
-				{#if character.example_dialogues.length}
-					<div
-						class="collapse-arrow collapse bg-base-200"
-					>
-						<input type="checkbox" />
-						<div
-							class="collapse-title font-medium"
-						>
-							Example dialogues
-						</div>
-						<div
-							class="collapse-content flex flex-col gap-2 text-sm opacity-80"
-						>
-							{#each character.example_dialogues as dialogue, i (i)}
-								<p
-									class="whitespace-pre-wrap {i >
-									0
-										? 'border-t border-base-content/10 pt-2'
-										: ''}"
-								>
-									{dialogue}
-								</p>
-							{/each}
-						</div>
-					</div>
-				{/if}
-
 				{#if character.first_message || character.alternate_greetings.length}
 					<div
 						class="collapse-arrow collapse bg-base-200"
@@ -524,6 +497,51 @@
 									{greeting}
 								</p>
 							{/each}
+						</div>
+					</div>
+				{/if}
+
+				{#if character.example_dialogues.length}
+					<div
+						class="collapse-arrow collapse bg-base-200"
+					>
+						<input type="checkbox" />
+						<div
+							class="collapse-title font-medium"
+						>
+							Example dialogues
+						</div>
+						<div
+							class="collapse-content flex flex-col gap-2 text-sm opacity-80"
+						>
+							{#each character.example_dialogues as dialogue, i (i)}
+								<p
+									class="whitespace-pre-wrap {i >
+									0
+										? 'border-t border-base-content/10 pt-2'
+										: ''}"
+								>
+									{dialogue}
+								</p>
+							{/each}
+						</div>
+					</div>
+				{/if}
+
+				{#if character.system_prompt}
+					<div
+						class="collapse-arrow collapse bg-base-200"
+					>
+						<input type="checkbox" />
+						<div
+							class="collapse-title font-medium"
+						>
+							System prompt
+						</div>
+						<div
+							class="collapse-content whitespace-pre-wrap text-sm opacity-80"
+						>
+							{character.system_prompt}
 						</div>
 					</div>
 				{/if}
