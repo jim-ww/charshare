@@ -26,25 +26,35 @@ describe('export filenames', () => {
 });
 
 describe('chats import', () => {
-	it('imports an exported chats array as new chats', async () => {
+	it('restores an exported chats array, preserving ids', async () => {
 		const chat = await createChat('char-1', 'Original');
 		const file = fileOf('charshare-chats-2026-01-01.json', JSON.stringify(getChats(), null, 2));
 
 		__setChatsForTests({});
 		const summaries = await importDataFile(file);
 
-		expect(summaries).toEqual([{ category: 'chats', count: 1 }]);
+		expect(summaries).toEqual([{ category: 'chats', count: 1, added: 1, updated: 0, skipped: 0 }]);
 		const imported = getChats();
 		expect(imported).toHaveLength(1);
 		expect(imported[0].name).toBe(chat.name);
 		expect(imported[0].character_id).toBe('char-1');
-		expect(imported[0].id).not.toBe(chat.id);
+		expect(imported[0].id).toBe(chat.id);
+	});
+
+	it('merges re-importing the same backup instead of duplicating', async () => {
+		await createChat('char-1', 'Original');
+		const file = fileOf('charshare-chats-2026-01-01.json', JSON.stringify(getChats(), null, 2));
+
+		const summaries = await importDataFile(file);
+
+		expect(summaries).toEqual([{ category: 'chats', count: 0, added: 0, updated: 0, skipped: 1 }]);
+		expect(getChats()).toHaveLength(1);
 	});
 });
 
 describe('personas import', () => {
-	it('imports an exported personas array as new personas', async () => {
-		await createPersona({ name: 'Alice', description: 'A test persona' });
+	it('restores an exported personas array, preserving ids', async () => {
+		const persona = await createPersona({ name: 'Alice', description: 'A test persona' });
 		const file = fileOf(
 			'charshare-personas-2026-01-01.json',
 			JSON.stringify(getPersonas(), null, 2)
@@ -53,10 +63,28 @@ describe('personas import', () => {
 		__setPersonasForTests({});
 		const summaries = await importDataFile(file);
 
-		expect(summaries).toEqual([{ category: 'personas', count: 1 }]);
+		expect(summaries).toEqual([
+			{ category: 'personas', count: 1, added: 1, updated: 0, skipped: 0 }
+		]);
 		const imported = getPersonas();
 		expect(imported).toHaveLength(1);
 		expect(imported[0].name).toBe('Alice');
+		expect(imported[0].id).toBe(persona.id);
+	});
+
+	it('merges re-importing the same backup instead of duplicating', async () => {
+		await createPersona({ name: 'Alice', description: 'A test persona' });
+		const file = fileOf(
+			'charshare-personas-2026-01-01.json',
+			JSON.stringify(getPersonas(), null, 2)
+		);
+
+		const summaries = await importDataFile(file);
+
+		expect(summaries).toEqual([
+			{ category: 'personas', count: 0, added: 0, updated: 0, skipped: 1 }
+		]);
+		expect(getPersonas()).toHaveLength(1);
 	});
 });
 

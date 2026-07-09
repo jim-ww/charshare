@@ -154,6 +154,9 @@
 						Imported {categoryLabel(summary.category)}{summary.count !== undefined
 							? ` (${summary.count})`
 							: ''}
+						{#if summary.skipped}
+							<span class="opacity-70">— {summary.skipped} unchanged, kept as-is</span>
+						{/if}
 					</li>
 				{/each}
 			</ul>

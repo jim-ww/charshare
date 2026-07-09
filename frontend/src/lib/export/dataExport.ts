@@ -2,17 +2,13 @@ import { zipSync, unzipSync, strToU8, strFromU8 } from 'fflate';
 import { getKeyring, setKeyring } from '$lib/state/auth.svelte';
 import { exportAccountBackup, parseAccountBackup } from '$lib/identity/backup';
 import { loadProfileForSwitchedAccount } from '$lib/state/profile.svelte';
-import {
-	getMyCharacters,
-	createOrEditCharacter,
-	importCharacterDraft
-} from '$lib/state/characters.svelte';
-import { getPersonas, createPersona, importPersonaDraft } from '$lib/state/personas.svelte';
-import { getChats, importChat } from '$lib/state/chats.svelte';
+import { getMyCharacters, restoreCharacter } from '$lib/state/characters.svelte';
+import { getPersonas, restorePersona } from '$lib/state/personas.svelte';
+import { getChats, restoreChat } from '$lib/state/chats.svelte';
 import { getPreferences, updatePreferences } from '$lib/state/preferences.svelte';
 import { getMyProfile } from '$lib/state/profile.svelte';
 import { isWailsDesktop, saveFile } from '$lib/wails';
-import type { Preferences } from '$lib/types';
+import type { Character, Chat, Persona, Preferences } from '$lib/types';
 
 export type DataCategory = 'account' | 'characters' | 'personas' | 'chats' | 'preferences';
 
@@ -143,6 +139,24 @@ export interface ImportSummary {
 	category: DataCategory;
 	/** Number of items imported, for the list-shaped categories. */
 	count?: number;
+	/** How many of `count` were new vs. replaced an existing item with the
+	 *  same id vs. left untouched because an existing item was preferred —
+	 *  only set for categories that dedupe by id (characters/personas/chats). */
+	added?: number;
+	updated?: number;
+	skipped?: number;
+}
+
+/** Tallies restore outcomes ('added' | 'updated' | 'skipped') into the
+ *  count/added/updated/skipped shape ImportSummary expects. */
+function summarizeRestoreResults(
+	category: DataCategory,
+	results: ('added' | 'updated' | 'skipped')[]
+): ImportSummary {
+	const added = results.filter((r) => r === 'added').length;
+	const updated = results.filter((r) => r === 'updated').length;
+	const skipped = results.filter((r) => r === 'skipped').length;
+	return { category, count: added + updated, added, updated, skipped };
 }
 
 /** Guesses which category a file holds — first from its filename (our own
@@ -176,42 +190,37 @@ async function importAccountFile(json: string): Promise<void> {
 	await loadProfileForSwitchedAccount(backup.profileFields);
 }
 
-async function importCharactersFile(json: string): Promise<number> {
+/** Restores a full "characters" backup, preserving each character's original
+ *  id — re-restoring the same backup merges by id (see restoreCharacter)
+ *  instead of piling up duplicates like the single-item share/import flow. */
+async function importCharactersFile(json: string): Promise<ImportSummary> {
 	const parsed: unknown = JSON.parse(json);
 	if (!Array.isArray(parsed)) throw new Error('Not a valid characters export.');
-	let count = 0;
-	for (const item of parsed) {
-		const draft = importCharacterDraft(JSON.stringify(item));
-		await createOrEditCharacter(draft, { localOnly: true });
-		count++;
+	const results: ('added' | 'updated' | 'skipped')[] = [];
+	for (const item of parsed as Character[]) {
+		results.push(await restoreCharacter(item));
 	}
-	return count;
+	return summarizeRestoreResults('characters', results);
 }
 
-async function importPersonasFile(json: string): Promise<number> {
+async function importPersonasFile(json: string): Promise<ImportSummary> {
 	const parsed: unknown = JSON.parse(json);
 	if (!Array.isArray(parsed)) throw new Error('Not a valid personas export.');
-	let count = 0;
-	for (const item of parsed) {
-		const draft = importPersonaDraft(JSON.stringify(item));
-		await createPersona(draft);
-		count++;
+	const results: ('added' | 'updated' | 'skipped')[] = [];
+	for (const item of parsed as Persona[]) {
+		results.push(await restorePersona(item));
 	}
-	return count;
+	return summarizeRestoreResults('personas', results);
 }
 
-async function importChatsFile(json: string): Promise<number> {
+async function importChatsFile(json: string): Promise<ImportSummary> {
 	const parsed: unknown = JSON.parse(json);
 	if (!Array.isArray(parsed)) throw new Error('Not a valid chats export.');
-	let count = 0;
-	for (const item of parsed as Record<string, unknown>[]) {
-		const characterId = item.character_id;
-		if (typeof characterId !== 'string') continue;
-		const personaId = typeof item.persona_id === 'string' ? item.persona_id : null;
-		await importChat(characterId, JSON.stringify(item), personaId);
-		count++;
+	const results: ('added' | 'updated' | 'skipped')[] = [];
+	for (const item of parsed as Chat[]) {
+		results.push(await restoreChat(item));
 	}
-	return count;
+	return summarizeRestoreResults('chats', results);
 }
 
 async function importPreferencesFile(json: string): Promise<void> {
@@ -234,11 +243,11 @@ async function importOne(filename: string, json: string): Promise<ImportSummary>
 			await importAccountFile(json);
 			return { category };
 		case 'characters':
-			return { category, count: await importCharactersFile(json) };
+			return importCharactersFile(json);
 		case 'personas':
-			return { category, count: await importPersonasFile(json) };
+			return importPersonasFile(json);
 		case 'chats':
-			return { category, count: await importChatsFile(json) };
+			return importChatsFile(json);
 		case 'preferences':
 			await importPreferencesFile(json);
 			return { category };

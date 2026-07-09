@@ -110,6 +110,33 @@ export async function deletePersona(id: PersonaId): Promise<void> {
 	await persist();
 }
 
+/** Restores a persona from a full data backup, preserving its original id
+ *  (unlike importPersonaDraft, which is for importing someone else's shared
+ *  persona and deliberately mints a new id). Used by dataExport.ts's bulk
+ *  "personas" category import, so re-restoring the same backup merges
+ *  instead of piling up duplicate copies every time.
+ *
+ *  Personas have no version field, so an id collision with different content
+ *  is resolved by asking the user which to keep. */
+export async function restorePersona(persona: Persona): Promise<'added' | 'updated' | 'skipped'> {
+	const existing = personas[persona.id];
+	if (!existing) {
+		personas = { ...personas, [persona.id]: persona };
+		await persist();
+		return 'added';
+	}
+	if (JSON.stringify(existing) === JSON.stringify(persona)) return 'skipped';
+
+	const preferImported = confirm(
+		`A persona named "${personaDisplayName(existing)}" already exists with different content. Replace it with the imported version?`
+	);
+	if (!preferImported) return 'skipped';
+
+	personas = { ...personas, [persona.id]: persona };
+	await persist();
+	return 'updated';
+}
+
 /** Serializes a persona for the "Export" action — plain JSON so it
  *  round-trips through importPersonaDraft (see below). Resolves the display
  *  name so an auto-named persona exports something meaningful. */

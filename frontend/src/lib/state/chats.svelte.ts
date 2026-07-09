@@ -201,6 +201,33 @@ export async function importChat(
 	return chat;
 }
 
+/** Restores a chat from a full data backup, preserving its original id
+ *  (unlike importChat, which is for importing a single shared chat and
+ *  deliberately mints a new id). Used by dataExport.ts's bulk "chats"
+ *  category import, so re-restoring the same backup merges instead of
+ *  piling up duplicate copies every time.
+ *
+ *  Chats have no version field, so an id collision with different content is
+ *  resolved by asking the user which to keep. */
+export async function restoreChat(chat: Chat): Promise<'added' | 'updated' | 'skipped'> {
+	const existing = chats[chat.id];
+	if (!existing) {
+		chats = { ...chats, [chat.id]: chat };
+		await persist();
+		return 'added';
+	}
+	if (JSON.stringify(existing) === JSON.stringify(chat)) return 'skipped';
+
+	const preferImported = confirm(
+		`A chat named "${existing.name}" already exists with different content. Replace it with the imported version?`
+	);
+	if (!preferImported) return 'skipped';
+
+	chats = { ...chats, [chat.id]: chat };
+	await persist();
+	return 'updated';
+}
+
 /** Walks the chat's active_child pointers from root_id to the leaf,
  *  returning the currently-selected linear conversation — what's rendered
  *  and what's sent to the model. All other messages in chat.messages belong

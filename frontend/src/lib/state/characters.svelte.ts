@@ -151,6 +151,53 @@ export async function forkCharacter(id: CharacterId): Promise<Character> {
 	return doc;
 }
 
+/** Restores a character from a full data backup, preserving its original id
+ *  (unlike importCharacterDraft, which is for importing someone else's shared
+ *  character and deliberately mints a new id). Used by dataExport.ts's bulk
+ *  "characters" category import, so re-restoring the same backup merges
+ *  instead of piling up duplicate copies every time.
+ *
+ *  - Already published under this id → GUN is authoritative, skipped.
+ *  - Not tracked locally, but published on the network → just linked into the
+ *    local index, network content wins.
+ *  - Not tracked locally at all → added as a new local-only character.
+ *  - Tracked locally as a local-only draft → the higher `version` wins; on a
+ *    tie with differing content, the user is asked which to keep. */
+export async function restoreCharacter(character: Character): Promise<'added' | 'updated' | 'skipped'> {
+	const entries = await loadMyCharacterEntries();
+	const existingEntry = entries.find((e) => e.id === character.id);
+
+	if (existingEntry?.published) return 'skipped';
+
+	const existing = existingEntry?.character;
+	if (!existing) {
+		const onNetwork = await getCharacter(character.id);
+		if (onNetwork.ok) {
+			await addPublishedCharacterId(character.id);
+			await refresh();
+			return 'added';
+		}
+		await saveLocalOnlyCharacter(character);
+		await refresh();
+		return 'added';
+	}
+
+	if (character.version < existing.version) return 'skipped';
+	if (character.version === existing.version && JSON.stringify(character) === JSON.stringify(existing)) {
+		return 'skipped';
+	}
+	if (character.version === existing.version) {
+		const preferImported = confirm(
+			`"${existing.name}" already exists locally at the same version with different content. Replace it with the imported version?`
+		);
+		if (!preferImported) return 'skipped';
+	}
+
+	await saveLocalOnlyCharacter(character);
+	await refresh();
+	return 'updated';
+}
+
 /** Serializes a character for the "Export" action — plain JSON so it round-trips
  *  through importCharacterDraft (see below). */
 export function exportCharacter(character: Character): string {
