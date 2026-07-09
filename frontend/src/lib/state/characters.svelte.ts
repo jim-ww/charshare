@@ -59,7 +59,17 @@ async function refresh(): Promise<void> {
 					: null;
 			}
 			const result = await getCharacter(entry.id);
-			return result.ok ? { character: result.doc, published: true } : null;
+			if (result.ok) {
+				// Keep the local cache in sync with whatever GUN just returned, so
+				// it stays a good fallback for the next time GUN isn't reachable.
+				await addPublishedCharacterId(entry.id, result.doc);
+				return { character: result.doc, published: true };
+			}
+			// No reachable relay (or the doc hasn't synced) — fall back to this
+			// browser's own cached copy rather than dropping the character.
+			return entry.character
+				? { character: normalizeLocalCharacter(entry.character), published: true }
+				: null;
 		})
 	);
 	const valid = resolved.filter((r): r is { character: Character; published: boolean } => r !== null);
@@ -97,7 +107,7 @@ export async function createOrEditCharacter(
 			return doc;
 		}
 		const doc = await gunPublishCharacter(fields);
-		await addPublishedCharacterId(doc.id);
+		await addPublishedCharacterId(doc.id, doc);
 		await refresh();
 		return doc;
 	}
@@ -112,13 +122,13 @@ export async function createOrEditCharacter(
 			return edited;
 		}
 		const published = await gunPublishLocalCharacter(edited);
-		await addPublishedCharacterId(published.id);
+		await addPublishedCharacterId(published.id, published);
 		await refresh();
 		return published;
 	}
 
 	const doc = await gunPublishCharacter(fields);
-	await addPublishedCharacterId(doc.id);
+	await addPublishedCharacterId(doc.id, doc);
 	await refresh();
 	return doc;
 }
@@ -127,7 +137,7 @@ export async function publishMyCharacter(id: CharacterId): Promise<Character> {
 	const existing = myCharacters.find((c) => c.id === id);
 	if (!existing) throw new Error('Character not found.');
 	const doc = await gunPublishLocalCharacter(existing);
-	await addPublishedCharacterId(doc.id);
+	await addPublishedCharacterId(doc.id, doc);
 	await refresh();
 	return doc;
 }
@@ -173,7 +183,7 @@ export async function restoreCharacter(character: Character): Promise<'added' | 
 	if (!existing) {
 		const onNetwork = await getCharacter(character.id);
 		if (onNetwork.ok) {
-			await addPublishedCharacterId(character.id);
+			await addPublishedCharacterId(character.id, onNetwork.doc);
 			await refresh();
 			return 'added';
 		}
