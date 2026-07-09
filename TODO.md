@@ -1,9 +1,12 @@
 - in chats {{user}} isnt properly changed to user profile name, make it reactive?
 - check that currently selected user persona is included in messages sent to AI, but, persona name in both Name and Description must be replaced with {{user}}
-- in system prompt, specify to always address user as {{user}}? as if its his name (unless stated to address other way by user)
-- fix theme selector being activated in collapsed state, ALSO make changing theme simpler? maybe add arrow keys for selection ?
-- create base64 image decoder (for image_url's) in characters, to allow store images in gun? compress, optimize image before saving
-- proper pagination in Characters browse page?
-- transcribe text & read aloud (with local models) (whisper?). and then add "call mode"?
-- rating system for characters?
-- implement extension for scraping characters from other services?
+- feat(system prompt): specify to always address user as {{user}}? as if its his name (unless stated to address other way by user)
+- feat(image urls): create base64 image decoder (for image_url's) in characters, to allow store images in gun? compress, optimize image before saving
+- feat(comments): allow author to hide them? but also add option to see hidden (for users)
+- feat(character model, character new/edit page): make setting system-prompt optional. if its empty, default system one is used. and only if its set, then it should be used. migrate old chars, so they all would have empty system prompt
+- fix (character page): not all character fields are shown
+- fix(characters page): initial fetch only fetches local characters
+- feat: proper pagination in Characters browse page?
+- feat(chat): add option transcribe user spoken text
+- feat(chat): read AI responses aloud (with local models) (whisper?)
+- feat(core): rating system for characters?
