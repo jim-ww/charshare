@@ -1,7 +1,6 @@
 - fix(data export/import): doesnt save user's username, description, image_url? also, should store those in local preferences
 - fix(data import): when importing characters, check if their ID's already exist, if so prefer one with newer version, if they have same verion - ask user which to prefer
 - feat(chat): resend message history to AI on user message edit. change text to 'send', instead of 'save'
-- check if we store signature correctly, for local/published characters
 - feat(comments): allow author to hide them? but also add option to see hidden (for users)
 - fix(characters page): initial fetch only fetches local characters
 - feat: proper pagination in Characters browse page?

@@ -68,7 +68,10 @@ function buildCategory(category: DataCategory): { filename: string; json: string
 		case 'account': {
 			const keyring = getKeyring();
 			if (!keyring) return null;
-			return { filename: categoryFilename(category), json: exportAccountBackup(keyring) };
+			return {
+				filename: categoryFilename(category),
+				json: exportAccountBackup(keyring, getMyProfile())
+			};
 		}
 		case 'characters':
 			return {
@@ -168,9 +171,9 @@ function detectCategory(filename: string, parsed: unknown): DataCategory | null 
 }
 
 async function importAccountFile(json: string): Promise<void> {
-	const keyring = parseAccountBackup(json);
-	await setKeyring(keyring);
-	await loadProfileForSwitchedAccount();
+	const backup = parseAccountBackup(json);
+	await setKeyring({ publicKey: backup.pair.pub, pair: backup.pair });
+	await loadProfileForSwitchedAccount(backup.profileFields);
 }
 
 async function importCharactersFile(json: string): Promise<number> {

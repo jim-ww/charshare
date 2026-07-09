@@ -73,7 +73,7 @@
 	function handleExport() {
 		const keyring = getKeyring();
 		if (!keyring) return;
-		const json = exportAccountBackup(keyring);
+		const json = exportAccountBackup(keyring, getMyProfile());
 		const blob = new Blob([json], { type: 'application/json' });
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement('a');
@@ -105,10 +105,10 @@
 		if (!file) return;
 		try {
 			const text = await file.text();
-			const keyring = parseAccountBackup(text);
-			await setKeyring(keyring);
+			const backup = parseAccountBackup(text);
+			await setKeyring({ publicKey: backup.pair.pub, pair: backup.pair });
 			loadedFromProfile = false;
-			await loadProfileForSwitchedAccount();
+			await loadProfileForSwitchedAccount(backup.profileFields);
 			imported = true;
 		} catch (err) {
 			importError = err instanceof Error ? err.message : String(err);
