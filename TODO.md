@@ -1,4 +1,3 @@
-- fix(characters browse page): images are too cropped, zoom them out a little
 - fix(chat view): handle case when remote character cannot be loaded, but chat exists (allow to either select character from local/non-local list(with search) OR upload character json)
 - feat(chat): resend message history to AI on user message edit. change text to 'send', instead of 'save'
 - feat(comments): allow author to hide them? but also add option to see hidden (for users)

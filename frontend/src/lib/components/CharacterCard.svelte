@@ -91,7 +91,7 @@
 					alt={character.name}
 					loading="lazy"
 					decoding="async"
-					class="h-full w-full object-cover"
+					class="h-full w-full object-cover object-top"
 				/>
 			{:else}
 				<div
