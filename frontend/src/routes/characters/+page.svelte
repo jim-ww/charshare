@@ -20,6 +20,7 @@
 		getRemoteResults,
 		getSearchQuery,
 		getSearchedQuery,
+		matchesQuery,
 		refreshNetwork,
 		runSearch,
 		setSearchQuery,
@@ -58,7 +59,6 @@
 		const searchedQuery = getSearchedQuery();
 		const trimmed = query.trim();
 		const isAuthorQuery = trimmed.startsWith("@");
-		const q = trimmed.toLowerCase();
 		const me = getCurrentUser();
 
 		const combined = new Map<string, Character>();
@@ -67,18 +67,11 @@
 		// equivalent — remoteResults (browseByAuthor) is the whole answer.
 		if (!isAuthorQuery) {
 			const localMatches = myCharacters.filter(
-				(c) =>
-					!q ||
-					c.name.toLowerCase().includes(q) ||
-					c.tags.some((t) => t.toLowerCase().includes(q)),
+				(c) => !trimmed || matchesQuery(c, trimmed),
 			);
 			for (const c of localMatches) combined.set(c.id, c);
 			for (const c of networkResults) {
-				if (
-					!q ||
-					c.name.toLowerCase().includes(q) ||
-					c.tags.some((t) => t.toLowerCase().includes(q))
-				) {
+				if (!trimmed || matchesQuery(c, trimmed)) {
 					if (!combined.has(c.id)) combined.set(c.id, c);
 				}
 			}

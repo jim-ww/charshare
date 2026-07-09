@@ -1,4 +1,5 @@
 - create base64 image decoder (for image_url's) in characters, to allow store images in gun? compress, optimize image before saving
+- mark nsfw bots specially in browse page
 - improve performance in search tab
 - set English as language by default
 - in chats {{user}} isnt properly changed to user profile name, make it reactive?
