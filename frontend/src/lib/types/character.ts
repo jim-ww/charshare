@@ -18,7 +18,7 @@ export interface CharacterFields {
 	scenario: string;
 	tags: string[];
 	nsfw: boolean;
-	language: string; // '' if unspecified
+	language: string; // ISO 639-1 code, e.g. "en"
 	system_prompt: string;
 	first_message: string;
 	alternate_greetings: string[];

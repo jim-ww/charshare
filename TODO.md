@@ -1,6 +1,8 @@
 - create base64 image decoder (for image_url's) in characters, to allow store images in gun? compress, optimize image before saving
 - improve performance in search tab
-- set English as language by default
+- alt+ arrow keys <- -> should act as back/next page in history. image viewer component interjects that.
+- add more keyboard oriented binds. like shift tab would switch between characters, chats pages
+- add go back button in character view page (back to characters page)
 - in chats {{user}} isnt properly changed to user profile name, make it reactive?
 - landing(wails): show source button doesnt work
 - check that currently selected user persona is included in messages sent to AI, but, persona name in both Name and Description must be replaced with {{user}}

@@ -153,12 +153,7 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 	}
 	let nsfw = $state(untrack(() => initial?.nsfw ?? draft?.nsfw ?? false));
 	let language = $state(
-		untrack(
-			() =>
-				initial?.language ??
-				draft?.language ??
-				(initial || draft ? "" : "en"),
-		),
+		untrack(() => initial?.language || draft?.language || "en"),
 	);
 	let systemPrompt = $state(
 		untrack(
@@ -324,6 +319,7 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 				<span class="label-text">Language</span>
 				<select
 					class="select select-bordered w-full"
+					required
 					bind:value={language}
 				>
 					{#if language && !LANGUAGES.some(([code]) => code === language)}
