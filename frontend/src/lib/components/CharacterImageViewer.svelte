@@ -49,6 +49,7 @@
 
 	function handleKeydown(event: KeyboardEvent) {
 		if (images.length < 2) return;
+		if (event.altKey || event.ctrlKey || event.metaKey) return;
 		if (event.key === 'ArrowLeft') {
 			index = (index - 1 + images.length) % images.length;
 		} else if (event.key === 'ArrowRight') {

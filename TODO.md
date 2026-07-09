@@ -1,4 +1,3 @@
-- alt+ arrow keys <- -> should act as back/next page in history. image viewer component interjects that.
 - in chats {{user}} isnt properly changed to user profile name, make it reactive?
 - check that currently selected user persona is included in messages sent to AI, but, persona name in both Name and Description must be replaced with {{user}}
 - in system prompt, specify to always address user as {{user}}? as if its his name (unless stated to address other way by user)

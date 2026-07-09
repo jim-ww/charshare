@@ -39,23 +39,40 @@
 	}
 
 	function handleGlobalKeydown(event: KeyboardEvent) {
-		if (event.key !== "Tab" || !event.ctrlKey) return;
-		if (event.altKey || event.metaKey) return;
-		if (isEditableTarget(event.target)) return;
+		if (event.key === "Tab" && event.ctrlKey) {
+			if (event.altKey || event.metaKey) return;
+			if (isEditableTarget(event.target)) return;
 
-		const currentIndex = pageOrder.findIndex((href) =>
-			page.url.pathname.startsWith(href),
-		);
+			const currentIndex = pageOrder.findIndex((href) =>
+				page.url.pathname.startsWith(href),
+			);
 
-		event.preventDefault();
-		if (currentIndex === -1) {
-			goto(pageOrder[0]);
+			event.preventDefault();
+			if (currentIndex === -1) {
+				goto(pageOrder[0]);
+				return;
+			}
+			const step = event.shiftKey ? -1 : 1;
+			const nextIndex =
+				(currentIndex + step + pageOrder.length) % pageOrder.length;
+			goto(pageOrder[nextIndex]);
 			return;
 		}
-		const step = event.shiftKey ? -1 : 1;
-		const nextIndex =
-			(currentIndex + step + pageOrder.length) % pageOrder.length;
-		goto(pageOrder[nextIndex]);
+
+		if (
+			event.altKey &&
+			!event.ctrlKey &&
+			!event.metaKey &&
+			(event.key === "ArrowLeft" || event.key === "ArrowRight")
+		) {
+			if (isEditableTarget(event.target)) return;
+			event.preventDefault();
+			if (event.key === "ArrowLeft") {
+				history.back();
+			} else {
+				history.forward();
+			}
+		}
 	}
 </script>
 
