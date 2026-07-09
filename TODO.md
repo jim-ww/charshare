@@ -1,4 +1,3 @@
-- fix: wails app should redirect users from landing 1 time per app start. currently it caches value between restarts. use session store?
 - feat(comments): allow author to hide them? but also add option to see hidden (for users)
 - feat: move all English text to paraglide translations
 - feat(chat): add option to transcribe user spoken text

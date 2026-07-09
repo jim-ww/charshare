@@ -7,14 +7,16 @@
 	// In the Wails desktop build, skip the marketing landing page on first
 	// launch and go straight into the app. `window.runtime` only exists in
 	// the Wails webview, so this is a no-op for the web build. Only fires
-	// once — after that, visiting "/" (e.g. via the logo) stays put.
+	// once per app start — sessionStorage (not localStorage) so the flag
+	// doesn't survive across restarts of the app; each fresh launch of the
+	// webview process gets its own session.
 	const SKIP_LANDING_KEY = "charshare:skippedInitialLanding";
 	onMount(() => {
 		if (
 			(window as unknown as { runtime?: unknown }).runtime &&
-			!localStorage.getItem(SKIP_LANDING_KEY)
+			!sessionStorage.getItem(SKIP_LANDING_KEY)
 		) {
-			localStorage.setItem(SKIP_LANDING_KEY, "true");
+			sessionStorage.setItem(SKIP_LANDING_KEY, "true");
 			goto(`${base}/characters`, { replaceState: true });
 		}
 	});
