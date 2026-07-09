@@ -536,7 +536,7 @@
 						<div
 							class="collapse-title font-medium"
 						>
-							System prompt
+							Custom system prompt
 						</div>
 						<div
 							class="collapse-content whitespace-pre-wrap text-sm opacity-80"

@@ -2,6 +2,7 @@ import type { Character, Chat, ChatId, Message, MessageId, ProviderConfig } from
 import { getPreferences, initPreferences } from '$lib/state/preferences.svelte';
 import { addMessage, deleteMessage, getActivePath, updateMessageContent } from '$lib/state/chats.svelte';
 import { getPersona } from '$lib/state/personas.svelte';
+import { DEFAULT_SYSTEM_PROMPT } from '$lib/data/defaultSystemPrompt';
 import { requestCompletion, type CompletionMessage } from './index';
 
 const MAX_CONTINUATIONS = 3;
@@ -69,14 +70,6 @@ const PARENTHETICAL_INSTRUCTION =
 	'instruction to you, not dialogue or narration. Follow it exactly, then continue the scene ' +
 	"without the parenthesized text itself appearing in your reply, unless the instruction says otherwise.";
 
-const USER_NAME_INSTRUCTION =
-	"The user's persona is named {{user}}. If you need to address them by name, write the literal " +
-	'placeholder {{user}} — do not substitute an actual name for it. If the user has explicitly ' +
-	'asked to be addressed differently (e.g. "call me Master"), use that form of address instead, ' +
-	'but still keep the {{user}} placeholder in it wherever their name would naturally appear ' +
-	'(e.g. "Master {{user}}") rather than dropping it — only omit {{user}} entirely if they asked ' +
-	'to be called something that has no name in it at all (e.g. just "Master").';
-
 /** The persona's name is never sent here — messages already use the
  *  `{{user}}` macro for that (see historyToMessages/systemPrompt callers),
  *  and the model is expected to resolve it the same as the UI does. Only the
@@ -88,13 +81,12 @@ function personaPrompt(chat: Chat): string {
 
 function systemPrompt(character: Character, chat: Chat): string {
 	return [
-		character.system_prompt && `<SystemPrompt>\n${character.system_prompt}\n</SystemPrompt>`,
+		`<SystemPrompt>\n${character.system_prompt || DEFAULT_SYSTEM_PROMPT}\n</SystemPrompt>`,
 		character.personality && `<Personality>\n${character.personality}\n</Personality>`,
 		character.scenario && `<Scenario>\n${character.scenario}\n</Scenario>`,
 		character.example_dialogues.length &&
 			`<ExampleDialogues>\n${character.example_dialogues.join('\n---\n')}\n</ExampleDialogues>`,
 		personaPrompt(chat),
-		USER_NAME_INSTRUCTION,
 		PARENTHETICAL_INSTRUCTION
 	]
 		.filter(Boolean)

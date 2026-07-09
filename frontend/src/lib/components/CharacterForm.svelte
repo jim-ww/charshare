@@ -7,6 +7,7 @@
 	import { openSettings } from "$lib/state/settingsModal.svelte";
 	import { LANGUAGES } from "$lib/languages";
 	import { PREDEFINED_TAGS } from "$lib/data/tags";
+	import { DEFAULT_SYSTEM_PROMPT } from "$lib/data/defaultSystemPrompt";
 
 	interface Props {
 		initial?: Character;
@@ -26,12 +27,6 @@
 		showLocalOnlyToggle = false,
 	}: Props = $props();
 	const registered = $derived(isAccountRegistered());
-	const defaultSystemPrompt = `You are {{char}}, and you must stay in character as {{char}} at all times.
-Write {{char}}'s next reply in a fictional chat between {{char}} and {{user}}.
-Narrate actions and physical reactions in *asterisks*, and speak dialogue plainly.
-Never speak, act, or narrate for {{user}} — only control {{char}}.
-Never state or assume what {{user}} does, thinks, or feels unless {{user}} has explicitly said so.
-Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 
 	let name = $state(untrack(() => initial?.name ?? draft?.name ?? ""));
 	let imageUrls = $state<string[]>(
@@ -156,12 +151,7 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 		untrack(() => initial?.language || draft?.language || "en"),
 	);
 	let systemPrompt = $state(
-		untrack(
-			() =>
-				initial?.system_prompt ??
-				draft?.system_prompt ??
-				(initial || draft ? "" : defaultSystemPrompt),
-		),
+		untrack(() => initial?.system_prompt ?? draft?.system_prompt ?? ""),
 	);
 	let firstMessage = $state(
 		untrack(() => initial?.first_message ?? draft?.first_message ?? ""),
@@ -789,9 +779,18 @@ Stay consistent with {{char}}'s personality, scenario, and prior messages.`;
 					<div
 						class="collapse-title label-text font-medium"
 					>
-						System prompt
+						Custom system prompt
 					</div>
-					<div class="collapse-content">
+					<div class="collapse-content flex flex-col gap-2">
+						<p class="text-sm opacity-70">
+							Leave blank to use the default roleplay instructions. Only
+							set this to override that default, e.g.:
+						</p>
+						<p
+							class="whitespace-pre-wrap rounded-box bg-base-300 p-2 text-xs opacity-60"
+						>
+							{DEFAULT_SYSTEM_PROMPT}
+						</p>
 						<textarea
 							class="textarea textarea-bordered field-sizing-content min-h-32 w-full"
 							bind:value={

@@ -1,4 +1,3 @@
-- feat(character model, character new/edit page): make setting system-prompt optional. if its empty, default system one is used. and only if its set, then it should be used. migrate old chars, so they all would have empty system prompt
 - feat(image viewer): view image in full size? dont crop
 - feat(image urls): create base64 image decoder (for image_url's) in characters, to allow store images in gun? compress, optimize image before saving
 - feat(comments): allow author to hide them? but also add option to see hidden (for users)
