@@ -129,6 +129,7 @@
 
 <div class="mx-auto max-w-5xl px-6 py-16">
 	<section class="flex flex-col items-center gap-6 py-16 text-center">
+		<img src="{base}/icon-192.png" alt="Charshare" class="h-32 w-32 rounded-2xl shadow-sm" />
 		<h1 class="text-4xl font-bold tracking-tight sm:text-5xl">
 			Your characters. Your chats. Your rules.
 		</h1>

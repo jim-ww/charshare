@@ -47,9 +47,10 @@
 	class="navbar sticky top-0 z-30 flex items-center border-b border-base-300 bg-base-100/80 px-4 backdrop-blur"
 >
 	<div class="flex flex-1 items-center gap-6">
-		<a href={base || "/"} class="text-xl font-bold leading-none tracking-tight"
-			>charshare</a
-		>
+		<a href={base || "/"} class="flex items-center gap-2 text-xl font-bold leading-none tracking-tight">
+			<img src="{base}/icon-192.png" alt="" class="h-6 w-6 rounded-md" />
+			charshare
+		</a>
 		{#each navLinks as { href, label } (href)}
 			<a
 				{href}
