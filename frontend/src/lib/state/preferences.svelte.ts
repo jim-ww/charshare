@@ -64,6 +64,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
 	blockedTags: [],
 	blockedAuthors: [],
 	hiddenCharacterIds: [],
+	hiddenCommentIds: [],
 	personaSelections: {},
 	defaultBackground: "",
 	chatOpacity: 100,
@@ -116,6 +117,7 @@ export function initPreferences(): Promise<void> {
 					...preferences,
 					blockedAuthors: preferences.blockedAuthors ?? [],
 					hiddenCharacterIds: preferences.hiddenCharacterIds ?? [],
+					hiddenCommentIds: preferences.hiddenCommentIds ?? [],
 					personaSelections: preferences.personaSelections ?? {},
 					defaultBackground: preferences.defaultBackground ?? "",
 					chatOpacity: preferences.chatOpacity ?? 100,
@@ -181,6 +183,30 @@ export async function unhideCharacter(characterId: string): Promise<void> {
 	await updatePreferences({
 		hiddenCharacterIds: preferences.hiddenCharacterIds.filter(
 			(id) => id !== characterId,
+		),
+	});
+}
+
+export function isCommentHidden(commentId: string): boolean {
+	return preferences.hiddenCommentIds.includes(commentId);
+}
+
+/** Hides a comment locally — this browser only, not a network action. The
+ *  comment itself is untouched; anyone else, including its author, still
+ *  sees it exactly as published. See landing page: no user gets the power
+ *  to take another user's speech away, so a comment can only be hidden
+ *  from the person choosing to hide it, never removed for everyone. */
+export async function hideComment(commentId: string): Promise<void> {
+	if (preferences.hiddenCommentIds.includes(commentId)) return;
+	await updatePreferences({
+		hiddenCommentIds: [...preferences.hiddenCommentIds, commentId],
+	});
+}
+
+export async function unhideComment(commentId: string): Promise<void> {
+	await updatePreferences({
+		hiddenCommentIds: preferences.hiddenCommentIds.filter(
+			(id) => id !== commentId,
 		),
 	});
 }

@@ -85,6 +85,7 @@ export interface Preferences {
   blockedTags: string[];
   blockedAuthors: string[]; // author pubkeys whose characters are excluded from Browse, this browser only
   hiddenCharacterIds: string[]; // other users' characters hidden locally, not deleted
+  hiddenCommentIds: string[]; // comments hidden locally, this browser only — never a network action
   personaSelections: Record<string, string>; // characterId -> personaId, remembers the last mask used per character
   provider: ProviderConfig; // the currently active provider's config
   providerConfigs: ProviderConfigMap; // last-saved config per provider

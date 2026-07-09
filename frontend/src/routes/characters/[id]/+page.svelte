@@ -33,6 +33,11 @@
 		loadComments,
 		removeComment,
 	} from "$lib/state/comments.svelte";
+	import {
+		hideComment,
+		isCommentHidden,
+		unhideComment,
+	} from "$lib/state/preferences.svelte";
 	import { getProfile } from "$lib/gun/users";
 	import CharacterImageViewer from "$lib/components/CharacterImageViewer.svelte";
 	import PersonaSelectorButton from "$lib/components/PersonaSelectorButton.svelte";
@@ -50,6 +55,7 @@
 	let notFound = $state(false);
 	let newComment = $state("");
 	let posting = $state(false);
+	let showHiddenComments = $state(false);
 	let authorNames = $state<Record<string, string>>({});
 
 	const localOnly = $derived(isCharacterLocalOnly(id));
@@ -242,6 +248,14 @@
 
 	async function handleDeleteComment(comment: Comment) {
 		await removeComment(id, comment.id);
+	}
+
+	async function handleToggleHideComment(comment: Comment) {
+		if (isCommentHidden(comment.id)) {
+			await unhideComment(comment.id);
+		} else {
+			await hideComment(comment.id);
+		}
 	}
 </script>
 
@@ -639,50 +653,87 @@
 								No comments yet.
 							</p>
 						{:else}
-							<ul
-								class="flex flex-col gap-3"
-							>
-								{#each comments as comment (comment.id)}
-									<li
-										class="rounded-box bg-base-200 p-3"
-									>
-										<div
-											class="flex items-center justify-between gap-2"
+							{@const visibleComments = comments.filter(
+								(c) => showHiddenComments || !isCommentHidden(c.id),
+							)}
+							<label class="label cursor-pointer justify-start gap-2 py-0">
+								<input
+									type="checkbox"
+									class="toggle toggle-xs"
+									bind:checked={showHiddenComments}
+								/>
+								<span class="label-text text-xs">Show hidden</span>
+							</label>
+							{#if visibleComments.length === 0}
+								<p class="text-sm opacity-60">
+									All comments are hidden.
+								</p>
+							{:else}
+								<ul
+									class="flex flex-col gap-3"
+								>
+									{#each visibleComments as comment (comment.id)}
+										{@const hidden = isCommentHidden(comment.id)}
+										<li
+											class="rounded-box bg-base-200 p-3"
+											class:opacity-50={hidden}
 										>
-											<span
-												class="text-xs font-semibold opacity-70"
+											<div
+												class="flex items-center justify-between gap-2"
 											>
-												{authorLabel(
-													comment.author,
-												)}
-												{#if comment.author === character.author}
-													<span
-														class="badge badge-xs badge-primary ml-1"
-														>author</span
-													>
-												{/if}
-											</span>
-											{#if comment.author === getCurrentUser()}
-												<button
-													class="btn btn-xs btn-ghost"
-													type="button"
-													onclick={() =>
-														handleDeleteComment(
-															comment,
-														)}
+												<span
+													class="text-xs font-semibold opacity-70"
 												>
-													Delete
-												</button>
-											{/if}
-										</div>
-										<p
-											class="mt-1 whitespace-pre-wrap text-sm"
-										>
-											{comment.content}
-										</p>
-									</li>
-								{/each}
-							</ul>
+													{authorLabel(
+														comment.author,
+													)}
+													{#if comment.author === character.author}
+														<span
+															class="badge badge-xs badge-primary ml-1"
+															>author</span
+														>
+													{/if}
+													{#if hidden}
+														<span class="badge badge-xs ml-1">hidden</span>
+													{/if}
+												</span>
+												<div class="flex gap-1">
+													<button
+														class="btn btn-xs btn-ghost"
+														type="button"
+														title={hidden
+															? "Only visible to you locally — unhide to stop hiding it"
+															: "Hide this comment locally, for you only"}
+														onclick={() =>
+															handleToggleHideComment(
+																comment,
+															)}
+													>
+														{hidden ? "Unhide" : "Hide"}
+													</button>
+													{#if comment.author === getCurrentUser()}
+														<button
+															class="btn btn-xs btn-ghost"
+															type="button"
+															onclick={() =>
+																handleDeleteComment(
+																	comment,
+																)}
+														>
+															Delete
+														</button>
+													{/if}
+												</div>
+											</div>
+											<p
+												class="mt-1 whitespace-pre-wrap text-sm"
+											>
+												{comment.content}
+											</p>
+										</li>
+									{/each}
+								</ul>
+							{/if}
 						{/if}
 					{:else}
 						<p class="text-sm opacity-60">
