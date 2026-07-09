@@ -1,4 +1,3 @@
-- check that currently selected user persona is included in messages sent to AI, but, persona name in both Name and Description must be replaced with {{user}}
 - feat(system prompt): specify to always address user as {{user}}? as if its his name (unless stated to address other way by user)
 - feat(image urls): create base64 image decoder (for image_url's) in characters, to allow store images in gun? compress, optimize image before saving
 - feat(comments): allow author to hide them? but also add option to see hidden (for users)

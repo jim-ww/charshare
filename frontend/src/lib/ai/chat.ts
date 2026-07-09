@@ -1,6 +1,7 @@
 import type { Character, Chat, ChatId, Message, MessageId, ProviderConfig } from '$lib/types';
 import { getPreferences, initPreferences } from '$lib/state/preferences.svelte';
 import { addMessage, deleteMessage, getActivePath, updateMessageContent } from '$lib/state/chats.svelte';
+import { getPersona } from '$lib/state/personas.svelte';
 import { requestCompletion, type CompletionMessage } from './index';
 
 const MAX_CONTINUATIONS = 3;
@@ -68,13 +69,23 @@ const PARENTHETICAL_INSTRUCTION =
 	'instruction to you, not dialogue or narration. Follow it exactly, then continue the scene ' +
 	"without the parenthesized text itself appearing in your reply, unless the instruction says otherwise.";
 
-function systemPrompt(character: Character): string {
+/** The persona's name is never sent here — messages already use the
+ *  `{{user}}` macro for that (see historyToMessages/systemPrompt callers),
+ *  and the model is expected to resolve it the same as the UI does. Only the
+ *  description carries information the model wouldn't otherwise have. */
+function personaPrompt(chat: Chat): string {
+	const persona = chat.persona_id ? getPersona(chat.persona_id) : undefined;
+	return persona?.description ? `<UserPersona>\n${persona.description}\n</UserPersona>` : '';
+}
+
+function systemPrompt(character: Character, chat: Chat): string {
 	return [
 		character.system_prompt && `<SystemPrompt>\n${character.system_prompt}\n</SystemPrompt>`,
 		character.personality && `<Personality>\n${character.personality}\n</Personality>`,
 		character.scenario && `<Scenario>\n${character.scenario}\n</Scenario>`,
 		character.example_dialogues.length &&
 			`<ExampleDialogues>\n${character.example_dialogues.join('\n---\n')}\n</ExampleDialogues>`,
+		personaPrompt(chat),
 		PARENTHETICAL_INSTRUCTION
 	]
 		.filter(Boolean)
@@ -131,7 +142,7 @@ export async function sendMessage(
 	await addMessage(chat.id, 'user', content);
 
 	const messages: CompletionMessage[] = [
-		{ role: 'system', content: systemPrompt(character) },
+		{ role: 'system', content: systemPrompt(character, chat) },
 		...historyToMessages(priorMessages),
 		{ role: 'user', content }
 	];
@@ -152,7 +163,7 @@ export async function continueChat(
 	const priorMessages = getActivePath(chat);
 
 	const messages: CompletionMessage[] = [
-		{ role: 'system', content: systemPrompt(character) },
+		{ role: 'system', content: systemPrompt(character, chat) },
 		...historyToMessages(priorMessages)
 	];
 
@@ -182,7 +193,7 @@ export async function regenerateMessage(
 
 	const message = await addMessage(chat.id, 'character', '', parentId);
 	const messages: CompletionMessage[] = [
-		{ role: 'system', content: systemPrompt(character) },
+		{ role: 'system', content: systemPrompt(character, chat) },
 		...historyToMessages(priorMessages)
 	];
 	await streamReply(chat.id, message.id, getPreferences().provider, messages, options);
@@ -197,7 +208,7 @@ export async function generateUserDraft(chat: Chat, character: Character): Promi
 	const messages: CompletionMessage[] = [
 		{
 			role: 'system',
-			content: `${systemPrompt(character)}\n\nWrite the next line for the human user in this conversation, in their voice — not as ${character.name}.`
+			content: `${systemPrompt(character, chat)}\n\nWrite the next line for the human user in this conversation, in their voice — not as ${character.name}.`
 		},
 		...historyToMessages(getActivePath(chat))
 	];
