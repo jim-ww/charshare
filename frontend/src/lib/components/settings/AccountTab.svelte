@@ -6,9 +6,10 @@
 		registerAccount,
 		loadProfileForSwitchedAccount
 	} from '$lib/state/profile.svelte';
-	import { getKeyring, isAccountRegistered, setKeyring } from '$lib/state/auth.svelte';
+	import { getKeyring, isAccountRegistered, setKeyring, logout } from '$lib/state/auth.svelte';
 	import { exportAccountBackup, parseAccountBackup } from '$lib/identity/backup';
 	import { categoryFilename } from '$lib/export/dataExport';
+	import { clearProfileForLogout } from '$lib/state/profile.svelte';
 
 	const profileReady = $derived(isProfileReady());
 	const registered = $derived(isAccountRegistered());
@@ -80,6 +81,20 @@
 		a.download = categoryFilename('account');
 		a.click();
 		URL.revokeObjectURL(url);
+	}
+
+	async function handleLogout() {
+		const confirmed = confirm(
+			'Log out of this account? Make sure you have downloaded a backup first — ' +
+				'there is no way to recover this account without it.'
+		);
+		if (!confirmed) return;
+		await logout();
+		clearProfileForLogout();
+		loadedFromProfile = false;
+		username = '';
+		description = '';
+		imageUrl = '';
 	}
 
 	async function handleImportFile(event: Event) {
@@ -231,6 +246,19 @@
 					<p class="text-success text-sm">Switched to the imported account.</p>
 				{/if}
 			</div>
+		</div>
+
+		<div class="divider"></div>
+
+		<div>
+			<h3 class="font-semibold">Log out</h3>
+			<p class="text-sm opacity-70">
+				Switches this browser back to a fresh guest identity. Make sure you've downloaded a
+				backup first — there's no other way to get back into this account.
+			</p>
+			<button class="btn btn-sm btn-error mt-2" type="button" onclick={handleLogout}>
+				Log out
+			</button>
 		</div>
 	</div>
 {/if}

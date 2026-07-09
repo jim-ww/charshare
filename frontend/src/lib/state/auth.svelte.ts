@@ -53,6 +53,18 @@ export async function setKeyring(next: Keyring): Promise<void> {
 	ready = true;
 }
 
+/** Logs out of the current account by replacing this browser's identity with
+ *  a freshly generated one, as a guest. There is no key recovery, so callers
+ *  must have already warned the user to back up their account first (see
+ *  spec: no key recovery — this is the only copy). */
+export async function logout(): Promise<void> {
+	const generated = await generateKeyring();
+	await saveKeyring(generated);
+	keyring = generated;
+	registered = false;
+	await saveRegistered(false);
+}
+
 /** Test-only escape hatch: sets the keyring directly, bypassing IndexedDB
  *  (unavailable under plain Node/vitest). Also marks the account registered,
  *  since most tests exercising a keyring are exercising publish/write paths

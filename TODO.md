@@ -1,4 +1,3 @@
-- create base64 image decoder (for image_url's) in characters, to allow store images in gun? compress, optimize image before saving
 - improve performance in search tab
 - alt+ arrow keys <- -> should act as back/next page in history. image viewer component interjects that.
 - add more keyboard oriented binds. like shift tab would switch between characters, chats pages
@@ -10,8 +9,7 @@
 - fix theme selector being activated in collapsed state, ALSO make changing theme simpler? maybe add arrow keys for selection ?
 - transcribe text & read aloud (with local models) (whisper?). and then add "call mode"?
 - wails build ignores linux prefer dark setting
-- add option to logout, but ask for confirmation, reminding to make account backup
-- change search token behavior: should only list character that has ALL tags from query
+- create base64 image decoder (for image_url's) in characters, to allow store images in gun? compress, optimize image before saving
 - rating system for characters?
 - proper pagination in Characters browse page?
 - implement extension for scraping characters from other services?

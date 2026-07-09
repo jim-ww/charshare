@@ -87,3 +87,11 @@ export async function loadProfileForSwitchedAccount(): Promise<void> {
 	await markRegistered();
 	subscribeToOwnProfile();
 }
+
+/** Called after logging out — drops the subscription to the old account's
+ *  profile since the browser now holds a fresh, unregistered guest identity. */
+export function clearProfileForLogout(): void {
+	unsubscribe?.();
+	unsubscribe = null;
+	profile = null;
+}
