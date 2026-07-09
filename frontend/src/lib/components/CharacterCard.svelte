@@ -46,7 +46,7 @@
 
 <a
 	href={`${base}/characters/${character.id}`}
-	class="card relative bg-base-200 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:scale-[1.02] hover:shadow-lg"
+	class="card relative bg-base-200 shadow-sm [content-visibility:auto] [contain-intrinsic-size:0_320px] hover:bg-base-300"
 	class:opacity-60={character.deleted || hidden}
 >
 	{#if character.nsfw}
@@ -89,6 +89,8 @@
 				<img
 					src={imageUrl}
 					alt={character.name}
+					loading="lazy"
+					decoding="async"
 					class="h-full w-full object-cover"
 				/>
 			{:else}

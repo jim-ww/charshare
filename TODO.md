@@ -1,13 +1,10 @@
-- improve performance in search tab
 - alt+ arrow keys <- -> should act as back/next page in history. image viewer component interjects that.
-- add go back button in character view page (back to characters page)
 - in chats {{user}} isnt properly changed to user profile name, make it reactive?
-- landing(wails): show source button doesnt work
 - check that currently selected user persona is included in messages sent to AI, but, persona name in both Name and Description must be replaced with {{user}}
 - in system prompt, specify to always address user as {{user}}? as if its his name (unless stated to address other way by user)
 - fix theme selector being activated in collapsed state, ALSO make changing theme simpler? maybe add arrow keys for selection ?
-- transcribe text & read aloud (with local models) (whisper?). and then add "call mode"?
 - create base64 image decoder (for image_url's) in characters, to allow store images in gun? compress, optimize image before saving
-- rating system for characters?
 - proper pagination in Characters browse page?
+- transcribe text & read aloud (with local models) (whisper?). and then add "call mode"?
+- rating system for characters?
 - implement extension for scraping characters from other services?
