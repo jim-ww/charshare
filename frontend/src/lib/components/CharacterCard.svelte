@@ -49,12 +49,22 @@
 	class="card relative bg-base-200 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:scale-[1.02] hover:shadow-lg"
 	class:opacity-60={character.deleted || hidden}
 >
+	{#if character.nsfw}
+		<span
+			class="badge badge-xs badge-warning absolute left-2 top-2 z-10 badge-outline opacity-70"
+			title="NSFW"
+		>
+			nsfw
+		</span>
+	{/if}
 	{#if !isMine}
 		<div class="absolute right-2 top-2 z-10 flex gap-1">
 			<button
 				type="button"
 				class="btn btn-xs btn-circle"
-				title={hidden ? "Unhide character" : "Hide character"}
+				title={hidden
+					? "Unhide character"
+					: "Hide character"}
 				onclick={toggleHidden}
 			>
 				{hidden ? "🙈" : "👁"}
@@ -62,7 +72,9 @@
 			<button
 				type="button"
 				class="btn btn-xs btn-circle"
-				title={authorBlocked ? "Unblock author" : "Block author"}
+				title={authorBlocked
+					? "Unblock author"
+					: "Block author"}
 				onclick={toggleAuthorBlocked}
 			>
 				{authorBlocked ? "🔓" : "🚫"}
@@ -70,7 +82,9 @@
 		</div>
 	{/if}
 	<div class="card-body items-center gap-1 p-3 text-center">
-		<figure class="h-44 w-44 overflow-hidden rounded-lg bg-base-300">
+		<figure
+			class="h-44 w-44 overflow-hidden rounded-lg bg-base-300"
+		>
 			{#if imageUrl}
 				<img
 					src={imageUrl}
@@ -109,7 +123,8 @@
 			<div class="divider my-1 w-full"></div>
 			<div class="flex flex-wrap justify-center gap-1">
 				{#each character.tags as tag (tag)}
-					<span class="badge badge-sm">{tag}</span>
+					<span class="badge badge-sm">{tag}</span
+					>
 				{/each}
 			</div>
 		{/if}
