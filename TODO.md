@@ -1,4 +1,3 @@
-- feat(chat): make small image preview bigger
 - feat(chat): resend message history to AI on user message edit. change text to 'send', instead of 'save'
 - feat(comments): allow author to hide them? but also add option to see hidden (for users)
 - fix(characters page): initial fetch only fetches local characters
