@@ -41,7 +41,16 @@ export function getSearchedQuery(): string {
 }
 
 export function addTagToQuery(tag: string): void {
-	query = query.trim() ? `${query.trim()} ${tag}` : tag;
+	const trimmed = query.trim();
+	if (!trimmed) {
+		query = tag;
+		return;
+	}
+	const words = trimmed.split(/\s+/);
+	if (words.includes(tag)) {
+		return;
+	}
+	query = `${trimmed} ${tag}`;
 }
 
 export async function runSearch(): Promise<void> {
