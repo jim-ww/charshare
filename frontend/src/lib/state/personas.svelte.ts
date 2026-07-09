@@ -81,15 +81,19 @@ export async function updatePersona(
 ): Promise<void> {
 	const existing = personas[id];
 	if (!existing) throw new Error('Persona not found.');
+	// Only opts out of live profile-username tracking if the name was actually
+	// changed away from what was being auto-displayed — otherwise saving the
+	// edit form untouched (or before the profile has even loaded, when the
+	// live-tracked value is momentarily the "User" placeholder) would silently
+	// freeze the persona on a stale name forever.
+	const nameChanged = fields.name.trim() !== personaDisplayName(existing);
 	personas = {
 		...personas,
 		[id]: {
 			...existing,
 			name: fields.name,
 			description: fields.description ?? existing.description,
-			// Editing the name directly opts this persona out of tracking the
-			// profile username, even if it happens to match right now.
-			auto_name: false
+			auto_name: existing.auto_name && !nameChanged
 		}
 	};
 	await persist();

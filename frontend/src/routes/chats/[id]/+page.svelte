@@ -16,6 +16,9 @@
 	import ChatCharacterImage from "$lib/components/ChatCharacterImage.svelte";
 	import ChatSettingsSidebar from "$lib/components/ChatSettingsSidebar.svelte";
 	import { getPreferences } from "$lib/state/preferences.svelte";
+	import { initPersonas } from "$lib/state/personas.svelte";
+
+	untrack(() => void initPersonas());
 
 	const chatId = $derived(page.params.id as string);
 	const chat = $derived(getChat(chatId));
