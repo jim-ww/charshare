@@ -1,4 +1,3 @@
-- fix: dont show 'hide' button on owned comments
 - fix(characters): check that owned published characters are always persisted as local ones too (even without remote nodes)?
 - feat: move all English text to paraglide translations
 - feat(chat): add option to transcribe user spoken text

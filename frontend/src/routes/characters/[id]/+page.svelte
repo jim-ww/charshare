@@ -723,19 +723,6 @@
 												</span>
 												{#if editingCommentId !== comment.id}
 													<div class="flex gap-1">
-														<button
-															class="btn btn-xs btn-ghost"
-															type="button"
-															title={hidden
-																? "Only visible to you locally — unhide to stop hiding it"
-																: "Hide this comment locally, for you only"}
-															onclick={() =>
-																handleToggleHideComment(
-																	comment,
-																)}
-														>
-															{hidden ? "Unhide" : "Hide"}
-														</button>
 														{#if comment.author === getCurrentUser()}
 															<button
 																class="btn btn-xs btn-ghost"
@@ -756,6 +743,20 @@
 																	)}
 															>
 																Delete
+															</button>
+														{:else}
+															<button
+																class="btn btn-xs btn-ghost"
+																type="button"
+																title={hidden
+																	? "Only visible to you locally — unhide to stop hiding it"
+																	: "Hide this comment locally, for you only"}
+																onclick={() =>
+																	handleToggleHideComment(
+																		comment,
+																	)}
+															>
+																{hidden ? "Unhide" : "Hide"}
 															</button>
 														{/if}
 													</div>
