@@ -244,6 +244,9 @@
 </script>
 
 <div class="mx-auto max-w-5xl p-4">
+	<a href={`${base}/characters`} class="btn btn-ghost btn-sm mb-4">
+		&larr; Back
+	</a>
 	{#if notFound}
 		<p class="text-error">Character not found.</p>
 	{:else if !character}
