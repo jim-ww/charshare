@@ -13,6 +13,7 @@ interface WailsApp {
 	StartProxyImportServer(): Promise<string>;
 	StopProxyImportServer(): Promise<string>;
 	IsProxyImportServerRunning(): Promise<boolean>;
+	SaveFile(filename: string, base64Data: string): Promise<string>;
 }
 
 interface WailsRuntime {
@@ -41,6 +42,14 @@ export function startProxyImportServer(): Promise<string> {
 
 export function stopProxyImportServer(): Promise<string> {
 	return wailsApp()!.StopProxyImportServer();
+}
+
+/** Saves data to disk via a native "Save As" dialog — the webview's
+ *  `<a download>`/blob-URL trick has no browser chrome to catch downloads in
+ *  Wails' Linux webkit backend, so it's a no-op there. Returns an error
+ *  message on failure, or "" on success/cancel. */
+export function saveFile(filename: string, base64Data: string): Promise<string> {
+	return wailsApp()!.SaveFile(filename, base64Data);
 }
 
 /** Subscribes to raw chat-completion request bodies forwarded by the local

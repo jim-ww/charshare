@@ -11,6 +11,7 @@ import { getPersonas, createPersona, importPersonaDraft } from '$lib/state/perso
 import { getChats, importChat } from '$lib/state/chats.svelte';
 import { getPreferences, updatePreferences } from '$lib/state/preferences.svelte';
 import { getMyProfile } from '$lib/state/profile.svelte';
+import { isWailsDesktop, saveFile } from '$lib/wails';
 import type { Preferences } from '$lib/types';
 
 export type DataCategory = 'account' | 'characters' | 'personas' | 'chats' | 'preferences';
@@ -89,8 +90,22 @@ function buildCategory(category: DataCategory): { filename: string; json: string
 	}
 }
 
-function downloadBlob(blob: Blob, filename: string): void {
-	const url = URL.createObjectURL(blob);
+function bytesToBase64(bytes: Uint8Array): string {
+	let binary = '';
+	for (const byte of bytes) binary += String.fromCharCode(byte);
+	return btoa(binary);
+}
+
+/** In the Wails desktop build, a browser-style `<a download>`/blob-URL click
+ *  has no browser chrome to catch the download — the webview just does
+ *  nothing. Route through the native "Save As" dialog there instead. */
+async function downloadBlob(bytes: Uint8Array, filename: string): Promise<void> {
+	if (isWailsDesktop()) {
+		const err = await saveFile(filename, bytesToBase64(bytes));
+		if (err) throw new Error(err);
+		return;
+	}
+	const url = URL.createObjectURL(new Blob([bytes as BlobPart]));
 	const a = document.createElement('a');
 	a.href = url;
 	a.download = filename;
@@ -101,7 +116,7 @@ function downloadBlob(blob: Blob, filename: string): void {
 /** Exports the selected data categories. A single category downloads as one
  *  plain JSON file; multiple categories are bundled into a zip so the user
  *  gets one download instead of several browser save prompts. */
-export function exportData(categories: DataCategory[]): void {
+export async function exportData(categories: DataCategory[]): Promise<void> {
 	const parts = categories
 		.map(buildCategory)
 		.filter((p): p is { filename: string; json: string } => p !== null);
@@ -109,14 +124,14 @@ export function exportData(categories: DataCategory[]): void {
 
 	if (parts.length === 1) {
 		const [part] = parts;
-		downloadBlob(new Blob([part.json], { type: 'application/json' }), part.filename);
+		await downloadBlob(strToU8(part.json), part.filename);
 		return;
 	}
 
 	const files: Record<string, Uint8Array> = {};
 	for (const part of parts) files[part.filename] = strToU8(part.json);
 	const zipped = zipSync(files);
-	downloadBlob(new Blob([zipped as BlobPart], { type: 'application/zip' }), bundleFilename());
+	await downloadBlob(zipped, bundleFilename());
 }
 
 // ---- import ----

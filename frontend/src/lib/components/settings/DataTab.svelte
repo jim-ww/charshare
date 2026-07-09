@@ -16,11 +16,11 @@
 		preferences: true
 	});
 
-	function handleExport() {
+	async function handleExport() {
 		const categories = exportEverything
 			? DATA_CATEGORIES.map((c) => c.id)
 			: DATA_CATEGORIES.filter((c) => selected[c.id]).map((c) => c.id);
-		exportData(categories);
+		await exportData(categories);
 	}
 
 	const nothingSelected = $derived(

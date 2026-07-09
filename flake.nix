@@ -107,7 +107,7 @@
         # doesn't go through the devShell's shellHook.
         postFixup = with pkgs; ''
           wrapProgram $out/bin/charshare \
-            --set XDG_DATA_DIRS "${gsettings-desktop-schemas}/share/gsettings-schemas/${gsettings-desktop-schemas.name}:${gtk3}/share/gsettings-schemas/${gtk3.name}" \
+            --suffix XDG_DATA_DIRS : "${gsettings-desktop-schemas}/share/gsettings-schemas/${gsettings-desktop-schemas.name}:${gtk3}/share/gsettings-schemas/${gtk3.name}" \
             --set GIO_EXTRA_MODULES "${glib-networking}/lib/gio/modules" \
             --set SSL_CERT_FILE "${cacert}/etc/ssl/certs/ca-bundle.crt" \
             --set NIX_SSL_CERT_FILE "${cacert}/etc/ssl/certs/ca-bundle.crt"
