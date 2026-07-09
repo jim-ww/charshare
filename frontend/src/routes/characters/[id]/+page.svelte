@@ -28,6 +28,7 @@
 	} from "$lib/state/chats.svelte";
 	import {
 		addComment,
+		editComment,
 		getCommentsFor,
 		isLoadingComments,
 		loadComments,
@@ -56,6 +57,8 @@
 	let newComment = $state("");
 	let posting = $state(false);
 	let showHiddenComments = $state(false);
+	let editingCommentId = $state<string | null>(null);
+	let commentDraft = $state("");
 	let authorNames = $state<Record<string, string>>({});
 
 	const localOnly = $derived(isCharacterLocalOnly(id));
@@ -248,6 +251,19 @@
 
 	async function handleDeleteComment(comment: Comment) {
 		await removeComment(id, comment.id);
+	}
+
+	function startEditComment(comment: Comment) {
+		editingCommentId = comment.id;
+		commentDraft = comment.content;
+	}
+
+	async function handleSaveComment(comment: Comment) {
+		const content = commentDraft.trim();
+		if (content && content !== comment.content) {
+			await editComment(id, comment.id, content);
+		}
+		editingCommentId = null;
 	}
 
 	async function handleToggleHideComment(comment: Comment) {
@@ -696,40 +712,88 @@
 													{#if hidden}
 														<span class="badge badge-xs ml-1">hidden</span>
 													{/if}
+													{#if comment.updated_at !== comment.created_at}
+														<span
+															class="italic opacity-60 ml-1"
+															title="Edited by the comment's author"
+														>
+															(edited)
+														</span>
+													{/if}
 												</span>
-												<div class="flex gap-1">
-													<button
-														class="btn btn-xs btn-ghost"
-														type="button"
-														title={hidden
-															? "Only visible to you locally — unhide to stop hiding it"
-															: "Hide this comment locally, for you only"}
-														onclick={() =>
-															handleToggleHideComment(
-																comment,
-															)}
-													>
-														{hidden ? "Unhide" : "Hide"}
-													</button>
-													{#if comment.author === getCurrentUser()}
+												{#if editingCommentId !== comment.id}
+													<div class="flex gap-1">
 														<button
 															class="btn btn-xs btn-ghost"
 															type="button"
+															title={hidden
+																? "Only visible to you locally — unhide to stop hiding it"
+																: "Hide this comment locally, for you only"}
 															onclick={() =>
-																handleDeleteComment(
+																handleToggleHideComment(
 																	comment,
 																)}
 														>
-															Delete
+															{hidden ? "Unhide" : "Hide"}
 														</button>
-													{/if}
-												</div>
+														{#if comment.author === getCurrentUser()}
+															<button
+																class="btn btn-xs btn-ghost"
+																type="button"
+																onclick={() =>
+																	startEditComment(
+																		comment,
+																	)}
+															>
+																Edit
+															</button>
+															<button
+																class="btn btn-xs btn-ghost"
+																type="button"
+																onclick={() =>
+																	handleDeleteComment(
+																		comment,
+																	)}
+															>
+																Delete
+															</button>
+														{/if}
+													</div>
+												{/if}
 											</div>
-											<p
-												class="mt-1 whitespace-pre-wrap text-sm"
-											>
-												{comment.content}
-											</p>
+											{#if editingCommentId === comment.id}
+												<textarea
+													class="textarea textarea-bordered mt-1 w-full text-sm"
+													bind:value={commentDraft}
+												></textarea>
+												<div class="mt-1 flex gap-1">
+													<button
+														class="btn btn-xs btn-primary"
+														type="button"
+														onclick={() =>
+															handleSaveComment(
+																comment,
+															)}
+													>
+														Save
+													</button>
+													<button
+														class="btn btn-xs"
+														type="button"
+														onclick={() =>
+															(editingCommentId =
+																null)}
+													>
+														Cancel
+													</button>
+												</div>
+											{:else}
+												<p
+													class="mt-1 whitespace-pre-wrap text-sm"
+												>
+													{comment.content}
+												</p>
+											{/if}
 										</li>
 									{/each}
 								</ul>

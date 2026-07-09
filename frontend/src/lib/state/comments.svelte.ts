@@ -1,5 +1,10 @@
 import type { CharacterId, Comment } from '$lib/types';
-import { deleteComment as gunDeleteComment, getCommentsForCharacter, postComment } from '$lib/gun/comments';
+import {
+	deleteComment as gunDeleteComment,
+	editComment as gunEditComment,
+	getCommentsForCharacter,
+	postComment
+} from '$lib/gun/comments';
 
 let comments = $state<Record<CharacterId, Comment[]>>({});
 let loading = $state<Record<CharacterId, boolean>>({});
@@ -28,5 +33,10 @@ export async function addComment(characterId: CharacterId, content: string): Pro
 
 export async function removeComment(characterId: CharacterId, commentId: string): Promise<void> {
 	await gunDeleteComment(commentId);
+	await loadComments(characterId);
+}
+
+export async function editComment(characterId: CharacterId, commentId: string, content: string): Promise<void> {
+	await gunEditComment(commentId, content);
 	await loadComments(characterId);
 }

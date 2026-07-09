@@ -133,6 +133,26 @@ export async function postComment(characterId: CharacterId, content: string): Pr
 	return doc;
 }
 
+/** Edits a comment's content — a new signed snapshot with the same id and
+ *  created_at but a fresh updated_at, so readers can tell it was edited
+ *  (updated_at !== created_at) without a separate flag or edit history. Only
+ *  the original author can do this (enforced both here and by other peers
+ *  re-verifying the signature against the unchanged author field) — nobody
+ *  else ever has the power to alter someone else's comment (see spec: no
+ *  moderation power over other users' speech). */
+export async function editComment(id: CommentId, content: string): Promise<Comment> {
+	const keyring = getKeyring();
+	if (!keyring) throw new Error('No identity available yet — call initAuth() first.');
+	requireAccount();
+
+	const existing = await getComment(id);
+	if (!existing.ok) throw new Error('Comment not found.');
+	if (existing.doc.author !== keyring.publicKey) throw new Error('Only the author can edit this comment.');
+
+	const { signature: _signature, updated_at: _updatedAt, ...rest } = existing.doc;
+	return signAndPublish({ ...rest, content }, keyring);
+}
+
 /** Tombstones a comment the current user authored — a new signed snapshot
  *  with `deleted: true`, not a graph removal (see document.ts / spec). */
 export async function deleteComment(id: CommentId): Promise<Comment> {
