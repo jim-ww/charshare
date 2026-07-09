@@ -8,3 +8,4 @@ Thumbs.db
 # Added by goreleaser init:
 dist/
 .env*
+.pnpm-store/
