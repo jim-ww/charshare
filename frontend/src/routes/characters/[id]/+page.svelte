@@ -356,7 +356,7 @@
 					<input
 						bind:this={importInput}
 						type="file"
-						accept="application/json"
+						accept="application/json,.json"
 						class="hidden"
 						onchange={handleImportChat}
 					/>
