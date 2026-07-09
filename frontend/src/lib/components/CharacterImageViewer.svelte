@@ -4,6 +4,10 @@
 		name: string;
 		class?: string;
 		aspectSquare?: boolean;
+		/** Show the full image uncropped (object-contain) within the normal aspect-ratio box, letterboxed. */
+		contain?: boolean;
+		/** Uncropped and shrink-wrapped to the image's own aspect ratio instead of a fixed box (used by the full-size modal view). */
+		fullSize?: boolean;
 		/** If provided, the image itself becomes clickable (used by chat's expand/collapse toggle). */
 		onImageClick?: () => void;
 		/** Listen for arrow key presses to switch images (used by the expanded/modal view). */
@@ -17,6 +21,8 @@
 		name,
 		class: className = '',
 		aspectSquare = false,
+		contain = false,
+		fullSize = false,
 		onImageClick,
 		keyboardNav = false,
 		index = $bindable(0)
@@ -61,22 +67,24 @@
 <svelte:window onkeydown={keyboardNav ? handleKeydown : undefined} />
 
 <figure
-	class="relative {aspectSquare
-		? 'aspect-square'
-		: 'aspect-[3/4]'} w-full overflow-hidden rounded-box bg-base-300 {className}"
+	class="relative {fullSize
+		? 'inline-flex min-h-32 min-w-32 max-h-[90vh] max-w-[90vw] items-center justify-center'
+		: `${aspectSquare ? 'aspect-square' : 'aspect-[3/4]'} w-full overflow-hidden bg-base-300`} rounded-box {className}"
 >
 	{#if images.length}
 		{#if onImageClick}
 			<button
 				type="button"
-				class="h-full w-full cursor-pointer"
+				class="{fullSize ? 'contents' : 'h-full w-full'} cursor-pointer"
 				onclick={onImageClick}
 				aria-label={`Toggle ${name} image size`}
 			>
 				<img
 					src={images[index]}
 					alt={name}
-					class="h-full w-full object-cover"
+					class={fullSize
+						? 'max-h-[90vh] max-w-[90vw] rounded-box object-contain'
+						: `h-full w-full ${contain ? 'object-contain' : 'object-cover'}`}
 					onload={() => (loadedSrc = images[index])}
 					onerror={() => (failedSrc = images[index])}
 				/>
@@ -85,7 +93,7 @@
 			<img
 				src={images[index]}
 				alt={name}
-				class="h-full w-full object-cover"
+				class="h-full w-full {contain ? 'object-contain' : 'object-cover'}"
 				onload={() => (loadedSrc = images[index])}
 				onerror={() => (failedSrc = images[index])}
 			/>

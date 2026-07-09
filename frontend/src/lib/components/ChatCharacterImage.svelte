@@ -49,16 +49,12 @@
 		onclick={() => (expanded = false)}
 		onkeydown={(e) => e.key === "Escape" && (expanded = false)}
 	>
-		<div
-			class="aspect-square w-full max-w-lg"
-			role="presentation"
-			onclick={(e) => e.stopPropagation()}
-		>
+		<div role="presentation" onclick={(e) => e.stopPropagation()}>
 			<CharacterImageViewer
 				images={character.image_urls}
 				name={character.name}
-				class="rounded-2xl shadow-2xl"
-				aspectSquare
+				class="shadow-2xl"
+				fullSize
 				onImageClick={() => (expanded = false)}
 				keyboardNav
 				bind:index

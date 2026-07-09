@@ -45,6 +45,8 @@
 	const id = $derived(page.params.id as string);
 
 	let character = $state<Character | null>(null);
+	let imageExpanded = $state(false);
+	let imageIndex = $state(0);
 	let notFound = $state(false);
 	let newComment = $state("");
 	let posting = $state(false);
@@ -257,8 +259,32 @@
 				<CharacterImageViewer
 					images={character.image_urls}
 					name={character.name}
-					keyboardNav
+					contain
+					onImageClick={() => (imageExpanded = true)}
+					bind:index={imageIndex}
 				/>
+
+				{#if imageExpanded}
+					<div
+						class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6"
+						role="button"
+						tabindex="0"
+						onclick={() => (imageExpanded = false)}
+						onkeydown={(e) => e.key === "Escape" && (imageExpanded = false)}
+					>
+						<div role="presentation" onclick={(e) => e.stopPropagation()}>
+							<CharacterImageViewer
+								images={character.image_urls}
+								name={character.name}
+								class="shadow-2xl"
+								fullSize
+								onImageClick={() => (imageExpanded = false)}
+								keyboardNav
+								bind:index={imageIndex}
+							/>
+						</div>
+					</div>
+				{/if}
 
 				<div>
 					<h1
