@@ -351,17 +351,19 @@
 						class="text-2xl font-semibold"
 					>
 						{character.name}
-						{#if isMine}
-							<span
-								class="badge badge-sm align-middle"
-								class:badge-outline={localOnly}
-								class:badge-primary={!localOnly}
-							>
+						<span
+							class="badge badge-sm align-middle"
+							class:badge-outline={isMine && localOnly}
+							class:badge-primary={isMine && !localOnly}
+						>
+							{#if isMine}
 								{localOnly
 									? m.char_detail_local_only()
 									: m.char_detail_published()}
-							</span>
-						{/if}
+							{:else}
+								{m.char_detail_from_network()}
+							{/if}
+						</span>
 					</h1>
 					<div
 						class="mt-1 flex items-center gap-1.5 text-sm opacity-70"

@@ -118,6 +118,7 @@
 	"char_detail_back": "← Back",
 	"char_detail_local_only": "Local only",
 	"char_detail_published": "Published",
+	"char_detail_from_network": "Network",
 	"char_detail_by": "By:",
 	"char_detail_continue_latest_chat": "Continue latest chat",
 	"char_detail_start_new_chat": "Start new chat",
@@ -301,6 +302,7 @@
 	"char_card_block_author": "Block author",
 	"char_card_local_only": "Local only",
 	"char_card_published": "Published",
+	"char_card_from_network": "Network",
 	"char_card_save": "Save locally",
 	"char_card_unsave": "Remove from saved characters",
 

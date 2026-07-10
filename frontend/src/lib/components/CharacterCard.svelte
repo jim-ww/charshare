@@ -143,15 +143,17 @@
 		>
 			{character.name}
 		</h3>
-		{#if isMine}
-			<span
-				class="badge badge-xs"
-				class:badge-outline={localOnly}
-				class:badge-primary={!localOnly}
-			>
+		<span
+			class="badge badge-xs"
+			class:badge-outline={isMine && localOnly}
+			class:badge-primary={isMine && !localOnly}
+		>
+			{#if isMine}
 				{localOnly ? m.char_card_local_only() : m.char_card_published()}
-			</span>
-		{/if}
+			{:else}
+				{m.char_card_from_network()}
+			{/if}
+		</span>
 		{#if character.description}
 			<p class="line-clamp-2 text-xs opacity-80">
 				{character.description}
