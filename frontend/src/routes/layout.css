@@ -2,3 +2,12 @@
 @plugin "daisyui" {
 	themes: all;
 }
+
+/* Overrides the anti-flash color hardcoded in app.html (which only exists to
+   paint something before this stylesheet loads) once it's actually loaded,
+   so html/body track the active DaisyUI theme instead of staying stuck on
+   that one hardcoded color forever. */
+html,
+body {
+	background-color: var(--color-base-100);
+}
