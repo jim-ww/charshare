@@ -7,6 +7,7 @@ export interface CommentFields {
   id: CommentId;
   character_id: CharacterId;
   content: string; // required, non-empty
+  parent_id: CommentId | null; // null = top-level comment, otherwise the comment being replied to
 }
 
 export type Comment = CommentFields & Signed & Tombstonable;

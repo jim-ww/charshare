@@ -1,6 +1,7 @@
-- feat(character new/edit page): check tag validator, must refuse system tags like __network__
-- feat: add option to reply to other comments
+- feat(comments): show created_at, updated_at dates
+- fix(background): html background stays the same, no matter what theme selected
 - feat: add option to see all owned comments, with edit, delete buttons and links to character (on which comment was posted)?
+- fix: in wails, after pressing post comment, they are not appear as posted right away
 - feat: improve usability on mobiles? improve modals, small buttons/controls
 - feat(providers): implement more robust support of ollama provider, like downloading/starting ollama server?
 - feat(browse): rework Browse/search to avoid fetching the entire published network unbounded on every load (currently `browseNetwork()` reads every id under the `__network__` pseudo-tag and fetches+verifies each one) — implement proper sorting (by updated_at, created_at) and pagination

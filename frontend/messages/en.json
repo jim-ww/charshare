@@ -168,6 +168,9 @@
 	"char_detail_comment_save": "Save",
 	"char_detail_comment_cancel": "Cancel",
 	"char_detail_comments_disabled": "Comments are disabled for this character.",
+	"char_detail_comment_reply": "Reply",
+	"char_detail_reply_placeholder": "Write a reply…",
+	"char_detail_cancel_reply": "Cancel",
 
 	"chat_composer_placeholder": "Message… (Enter to send, Shift+Enter for a new line)",
 	"chat_composer_generating": "Generating…",

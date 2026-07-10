@@ -16,6 +16,8 @@ const isComment: Validator<Comment> = (data): data is Comment => {
 		typeof d.id === 'string' &&
 		typeof d.character_id === 'string' &&
 		typeof d.content === 'string' &&
+		// undefined is tolerated for comments written before replies existed
+		(d.parent_id === null || d.parent_id === undefined || typeof d.parent_id === 'string') &&
 		typeof d.author === 'string' &&
 		typeof d.signature === 'string' &&
 		typeof d.created_at === 'number' &&
@@ -39,8 +41,10 @@ const pubkeyOf = (doc: Comment): PubKey => doc.author;
  *  afterward in browse.ts:resolveIndex. */
 const commentIndex = createSignedPointerIndex('comments', () => true);
 
-export function getComment(id: CommentId): Promise<Verified<Comment>> {
-	return getDocument(gunPath(getGun(), commentPath(id)), isComment, pubkeyOf);
+export async function getComment(id: CommentId): Promise<Verified<Comment>> {
+	const result = await getDocument(gunPath(getGun(), commentPath(id)), isComment, pubkeyOf);
+	if (!result.ok) return result;
+	return { ...result, doc: { ...result.doc, parent_id: result.doc.parent_id ?? null } };
 }
 
 /** Fetches every non-tombstoned comment on `characterId`, dropping any that
@@ -65,16 +69,33 @@ async function signAndPublish(draft: Omit<Comment, 'signature' | 'updated_at'>, 
 	return doc;
 }
 
-export async function postComment(characterId: CharacterId, content: string): Promise<Comment> {
+export async function postComment(
+	characterId: CharacterId,
+	content: string,
+	parentId: CommentId | null = null,
+	// The comment actually being replied to, for the "can't reply to your own
+	// comment" check below — distinct from parentId, which is always the
+	// thread's root (replies are flattened one level deep, so replying to a
+	// reply still stores parent_id = the root, not that reply's id).
+	replyToId: CommentId | null = parentId
+): Promise<Comment> {
 	const keyring = getKeyring();
 	if (!keyring) throw new Error('No identity available yet — call initAuth() first.');
 	requireAccount();
+
+	if (replyToId) {
+		const replyTo = await getComment(replyToId);
+		if (replyTo.ok && replyTo.doc.author === keyring.publicKey) {
+			throw new Error("Can't reply to your own comment.");
+		}
+	}
 
 	const doc = await signAndPublish(
 		{
 			id: crypto.randomUUID(),
 			character_id: characterId,
 			content,
+			parent_id: parentId,
 			author: keyring.publicKey,
 			deleted: false,
 			deleted_at: null,

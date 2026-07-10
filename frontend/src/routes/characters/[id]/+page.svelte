@@ -67,6 +67,10 @@
 	let editingCommentId = $state<string | null>(null);
 	let commentDraft = $state("");
 	let authorNames = $state<Record<string, string>>({});
+	let replyingToCommentId = $state<string | null>(null);
+	let replyingToTargetId = $state<string | null>(null);
+	let replyDraft = $state("");
+	let replyError = $state<string | null>(null);
 
 	const localOnly = $derived(isCharacterLocalOnly(id));
 
@@ -297,6 +301,41 @@
 
 	async function handleDeleteComment(comment: Comment) {
 		await removeComment(id, comment.id);
+	}
+
+	// Replies are flattened one level deep — replying to a reply attaches to
+	// its thread's root comment rather than growing an arbitrarily deep tree.
+	function threadRootId(comment: Comment): string {
+		return comment.parent_id ?? comment.id;
+	}
+
+	function startReply(comment: Comment) {
+		replyingToCommentId = threadRootId(comment);
+		replyingToTargetId = comment.id;
+		replyDraft = "";
+		replyError = null;
+	}
+
+	async function handlePostReply(event: SubmitEvent, parentId: string) {
+		event.preventDefault();
+		const content = replyDraft.trim();
+		if (!content) return;
+		if (!isAccountRegistered()) {
+			openSettings("account");
+			return;
+		}
+		posting = true;
+		replyError = null;
+		try {
+			await addComment(id, content, parentId, replyingToTargetId);
+			replyDraft = "";
+			replyingToCommentId = null;
+			replyingToTargetId = null;
+		} catch (err) {
+			replyError = err instanceof Error ? err.message : String(err);
+		} finally {
+			posting = false;
+		}
 	}
 
 	function startEditComment(comment: Comment) {
@@ -727,7 +766,9 @@
 							</p>
 						{:else}
 							{@const visibleComments = comments.filter(
-								(c) => showHiddenComments || !isCommentHidden(c.id),
+								(c) =>
+									!c.parent_id &&
+									(showHiddenComments || !isCommentHidden(c.id)),
 							)}
 							<label class="label cursor-pointer justify-start gap-2 py-0">
 								<input
@@ -747,6 +788,11 @@
 								>
 									{#each visibleComments as comment (comment.id)}
 										{@const hidden = isCommentHidden(comment.id)}
+										{@const replies = comments.filter(
+											(c) =>
+												c.parent_id === comment.id &&
+												(showHiddenComments || !isCommentHidden(c.id)),
+										)}
 										<li
 											class="rounded-box bg-base-200 p-3"
 											class:opacity-50={hidden}
@@ -816,6 +862,15 @@
 																{hidden ? m.char_detail_comment_unhide() : m.char_detail_comment_hide()}
 															</button>
 														{/if}
+														{#if comment.author !== getCurrentUser()}
+															<button
+																class="btn btn-xs btn-ghost"
+																type="button"
+																onclick={() => startReply(comment)}
+															>
+																{m.char_detail_comment_reply()}
+															</button>
+														{/if}
 													</div>
 												{/if}
 											</div>
@@ -851,6 +906,100 @@
 												>
 													{comment.content}
 												</p>
+											{/if}
+
+											{#if replies.length > 0}
+												<ul class="mt-2 flex flex-col gap-2 border-l-2 border-base-300 pl-3">
+													{#each replies as reply (reply.id)}
+														{@const replyHidden = isCommentHidden(reply.id)}
+														<li class:opacity-50={replyHidden}>
+															<div class="flex items-center justify-between gap-2">
+																<span class="text-xs font-semibold opacity-70">
+																	{authorLabel(reply.author)}
+																	{#if reply.author === character.author}
+																		<span class="badge badge-xs badge-primary ml-1"
+																			>{m.char_detail_author_badge()}</span
+																		>
+																	{/if}
+																	{#if replyHidden}
+																		<span class="badge badge-xs ml-1">{m.char_detail_hidden_badge()}</span>
+																	{/if}
+																</span>
+																<div class="flex gap-1">
+																	{#if reply.author === getCurrentUser()}
+																		<button
+																			class="btn btn-xs btn-ghost"
+																			type="button"
+																			onclick={() => handleDeleteComment(reply)}
+																		>
+																			{m.char_detail_comment_delete()}
+																		</button>
+																	{:else}
+																		<button
+																			class="btn btn-xs btn-ghost"
+																			type="button"
+																			title={replyHidden
+																				? m.char_detail_hide_tooltip_hidden()
+																				: m.char_detail_hide_tooltip_visible()}
+																			onclick={() => handleToggleHideComment(reply)}
+																		>
+																			{replyHidden ? m.char_detail_comment_unhide() : m.char_detail_comment_hide()}
+																		</button>
+																	{/if}
+																	{#if reply.author !== getCurrentUser()}
+																		<button
+																			class="btn btn-xs btn-ghost"
+																			type="button"
+																			onclick={() => startReply(reply)}
+																		>
+																			{m.char_detail_comment_reply()}
+																		</button>
+																	{/if}
+																</div>
+															</div>
+															<p class="mt-1 whitespace-pre-wrap text-sm">{reply.content}</p>
+														</li>
+													{/each}
+												</ul>
+											{/if}
+
+											{#if replyingToCommentId === comment.id}
+												<form
+													class="mt-2 flex flex-col gap-2 border-l-2 border-base-300 pl-3"
+													onsubmit={(event) => handlePostReply(event, comment.id)}
+												>
+													<textarea
+														class="textarea textarea-bordered w-full text-sm"
+														placeholder={m.char_detail_reply_placeholder()}
+														bind:value={replyDraft}
+														rows="2"
+													></textarea>
+													{#if replyError}
+														<p class="text-error text-xs">
+															{m.error_generic({ message: replyError })}
+														</p>
+													{/if}
+													<div class="flex gap-1 self-end">
+														<button
+															class="btn btn-xs"
+															type="button"
+															onclick={() => {
+																replyingToCommentId = null;
+																replyingToTargetId = null;
+																replyError = null;
+															}}
+														>
+															{m.char_detail_cancel_reply()}
+														</button>
+														<button
+															class="btn btn-xs btn-primary"
+															type="submit"
+															disabled={posting || !replyDraft.trim()}
+														>
+															{m.char_detail_post_comment()}
+														</button>
+													</div>
+												</form>
 											{/if}
 										</li>
 									{/each}

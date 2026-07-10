@@ -7,10 +7,12 @@ import { generateKeyring } from '$lib/crypto/keys';
 import { postComment, editComment, deleteComment, getCommentsForCharacter } from './comments';
 
 const RADATA_DIR = `test-radata-comments-${crypto.randomUUID()}`;
+let mainKeyring: Awaited<ReturnType<typeof generateKeyring>>;
 
 beforeAll(async () => {
 	__setGunForTests(new Gun({ radisk: true, localStorage: false, peers: [], axe: false, multicast: false, file: RADATA_DIR }));
-	__setKeyringForTests(await generateKeyring());
+	mainKeyring = await generateKeyring();
+	__setKeyringForTests(mainKeyring);
 });
 
 afterAll(() => {
@@ -61,6 +63,46 @@ describe('postComment / getCommentsForCharacter', () => {
 		await commentIndex.addToIndex(characterId, comment.id, keyring);
 
 		expect(await getCommentsForCharacter(characterId)).toEqual([]);
+	});
+
+	it('posts a reply with parent_id set, alongside the top-level comment', async () => {
+		const characterId = `char-${crypto.randomUUID()}`;
+		const root = await postComment(characterId, 'Top-level');
+
+		__setKeyringForTests(await generateKeyring());
+		const reply = await postComment(characterId, 'A reply', root.id);
+		__setKeyringForTests(await generateKeyring());
+
+		expect(reply.parent_id).toBe(root.id);
+
+		const comments = await getCommentsForCharacter(characterId);
+		expect(comments).toHaveLength(2);
+		expect(comments.find((c) => c.id === root.id)?.parent_id).toBeNull();
+		expect(comments.find((c) => c.id === reply.id)?.parent_id).toBe(root.id);
+	});
+
+	it('rejects replying to your own comment', async () => {
+		const characterId = `char-${crypto.randomUUID()}`;
+		const root = await postComment(characterId, 'Top-level');
+
+		await expect(postComment(characterId, 'Self-reply', root.id)).rejects.toThrow(
+			"Can't reply to your own comment."
+		);
+	});
+
+	it("allows replying to someone else's reply within your own thread (checks the actual reply target, not the flattened root)", async () => {
+		const characterId = `char-${crypto.randomUUID()}`;
+		const root = await postComment(characterId, 'My top-level comment');
+
+		__setKeyringForTests(await generateKeyring());
+		const reply = await postComment(characterId, "Someone else's reply", root.id);
+
+		// Back to the root's author, replying to that reply — parent_id still
+		// flattens to root.id, but the reply target (reply.id) isn't self-authored.
+		__setKeyringForTests(mainKeyring);
+		const nestedReply = await postComment(characterId, 'Thanks for the reply', root.id, reply.id);
+
+		expect(nestedReply.parent_id).toBe(root.id);
 	});
 
 	it('rejects an edit from a non-author', async () => {

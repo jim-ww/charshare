@@ -26,8 +26,13 @@ export async function loadComments(characterId: CharacterId): Promise<void> {
 	}
 }
 
-export async function addComment(characterId: CharacterId, content: string): Promise<void> {
-	await postComment(characterId, content);
+export async function addComment(
+	characterId: CharacterId,
+	content: string,
+	parentId: Comment['parent_id'] = null,
+	replyToId: Comment['parent_id'] = parentId
+): Promise<void> {
+	await postComment(characterId, content, parentId, replyToId);
 	await loadComments(characterId);
 }
 
