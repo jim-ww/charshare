@@ -60,7 +60,7 @@ export const DEFAULT_HUGGINGFACE_CONFIG: HuggingFaceProviderConfig = {
 
 export const DEFAULT_PREFERENCES: Preferences = {
 	gunRelays: DEFAULT_GUN_RELAYS,
-	theme: "forest",
+	theme: "dim",
 	blockedTags: [],
 	blockedAuthors: [],
 	hiddenCharacterIds: [],
