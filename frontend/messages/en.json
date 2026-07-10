@@ -195,6 +195,7 @@
 	"chat_sidebar_export": "Export",
 	"chat_sidebar_rename": "Rename",
 	"chat_sidebar_choose_character": "Choose character",
+	"chat_sidebar_view_character": "View character",
 	"chat_sidebar_delete": "Delete",
 	"chat_sidebar_unknown_character": "Unknown character",
 	"chat_sidebar_show_other_conversations": "Show other conversations",

@@ -100,6 +100,9 @@
 			<li><button type="button" onclick={() => handleExport(chat)}>{m.chat_sidebar_export()}</button></li>
 			<li><button type="button" onclick={() => handleRename(chat)}>{m.chat_sidebar_rename()}</button></li>
 			<li>
+				<a href={resolve('/characters/[id]', { id: chat.character_id })}>{m.chat_sidebar_view_character()}</a>
+			</li>
+			<li>
 				<a href={`${resolve('/chats/[id]', { id: chat.id })}?pick-character`}>{m.chat_sidebar_choose_character()}</a>
 			</li>
 			<li><button type="button" class="text-error" onclick={() => handleDelete(chat)}>{m.chat_sidebar_delete()}</button></li>

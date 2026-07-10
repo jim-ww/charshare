@@ -123,7 +123,11 @@
 		class:flex-row-reverse={message.role === 'user'}
 	>
 		<span class="flex items-baseline gap-2">
-			<span>{displayName}</span>
+			{#if message.role === 'character'}
+				<a class="link link-hover" href={resolve('/characters/[id]', { id: character.id })}>{displayName}</a>
+			{:else}
+				<span>{displayName}</span>
+			{/if}
 			<span class="text-xs font-normal italic opacity-60">{formattedTime}</span>
 		</span>
 		{#if !editing}
