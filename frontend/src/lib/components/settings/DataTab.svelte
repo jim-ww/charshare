@@ -6,6 +6,7 @@
 		type DataCategory,
 		type ImportSummary
 	} from '$lib/export/dataExport';
+	import { notify } from '$lib/state/notifications.svelte';
 	import { m } from '$lib/paraglide/messages.js';
 
 	const DATA_CATEGORIES = $derived(dataCategories());
@@ -24,7 +25,17 @@
 		const categories = exportEverything
 			? DATA_CATEGORIES.map((c) => c.id)
 			: DATA_CATEGORIES.filter((c) => selected[c.id]).map((c) => c.id);
-		await exportData(categories);
+		try {
+			await exportData(categories);
+			notify(m.data_tab_export_complete(), { kind: 'success' });
+		} catch (err) {
+			notify(
+				m.data_tab_export_failed({
+					message: err instanceof Error ? err.message : String(err)
+				}),
+				{ kind: 'error', duration: 0 }
+			);
+		}
 	}
 
 	const nothingSelected = $derived(

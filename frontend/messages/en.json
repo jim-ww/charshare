@@ -471,6 +471,8 @@
 	"data_tab_select_none": "Select none",
 	"data_tab_download": "Download",
 	"data_tab_download_hint": "One category downloads as a single JSON file; multiple categories are bundled into a zip.",
+	"data_tab_export_complete": "Data export downloaded successfully.",
+	"data_tab_export_failed": "Data export failed: {message}",
 	"data_tab_import_heading": "Import",
 	"data_tab_import_body": "Select a file exported from here — a single category's JSON, or a zip bundle of several. Imported characters come in as local-only drafts; imported personas and chats are added alongside what you already have.",
 	"data_tab_importing": "Importing…",

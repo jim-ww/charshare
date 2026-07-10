@@ -1,4 +1,4 @@
-- feat(preferences.DataTab): when data export finishes, send data export completed notification (only when file was written completely)
+- feat(characters): add separate radio button for Network, separate from Published(owned ones)
 - feat(character new/edit page): check tag validator, must refuse system tags like __network__
 - feat: add option to reply to other comments
 - feat: add option to see all owned comments, with edit, delete buttons and links to character (on which comment was posted)?
