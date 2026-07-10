@@ -32,7 +32,7 @@
 		setSelectedTags,
 		toggleTag,
 	} from "$lib/state/search.svelte";
-	import { m } from '$lib/paraglide/messages.js';
+	import { m } from "$lib/paraglide/messages.js";
 
 	type ListFilter = "all" | "mine" | "saved" | "published";
 	let listFilter = $state<ListFilter>("all");
@@ -67,7 +67,9 @@
 			lastRunQuery = q;
 			lastRunTags = tagsParam;
 			setSearchQuery(q);
-			setSelectedTags(new Set(tagsParam.split(",").filter(Boolean)));
+			setSelectedTags(
+				new Set(tagsParam.split(",").filter(Boolean)),
+			);
 			runSearch();
 		}
 	});
@@ -105,13 +107,15 @@
 		// "@name"/"@pubkey" author search has no meaningful local text-match
 		// equivalent — remoteResults (browseByAuthor) is the whole answer.
 		if (!isAuthorQuery) {
-			const localMatches = [...myCharacters, ...savedCharacters].filter(
-				(c) => !trimmed || matchesQuery(c, trimmed),
-			);
+			const localMatches = [
+				...myCharacters,
+				...savedCharacters,
+			].filter((c) => !trimmed || matchesQuery(c, trimmed));
 			for (const c of localMatches) combined.set(c.id, c);
 			for (const c of networkResults) {
 				if (!trimmed || matchesQuery(c, trimmed)) {
-					if (!combined.has(c.id)) combined.set(c.id, c);
+					if (!combined.has(c.id))
+						combined.set(c.id, c);
 				}
 			}
 		}
@@ -122,13 +126,19 @@
 		}
 
 		let list = [...combined.values()];
-		if (listFilter === "mine") list = list.filter((c) => c.author === me);
-		else if (listFilter === "saved") list = list.filter((c) => savedIds.has(c.id));
+		if (listFilter === "mine")
+			list = list.filter((c) => c.author === me);
+		else if (listFilter === "saved")
+			list = list.filter((c) => savedIds.has(c.id));
 		else if (listFilter === "published") {
 			list = list.filter((c) => !isCharacterLocalOnly(c.id));
 		}
 		if (!showHidden) {
-			list = list.filter((c) => c.author === me || !isCharacterHidden(c.id));
+			list = list.filter(
+				(c) =>
+					c.author === me ||
+					!isCharacterHidden(c.id),
+			);
 		}
 		if (!showNsfw) {
 			list = list.filter((c) => !c.nsfw);
@@ -139,8 +149,13 @@
 
 <div class="p-4">
 	<div class="mb-6 flex flex-col items-center gap-3">
-		<TagCarousel selected={getSelectedTags()} ontoggle={handleToggleTag} />
-		<div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-1">
+		<TagCarousel
+			selected={getSelectedTags()}
+			ontoggle={handleToggleTag}
+		/>
+		<div
+			class="flex flex-wrap items-center justify-center gap-x-5 gap-y-1"
+		>
 			<label class="label cursor-pointer gap-2 py-0">
 				<input
 					type="radio"
@@ -149,7 +164,9 @@
 					value="all"
 					bind:group={listFilter}
 				/>
-				<span class="label-text">{m.char_list_filter_all()}</span>
+				<span class="label-text"
+					>{m.char_list_filter_all()}</span
+				>
 			</label>
 			<label class="label cursor-pointer gap-2 py-0">
 				<input
@@ -159,17 +176,9 @@
 					value="mine"
 					bind:group={listFilter}
 				/>
-				<span class="label-text">{m.char_list_mine_only()}</span>
-			</label>
-			<label class="label cursor-pointer gap-2 py-0">
-				<input
-					type="radio"
-					name="listFilter"
-					class="radio radio-sm"
-					value="saved"
-					bind:group={listFilter}
-				/>
-				<span class="label-text">{m.char_list_saved_only()}</span>
+				<span class="label-text"
+					>{m.char_list_mine_only()}</span
+				>
 			</label>
 			<label class="label cursor-pointer gap-2 py-0">
 				<input
@@ -179,15 +188,32 @@
 					value="published"
 					bind:group={listFilter}
 				/>
-				<span class="label-text">{m.char_list_filter_published()}</span>
+				<span class="label-text"
+					>{m.char_list_filter_published()}</span
+				>
 			</label>
+			<label class="label cursor-pointer gap-2 py-0">
+				<input
+					type="radio"
+					name="listFilter"
+					class="radio radio-sm"
+					value="saved"
+					bind:group={listFilter}
+				/>
+				<span class="label-text"
+					>{m.char_list_saved_only()}</span
+				>
+			</label>
+
 			<label class="label cursor-pointer gap-2 py-0">
 				<input
 					type="checkbox"
 					class="toggle toggle-sm"
 					bind:checked={showHidden}
 				/>
-				<span class="label-text">{m.char_list_show_hidden()}</span>
+				<span class="label-text"
+					>{m.char_list_show_hidden()}</span
+				>
 			</label>
 			<label class="label cursor-pointer gap-2 py-0">
 				<input
@@ -196,10 +222,14 @@
 					checked={showNsfw}
 					onchange={(e) =>
 						updatePreferences({
-							showNsfw: e.currentTarget.checked,
+							showNsfw: e
+								.currentTarget
+								.checked,
 						})}
 				/>
-				<span class="label-text">{m.char_list_show_nsfw()}</span>
+				<span class="label-text"
+					>{m.char_list_show_nsfw()}</span
+				>
 			</label>
 		</div>
 	</div>

@@ -99,9 +99,9 @@
 	"chats_empty_state": "Select a conversation, or start one from a character's page.",
 
 	"char_list_filter_all": "All",
-	"char_list_mine_only": "Mine only",
-	"char_list_saved_only": "Saved only",
-	"char_list_filter_published": "Published only",
+	"char_list_mine_only": "Owned",
+	"char_list_saved_only": "Saved",
+	"char_list_filter_published": "Published",
 	"char_list_show_hidden": "Show hidden",
 	"char_list_show_nsfw": "Show NSFW",
 	"char_list_loading": "Loading…",
