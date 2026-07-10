@@ -1,4 +1,12 @@
 import { browser } from '$app/environment';
+import { WHISPER_MODELS, type WhisperModelSize } from './models';
+
+export { WHISPER_MODELS, type WhisperModelSize };
+
+// The Cache Storage bucket transformers.js stores model files in (its
+// `env.cacheKey` default) — read directly here to report/delete cached
+// models without round-tripping through the worker.
+const CACHE_NAME = 'transformers-cache';
 
 interface ProgressEvent {
 	status: string;
@@ -30,7 +38,10 @@ function getWorker(): Worker {
 /** Downloads (or loads from cache) the Whisper model, reporting overall
  *  progress 0-100 across every file the model is split into. Resolves once
  *  the model is ready to transcribe. */
-export function preloadModel(onProgress: (percent: number) => void): Promise<void> {
+export function preloadModel(
+	modelSize: WhisperModelSize,
+	onProgress: (percent: number) => void,
+): Promise<void> {
 	const w = getWorker();
 	const fileTotals = new Map<string, { loaded: number; total: number }>();
 
@@ -63,14 +74,14 @@ export function preloadModel(onProgress: (percent: number) => void): Promise<voi
 			}
 		};
 		w.addEventListener('message', handleMessage);
-		w.postMessage({ type: 'preload' });
+		w.postMessage({ type: 'preload', modelSize });
 	});
 }
 
 /** Transcribes mono 16kHz PCM audio locally via a Whisper model running in a
  *  Web Worker. Call `preloadModel` first so the model is already cached and
  *  this resolves quickly instead of triggering a fresh download. */
-export function transcribe(audio: Float32Array): Promise<string> {
+export function transcribe(audio: Float32Array, modelSize: WhisperModelSize): Promise<string> {
 	const w = getWorker();
 	return new Promise((resolve, reject) => {
 		const handleMessage = (event: MessageEvent<WorkerMessage>) => {
@@ -83,6 +94,34 @@ export function transcribe(audio: Float32Array): Promise<string> {
 			}
 		};
 		w.addEventListener('message', handleMessage);
-		w.postMessage({ type: 'transcribe', audio }, [audio.buffer]);
+		w.postMessage({ type: 'transcribe', audio, modelSize }, [audio.buffer]);
 	});
+}
+
+/** Whether a Whisper model's files are already in the browser's model cache
+ *  (Cache Storage), i.e. usable offline without a fresh download. */
+export async function isModelCached(modelSize: WhisperModelSize): Promise<boolean> {
+	if (!browser || !('caches' in globalThis)) return false;
+	const cache = await caches.open(CACHE_NAME);
+	const keys = await cache.keys();
+	const modelId = WHISPER_MODELS[modelSize].id;
+	return keys.some((request) => request.url.includes(modelId));
+}
+
+/** Removes a Whisper model's files from the browser's model cache, freeing
+ *  the disk space it used. Also tears down the worker so a copy of the
+ *  model already loaded in its memory can't keep serving transcriptions
+ *  after its cache is gone — the next use starts a fresh worker/download. */
+export async function deleteModel(modelSize: WhisperModelSize): Promise<void> {
+	if (!browser || !('caches' in globalThis)) return;
+	const cache = await caches.open(CACHE_NAME);
+	const modelId = WHISPER_MODELS[modelSize].id;
+	const keys = await cache.keys();
+	await Promise.all(
+		keys.filter((request) => request.url.includes(modelId)).map((request) => cache.delete(request)),
+	);
+	if (worker) {
+		worker.terminate();
+		worker = null;
+	}
 }

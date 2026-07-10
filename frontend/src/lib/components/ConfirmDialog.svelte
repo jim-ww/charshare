@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages.js';
+	import type { Snippet } from 'svelte';
 
 	interface Props {
 		open: boolean;
@@ -9,9 +10,10 @@
 		danger?: boolean;
 		onconfirm: () => void;
 		oncancel: () => void;
+		children?: Snippet;
 	}
 
-	let { open, title, message, confirmLabel = m.confirm_dialog_default_confirm(), danger = false, onconfirm, oncancel }: Props = $props();
+	let { open, title, message, confirmLabel = m.confirm_dialog_default_confirm(), danger = false, onconfirm, oncancel, children }: Props = $props();
 
 	let dialogEl: HTMLDialogElement | undefined;
 
@@ -25,6 +27,9 @@
 	<div class="modal-box">
 		<h3 class="text-lg font-semibold">{title}</h3>
 		<p class="py-3 text-sm opacity-80">{message}</p>
+		{#if children}
+			<div class="pb-1">{@render children()}</div>
+		{/if}
 		<div class="modal-action">
 			<button class="btn btn-sm" type="button" onclick={oncancel}>{m.confirm_dialog_cancel()}</button>
 			<button

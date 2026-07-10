@@ -1,13 +1,9 @@
-- mic: check other whisper models?
+- fix(chat): image preview position, that adaptivity commit broke
 - add button to cache some character locally? like 'save locally' or 'add to favourites', so it would always stay there, even ifs deleted from remote node or by author? but should be marked locally if author deleted it
 - chat page doesnt load up characters, or load with retry like on 'characters' page?
 - make 'This chat's character couldn't be loaded' error appear after a bit longer period and check if it make fetch instantly on 'wait longer' press
-- download failed several times in wails + need to approve microphone
-- fix(chat): image preview position, that adaptivity commit broke
 - feat(chat message bubbles): make character name a link
 - fix(chat): image preview should exit on Esc press
-- feat(chat): add option to transcribe user spoken text
-- feat(chat): read AI responses aloud (with local models) (whisper?)
 - feat: improve usability on mobiles? improve modals, small buttons/controls
 - feat: add option to reply to other comments
 - feat: add option to see all owned comments, with edit, delete buttons and links to character?

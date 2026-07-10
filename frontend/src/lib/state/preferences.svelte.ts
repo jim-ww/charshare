@@ -70,6 +70,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
 	chatOpacity: 100,
 	showNsfw: false,
 	whisperConsentGiven: false,
+	whisperModelSize: "tiny",
 	micSilenceTimeoutMs: 1500,
 	provider: DEFAULT_HUGGINGFACE_CONFIG,
 	providerConfigs: {
@@ -125,6 +126,7 @@ export function initPreferences(): Promise<void> {
 					chatOpacity: preferences.chatOpacity ?? 100,
 					showNsfw: preferences.showNsfw ?? false,
 					whisperConsentGiven: preferences.whisperConsentGiven ?? false,
+					whisperModelSize: preferences.whisperModelSize ?? "tiny",
 					micSilenceTimeoutMs: preferences.micSilenceTimeoutMs ?? 1500,
 					providerConfigs: {
 						...DEFAULT_PREFERENCES.providerConfigs,

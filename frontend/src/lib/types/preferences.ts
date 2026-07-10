@@ -93,5 +93,6 @@ export interface Preferences {
   chatOpacity: number; // 0-100, applied to message bubbles and composer over the chat background
   showNsfw: boolean; // include NSFW characters in Browse results, other than your own
   whisperConsentGiven: boolean; // user agreed to download the local speech-to-text model
+  whisperModelSize: 'tiny' | 'base'; // which Whisper model size to use for mic transcription
   micSilenceTimeoutMs: number | null; // auto-stop recording after this much silence; null disables auto-stop entirely
 }

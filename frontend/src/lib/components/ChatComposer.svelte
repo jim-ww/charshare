@@ -10,7 +10,12 @@
 	import { m } from '$lib/paraglide/messages.js';
 	import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
 	import { startMicRecording, type MicRecording } from "$lib/audio/recordMic";
-	import { transcribe, preloadModel } from "$lib/asr/whisperClient";
+	import {
+		transcribe,
+		preloadModel,
+		WHISPER_MODELS,
+		type WhisperModelSize,
+	} from "$lib/asr/whisperClient";
 	import { getPreferences, updatePreferences } from "$lib/state/preferences.svelte";
 	import { isWailsDesktop } from "$lib/wails";
 
@@ -41,8 +46,13 @@
 	let listening = $state(false);
 	let transcribing = $state(false);
 	let showMicConsent = $state(false);
+	// The model the consent dialog's radios currently have selected — seeded
+	// from the saved preference each time the dialog opens, so re-opening it
+	// doesn't lose an earlier in-dialog choice's effect on the preference.
+	let consentModelSize = $state<WhisperModelSize>("tiny");
 	// null = not downloading; a number = download in progress, percent complete
 	let downloadProgress = $state<number | null>(null);
+	const whisperModelSizes = Object.keys(WHISPER_MODELS) as WhisperModelSize[];
 
 	// Up/down arrow history navigation over the user's own past messages
 	// (oldest to newest). -1 means "showing the draft"; 0 is the most recent
@@ -189,6 +199,7 @@
 			return;
 		}
 		if (!getPreferences().whisperConsentGiven) {
+			consentModelSize = getPreferences().whisperModelSize;
 			showMicConsent = true;
 			return;
 		}
@@ -229,7 +240,7 @@
 		transcribing = true;
 		try {
 			const audio = await recording.stop();
-			const text = await transcribe(audio);
+			const text = await transcribe(audio, getPreferences().whisperModelSize);
 			if (text) {
 				content = content ? content.trimEnd() + " " + text : text;
 				historyIndex = -1;
@@ -245,7 +256,7 @@
 
 	async function handleMicConsentConfirm() {
 		showMicConsent = false;
-		await updatePreferences({ whisperConsentGiven: true });
+		await updatePreferences({ whisperConsentGiven: true, whisperModelSize: consentModelSize });
 		await downloadModelThenRecord();
 	}
 
@@ -257,7 +268,7 @@
 		error = null;
 		downloadProgress = 0;
 		try {
-			await preloadModel((percent) => {
+			await preloadModel(getPreferences().whisperModelSize, (percent) => {
 				downloadProgress = percent;
 			});
 		} catch (err) {
@@ -435,8 +446,29 @@
 <ConfirmDialog
 	open={showMicConsent}
 	title={m.chat_composer_mic_consent_title()}
-	message={m.chat_composer_mic_consent_message()}
+	message={m.chat_composer_mic_consent_message({
+		sizeMB: WHISPER_MODELS[consentModelSize].approxSizeMB,
+	})}
 	confirmLabel={m.chat_composer_mic_consent_confirm()}
 	onconfirm={handleMicConsentConfirm}
 	oncancel={handleMicConsentCancel}
-/>
+>
+	<div class="flex flex-col gap-1">
+		{#each whisperModelSizes as size (size)}
+			<label class="flex cursor-pointer items-center gap-2">
+				<input
+					type="radio"
+					name="mic-consent-model-size"
+					class="radio radio-sm"
+					checked={consentModelSize === size}
+					onchange={() => (consentModelSize = size)}
+				/>
+				<span class="text-sm">
+					{size === "tiny"
+						? m.general_tab_whisper_model_tiny_label()
+						: m.general_tab_whisper_model_base_label()}
+				</span>
+			</label>
+		{/each}
+	</div>
+</ConfirmDialog>
