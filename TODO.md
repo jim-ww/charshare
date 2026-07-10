@@ -1,6 +1,3 @@
-- feat(navbar): make nav items as ghost buttons, with full nav height
-- fix(i18n): not all strings are translated with paraglide. example: src/lib/export/dataExport.ts
-- preferences(DataTab): add select all/none buttons
 - feat(characters page): improve tag selector, also, make them all as checkboxes, and never append to query visibly? (but append correctly formatted list in the beginning, for example) or handle them separately
 - feat: add option to reply to other comments
 - feat: add option to see all owned comments, with edit, delete buttons and links to character (on which comment was posted)?

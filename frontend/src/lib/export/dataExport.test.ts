@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { categoryFilename, bundleFilename, importDataFile, DATA_CATEGORIES } from './dataExport';
+import { categoryFilename, bundleFilename, importDataFile, CATEGORY_IDS } from './dataExport';
 import { __setChatsForTests, createChat, getChats } from '$lib/state/chats.svelte';
 import { __setPersonasForTests, createPersona, getPersonas } from '$lib/state/personas.svelte';
 import type { Character } from '$lib/types';
@@ -173,7 +173,6 @@ describe('detection', () => {
 	});
 
 	it('lists every category exactly once', () => {
-		const ids = DATA_CATEGORIES.map((c) => c.id);
-		expect(new Set(ids).size).toBe(ids.length);
+		expect(new Set(CATEGORY_IDS).size).toBe(CATEGORY_IDS.length);
 	});
 });

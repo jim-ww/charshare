@@ -10,33 +10,44 @@ import { getPreferences, updatePreferences } from '$lib/state/preferences.svelte
 import { getMyProfile } from '$lib/state/profile.svelte';
 import { isWailsDesktop, saveFile } from '$lib/wails';
 import type { Character, Chat, Persona, Preferences } from '$lib/types';
+import { m } from '$lib/paraglide/messages.js';
 
 export type DataCategory = 'account' | 'characters' | 'savedCharacters' | 'personas' | 'chats' | 'preferences';
 
-export const DATA_CATEGORIES: { id: DataCategory; label: string; description: string }[] = [
-	{
-		id: 'account',
-		label: 'Account',
-		description: 'Your private key — treat this like a password.'
-	},
-	{
-		id: 'characters',
-		label: 'My characters',
-		description: "Local-only drafts and characters you've published, together."
-	},
-	{
-		id: 'savedCharacters',
-		label: 'Saved characters',
-		description: "Other authors' characters you've kept as a local backup."
-	},
-	{ id: 'personas', label: 'Personas', description: 'All personas you play as.' },
-	{ id: 'chats', label: 'Chats', description: 'Every conversation, with all branches.' },
-	{
-		id: 'preferences',
-		label: 'Preferences',
-		description: "Theme, blocked tags, AI provider settings — including any API keys you've entered."
-	}
+/** Fixed id order — labels/descriptions are locale-dependent (see
+ *  dataCategories()) but the set/order of ids themselves is not. */
+export const CATEGORY_IDS: DataCategory[] = [
+	'account',
+	'characters',
+	'savedCharacters',
+	'personas',
+	'chats',
+	'preferences'
 ];
+
+export function dataCategories(): { id: DataCategory; label: string; description: string }[] {
+	return [
+		{ id: 'account', label: m.data_category_account_label(), description: m.data_category_account_description() },
+		{
+			id: 'characters',
+			label: m.data_category_characters_label(),
+			description: m.data_category_characters_description()
+		},
+		{
+			id: 'savedCharacters',
+			label: m.data_category_savedCharacters_label(),
+			description: m.data_category_savedCharacters_description()
+		},
+		{ id: 'personas', label: m.data_category_personas_label(), description: m.data_category_personas_description() },
+		{ id: 'chats', label: m.data_category_chats_label(), description: m.data_category_chats_description() },
+		{
+			id: 'preferences',
+			label: m.data_category_preferences_label(),
+			description: m.data_category_preferences_description()
+		}
+	];
+}
+
 
 const APP_NAME = 'charshare';
 
@@ -179,7 +190,7 @@ function detectCategory(filename: string, parsed: unknown): DataCategory | null 
 	// Longest id first — "savedCharacters" contains "characters" as a
 	// substring, so checking the shorter id first would misdetect a
 	// "charshare-savedcharacters-....json" filename as plain "characters".
-	const idsByLengthDesc = DATA_CATEGORIES.map((c) => c.id).sort((a, b) => b.length - a.length);
+	const idsByLengthDesc = [...CATEGORY_IDS].sort((a, b) => b.length - a.length);
 	for (const category of idsByLengthDesc) {
 		if (lower.includes(category.toLowerCase())) return category;
 	}
@@ -213,7 +224,7 @@ async function importAccountFile(json: string): Promise<void> {
  *  instead of piling up duplicates like the single-item share/import flow. */
 async function importCharactersFile(json: string): Promise<ImportSummary> {
 	const parsed: unknown = JSON.parse(json);
-	if (!Array.isArray(parsed)) throw new Error('Not a valid characters export.');
+	if (!Array.isArray(parsed)) throw new Error(m.data_export_error_not_valid_characters());
 	const results: ('added' | 'updated' | 'skipped')[] = [];
 	for (const item of parsed as Character[]) {
 		results.push(await restoreCharacter(item));
@@ -226,7 +237,7 @@ async function importCharactersFile(json: string): Promise<ImportSummary> {
  *  characters have no local edit chain of our own to protect). */
 async function importSavedCharactersFile(json: string): Promise<ImportSummary> {
 	const parsed: unknown = JSON.parse(json);
-	if (!Array.isArray(parsed)) throw new Error('Not a valid saved characters export.');
+	if (!Array.isArray(parsed)) throw new Error(m.data_export_error_not_valid_saved_characters());
 	const results: ('added' | 'updated' | 'skipped')[] = [];
 	for (const item of parsed as Character[]) {
 		results.push(await restoreSavedCharacter(item));
@@ -236,7 +247,7 @@ async function importSavedCharactersFile(json: string): Promise<ImportSummary> {
 
 async function importPersonasFile(json: string): Promise<ImportSummary> {
 	const parsed: unknown = JSON.parse(json);
-	if (!Array.isArray(parsed)) throw new Error('Not a valid personas export.');
+	if (!Array.isArray(parsed)) throw new Error(m.data_export_error_not_valid_personas());
 	const results: ('added' | 'updated' | 'skipped')[] = [];
 	for (const item of parsed as Persona[]) {
 		results.push(await restorePersona(item));
@@ -246,7 +257,7 @@ async function importPersonasFile(json: string): Promise<ImportSummary> {
 
 async function importChatsFile(json: string): Promise<ImportSummary> {
 	const parsed: unknown = JSON.parse(json);
-	if (!Array.isArray(parsed)) throw new Error('Not a valid chats export.');
+	if (!Array.isArray(parsed)) throw new Error(m.data_export_error_not_valid_chats());
 	const results: ('added' | 'updated' | 'skipped')[] = [];
 	for (const item of parsed as Chat[]) {
 		results.push(await restoreChat(item));
@@ -256,7 +267,7 @@ async function importChatsFile(json: string): Promise<ImportSummary> {
 
 async function importPreferencesFile(json: string): Promise<void> {
 	const parsed: unknown = JSON.parse(json);
-	if (typeof parsed !== 'object' || parsed === null) throw new Error('Not a valid preferences export.');
+	if (typeof parsed !== 'object' || parsed === null) throw new Error(m.data_export_error_not_valid_preferences());
 	await updatePreferences(parsed as Partial<Preferences>);
 }
 
@@ -265,10 +276,10 @@ async function importOne(filename: string, json: string): Promise<ImportSummary>
 	try {
 		parsed = JSON.parse(json);
 	} catch {
-		throw new Error(`${filename}: not valid JSON.`);
+		throw new Error(m.data_export_error_not_json({ filename }));
 	}
 	const category = detectCategory(filename, parsed);
-	if (!category) throw new Error(`${filename}: couldn't tell what kind of data this is.`);
+	if (!category) throw new Error(m.data_export_error_unknown_category({ filename }));
 	switch (category) {
 		case 'account':
 			await importAccountFile(json);

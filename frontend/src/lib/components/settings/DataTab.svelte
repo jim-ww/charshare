@@ -2,11 +2,13 @@
 	import {
 		exportData,
 		importDataFile,
-		DATA_CATEGORIES,
+		dataCategories,
 		type DataCategory,
 		type ImportSummary
 	} from '$lib/export/dataExport';
 	import { m } from '$lib/paraglide/messages.js';
+
+	const DATA_CATEGORIES = $derived(dataCategories());
 
 	let exportEverything = $state(true);
 	let selected = $state<Record<DataCategory, boolean>>({
