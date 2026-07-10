@@ -307,8 +307,11 @@
 	"char_image_viewer_previous": "Previous image",
 	"char_image_viewer_next": "Next image",
 
-	"tag_carousel_show_as_carousel": "Show tags as carousel",
-	"tag_carousel_show_all": "Show all tags",
+	"tag_carousel_show_all": "Show all {count} tags",
+	"tag_carousel_show_less": "Show fewer tags",
+	"tag_carousel_your_tags": "Your tags:",
+	"tag_carousel_custom_placeholder": "Custom tag…",
+	"tag_carousel_custom_add": "Add",
 
 	"navbar_guest_sign_in": "Guest — sign in",
 	"navbar_nav_characters": "Characters",

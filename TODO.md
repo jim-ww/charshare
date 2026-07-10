@@ -1,4 +1,5 @@
-- feat(characters page): improve tag selector, also, make them all as checkboxes, and never append to query visibly? (but append correctly formatted list in the beginning, for example) or handle them separately
+- fix: do not show 'save' button on local+owned character cards in characters/ and in character view page
+- add tooltip on characters/ 'Saved only' filter option, describing which characters are considered 'Saved'
 - feat: add option to reply to other comments
 - feat: add option to see all owned comments, with edit, delete buttons and links to character (on which comment was posted)?
 - feat: improve usability on mobiles? improve modals, small buttons/controls

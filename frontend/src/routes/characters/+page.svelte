@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { page } from "$app/state";
+	import { goto } from "$app/navigation";
+	import { resolve } from "$app/paths";
 	import type { Character } from "$lib/types";
 	import {
 		getMyCharacters,
@@ -16,15 +18,18 @@
 		updatePreferences,
 	} from "$lib/state/preferences.svelte";
 	import {
-		addTagToQuery,
+		effectiveQuery,
 		getNetworkResults,
 		getRemoteResults,
 		getSearchQuery,
 		getSearchedQuery,
+		getSelectedTags,
 		matchesQuery,
 		refreshNetwork,
 		runSearch,
 		setSearchQuery,
+		setSelectedTags,
+		toggleTag,
 	} from "$lib/state/search.svelte";
 	import { m } from '$lib/paraglide/messages.js';
 
@@ -33,10 +38,12 @@
 	let showHidden = $state(false);
 	const showNsfw = $derived(getPreferences().showNsfw);
 	const networkResults = $derived(getNetworkResults());
-	// Tracks the last "?q=" we actually ran a search for, so navigating here
-	// with a new query (e.g. from the NavBar on another page) re-triggers the
-	// search exactly once instead of looping against the shared search state.
+	// Tracks the last "?q="/"?tags=" we actually ran a search for, so
+	// navigating here with a new query (e.g. from the NavBar on another page)
+	// re-triggers the search exactly once instead of looping against the
+	// shared search state.
 	let lastRunQuery: string | null = $state(null);
+	let lastRunTags: string | null = $state(null);
 
 	const myCharacters = $derived(
 		getMyCharacters().filter((c) => !c.deleted),
@@ -54,19 +61,42 @@
 
 	$effect(() => {
 		const q = page.url.searchParams.get("q") ?? "";
-		if (q !== lastRunQuery) {
+		const tagsParam = page.url.searchParams.get("tags") ?? "";
+		if (q !== lastRunQuery || tagsParam !== lastRunTags) {
 			lastRunQuery = q;
+			lastRunTags = tagsParam;
 			setSearchQuery(q);
+			setSelectedTags(new Set(tagsParam.split(",").filter(Boolean)));
 			runSearch();
 		}
 	});
 
+	/** Toggles a tag and reflects the new selection into the URL (so it's
+	 *  shareable/bookmarkable the same way the free-text query already is),
+	 *  then re-runs the search immediately — unlike free text, a checkbox
+	 *  toggle is itself the "submit" action. */
+	function handleToggleTag(tag: string) {
+		toggleTag(tag);
+		const params = new URLSearchParams(page.url.searchParams);
+		const tags = [...getSelectedTags()];
+		if (tags.length > 0) params.set("tags", tags.join(","));
+		else params.delete("tags");
+		lastRunTags = params.get("tags") ?? "";
+		goto(`${resolve("/characters")}?${params}`, {
+			replaceState: true,
+			keepFocus: true,
+			noScroll: true,
+		});
+		runSearch();
+	}
+
 	const results = $derived.by(() => {
-		const query = getSearchQuery();
 		const remoteResults = getRemoteResults();
 		const searchedQuery = getSearchedQuery();
-		const trimmed = query.trim();
-		const isAuthorQuery = trimmed.startsWith("@");
+		const rawQuery = getSearchQuery().trim();
+		const isAuthorQuery = rawQuery.startsWith("@");
+		// Selected tags don't apply to an "@" author lookup — see runSearch.
+		const trimmed = isAuthorQuery ? rawQuery : effectiveQuery();
 		const me = getCurrentUser();
 
 		const combined = new Map<string, Character>();
@@ -105,7 +135,7 @@
 
 <div class="p-4">
 	<div class="mb-6 flex flex-col items-center gap-3">
-		<TagCarousel onpick={addTagToQuery} />
+		<TagCarousel selected={getSelectedTags()} ontoggle={handleToggleTag} />
 		<div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-1">
 			<label class="label cursor-pointer gap-2 py-0">
 				<input

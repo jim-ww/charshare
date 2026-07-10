@@ -7,6 +7,7 @@
 	import { openSettings } from "$lib/state/settingsModal.svelte";
 	import {
 		getSearchQuery,
+		getSelectedTags,
 		isSearching,
 		runSearch,
 		setSearchQuery,
@@ -32,7 +33,10 @@
 	function handleSearch(event: SubmitEvent) {
 		event.preventDefault();
 		const q = getSearchQuery().trim();
-		const params = new URLSearchParams(q ? { q } : {});
+		const tags = [...getSelectedTags()];
+		const params = new URLSearchParams();
+		if (q) params.set("q", q);
+		if (tags.length > 0) params.set("tags", tags.join(","));
 		const target = `${resolve("/characters")}${params.toString() ? `?${params}` : ""}`;
 		if (page.url.pathname === resolve("/characters") && page.url.search === (params.toString() ? `?${params}` : "")) {
 			// Already on this exact search URL — goto() wouldn't navigate, so

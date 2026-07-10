@@ -7,6 +7,10 @@ import {
 } from "$lib/gun/browse";
 
 let query = $state("");
+// Tags picked via the tag checkboxes — kept separate from the free-text
+// `query` so selecting a tag never clutters the visible search box; they're
+// folded back in (see effectiveQuery) wherever matching/searching happens.
+let selectedTags = $state<Set<string>>(new Set());
 let remoteResults = $state<Character[]>([]);
 let networkResults = $state<Character[]>([]);
 let searching = $state(false);
@@ -18,6 +22,30 @@ export function getSearchQuery(): string {
 
 export function setSearchQuery(value: string): void {
 	query = value;
+}
+
+export function getSelectedTags(): Set<string> {
+	return selectedTags;
+}
+
+export function toggleTag(tag: string): void {
+	const next = new Set(selectedTags);
+	if (next.has(tag)) next.delete(tag);
+	else next.add(tag);
+	selectedTags = next;
+}
+
+/** Replaces the whole selected-tags set — used to restore it from the `tags`
+ *  URL param (see routes/characters/+page.svelte). */
+export function setSelectedTags(tags: Set<string>): void {
+	selectedTags = tags;
+}
+
+/** The query actually used for matching/search, folding the selected tags in
+ *  ahead of any free-text words — same shape `matchesQuery`/`browseByTag`
+ *  already expect, just assembled without ever touching the visible input. */
+export function effectiveQuery(): string {
+	return [...selectedTags, ...queryWords(query)].join(" ");
 }
 
 export function getRemoteResults(): Character[] {
@@ -76,21 +104,24 @@ export function matchesQuery(c: Character, q: string): boolean {
 	return words.every((w) => matchesWord(c, w));
 }
 
-export function addTagToQuery(tag: string): void {
-	const trimmed = query.trim();
-	if (!trimmed) {
-		query = tag;
-		return;
-	}
-	const words = trimmed.split(/\s+/);
-	if (words.includes(tag)) {
-		return;
-	}
-	query = `${trimmed} ${tag}`;
-}
-
 export async function runSearch(): Promise<void> {
-	const q = query.trim();
+	// "@name"/"@pubkey" author search is its own mode — selected tags don't
+	// apply to it, so it's checked against the raw free-text query, not
+	// effectiveQuery() (which would otherwise push tag words in front of the
+	// "@" and break the prefix check).
+	const rawQuery = query.trim();
+	if (rawQuery.startsWith("@")) {
+		searching = true;
+		try {
+			remoteResults = await browseByAuthor(rawQuery.slice(1));
+			searchedQuery = rawQuery;
+		} finally {
+			searching = false;
+		}
+		return;
+	}
+
+	const q = effectiveQuery();
 	if (!q) {
 		remoteResults = [];
 		searchedQuery = "";
@@ -104,19 +135,15 @@ export async function runSearch(): Promise<void> {
 	}
 	searching = true;
 	try {
-		if (q.startsWith("@")) {
-			remoteResults = await browseByAuthor(q.slice(1));
-		} else {
-			const words = queryWords(q);
-			const perWord = await Promise.all(
-				words.map((w) => Promise.all([browseByName(w), browseByTag(w)])),
-			);
-			const merged = new Map<string, Character>();
-			for (const [byName, byTag] of perWord) {
-				for (const c of [...byName, ...byTag]) merged.set(c.id, c);
-			}
-			remoteResults = [...merged.values()].filter((c) => matchesQuery(c, q));
+		const words = queryWords(q);
+		const perWord = await Promise.all(
+			words.map((w) => Promise.all([browseByName(w), browseByTag(w)])),
+		);
+		const merged = new Map<string, Character>();
+		for (const [byName, byTag] of perWord) {
+			for (const c of [...byName, ...byTag]) merged.set(c.id, c);
 		}
+		remoteResults = [...merged.values()].filter((c) => matchesQuery(c, q));
 		searchedQuery = q;
 	} finally {
 		searching = false;
