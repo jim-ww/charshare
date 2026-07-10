@@ -57,7 +57,9 @@
 			await deletePersona(id);
 			if (editingId === id) editingId = null;
 		} catch (err) {
-			error = err instanceof Error ? err.message : String(err);
+			error = m.error_generic({
+				message: err instanceof Error ? err.message : String(err)
+			});
 		}
 	}
 
@@ -89,7 +91,9 @@
 			const draft = importPersonaDraft(await file.text());
 			await createPersona(draft);
 		} catch (err) {
-			error = err instanceof Error ? err.message : String(err);
+			error = m.error_generic({
+				message: err instanceof Error ? err.message : String(err)
+			});
 		} finally {
 			input.value = '';
 		}

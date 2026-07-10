@@ -39,7 +39,7 @@
 		<button class="btn btn-xs" type="button" disabled={index <= 0} onclick={() => go(-1)}>
 			‹
 		</button>
-		<span class="opacity-70">Conversation {index + 1} of {siblings.length}</span>
+		<span class="opacity-70">{m.chat_thread_switcher_position({ current: index + 1, total: siblings.length })}</span>
 		<button
 			class="btn btn-xs"
 			type="button"

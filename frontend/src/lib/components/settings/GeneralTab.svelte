@@ -185,7 +185,7 @@
 	</label>
 
 	<label class="form-control w-full max-w-md">
-		<span class="label-text">{m.general_tab_opacity_label()} ({preferences.chatOpacity}%)</span>
+		<span class="label-text">{m.general_tab_opacity_label({ percent: preferences.chatOpacity })}</span>
 		<input
 			class="range"
 			type="range"

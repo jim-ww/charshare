@@ -89,10 +89,9 @@
 					err.name === "AbortError"
 				)
 			) {
-				error =
-					err instanceof Error
-						? err.message
-						: String(err);
+				error = m.error_generic({
+					message: err instanceof Error ? err.message : String(err),
+				});
 			}
 		} finally {
 			sending = false;
@@ -171,10 +170,9 @@
 			historyIndex = -1;
 			draftBackup = "";
 		} catch (err) {
-			error =
-				err instanceof Error
-					? err.message
-					: String(err);
+			error = m.error_generic({
+				message: err instanceof Error ? err.message : String(err),
+			});
 		} finally {
 			generating = false;
 		}

@@ -164,7 +164,7 @@
 <ConfirmDialog
 	open={deleteTarget !== null}
 	title={m.chat_sidebar_delete_title()}
-	message={`Delete conversation "${deleteTarget?.name ?? ''}"? This cannot be undone.`}
+	message={m.chat_sidebar_delete_message({ name: deleteTarget?.name ?? '' })}
 	confirmLabel={m.chat_sidebar_delete_confirm()}
 	danger
 	onconfirm={confirmDelete}

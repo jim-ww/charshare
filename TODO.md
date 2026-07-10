@@ -1,5 +1,8 @@
 - feat: move all English text to paraglide translations
+- serve LICENSE text from site too? on Legal page
+- check if local cached, but published characters are synced to connected relay
+- fix(adaptivity): improve NavBar, ChatView(and both chat sidebars), characters page adaptivity on tablets, phones (buttons overlap on each other)
 - feat(chat): add option to transcribe user spoken text
 - feat(chat): read AI responses aloud (with local models) (whisper?)
-- feat: proper sorting(by updated_at,created_at), pagination in Characters browse page?
+- feat: implement proper sorting(by updated_at,created_at), pagination in Characters browse page?
 - feat(core): rating system for characters? then add sorting by popularity

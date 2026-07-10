@@ -79,7 +79,7 @@
 				type="button"
 				class="{fullSize ? 'contents' : 'h-full w-full'} cursor-pointer"
 				onclick={onImageClick}
-				aria-label={`Toggle ${name} image size`}
+				aria-label={m.char_image_viewer_toggle_size({ name })}
 			>
 				<img
 					src={images[index]}

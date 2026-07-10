@@ -74,10 +74,9 @@
 				matchesQuery(c, q),
 			);
 		} catch (err) {
-			error =
-				err instanceof Error
-					? err.message
-					: String(err);
+			error = m.error_generic({
+				message: err instanceof Error ? err.message : String(err),
+			});
 		} finally {
 			searching = false;
 		}
@@ -90,10 +89,9 @@
 			await setChatCharacter(chatId, character.id);
 			onpicked?.();
 		} catch (err) {
-			error =
-				err instanceof Error
-					? err.message
-					: String(err);
+			error = m.error_generic({
+				message: err instanceof Error ? err.message : String(err),
+			});
 		} finally {
 			reassigning = false;
 		}
@@ -114,10 +112,9 @@
 			await setChatCharacter(chatId, character.id);
 			onpicked?.();
 		} catch (err) {
-			error =
-				err instanceof Error
-					? err.message
-					: String(err);
+			error = m.error_generic({
+				message: err instanceof Error ? err.message : String(err),
+			});
 		} finally {
 			reassigning = false;
 			input.value = "";

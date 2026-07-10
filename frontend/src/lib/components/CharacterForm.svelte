@@ -293,7 +293,7 @@
 			);
 			if (invalidImageUrl) {
 				throw new Error(
-					`Image URLs must link to an image hosted elsewhere (starting with http:// or https://) — got "${invalidImageUrl.slice(0, 60)}"`,
+					m.char_form_error_image_url({ url: invalidImageUrl.slice(0, 60) }),
 				);
 			}
 
@@ -326,7 +326,10 @@
 			).length;
 			if (payloadBytes > MAX_CHARACTER_JSON_BYTES) {
 				throw new Error(
-					`Character data is too large (${Math.round(payloadBytes / 1000)}KB, limit ${Math.round(MAX_CHARACTER_JSON_BYTES / 1000)}KB). Trim down the description, dialogues, or greetings.`,
+					m.char_form_error_too_large({
+						actualKb: String(Math.round(payloadBytes / 1000)),
+						limitKb: String(Math.round(MAX_CHARACTER_JSON_BYTES / 1000)),
+					}),
 				);
 			}
 
@@ -337,10 +340,9 @@
 			await onsubmit(payload);
 		} catch (err) {
 			savedSnapshot = previousSnapshot;
-			error =
-				err instanceof Error
-					? err.message
-					: String(err);
+			error = m.error_generic({
+				message: err instanceof Error ? err.message : String(err),
+			});
 		} finally {
 			saving = false;
 		}
@@ -587,7 +589,7 @@
 						class="collapse-title label-text font-medium"
 					>
 						{m.char_form_image_urls_heading()}{imageUrls.length
-							? ` (${imageUrls.length})`
+							? m.char_form_count_suffix({ count: String(imageUrls.length) })
 							: ""}
 					</div>
 					<div class="collapse-content">
@@ -744,7 +746,7 @@
 						class="collapse-title label-text font-medium"
 					>
 						{m.char_form_alternate_greetings_heading()}{alternateGreetings.length
-							? ` (${alternateGreetings.length})`
+							? m.char_form_count_suffix({ count: String(alternateGreetings.length) })
 							: ""}
 					</div>
 					<div class="collapse-content">
@@ -803,7 +805,7 @@
 						class="collapse-title label-text font-medium"
 					>
 						{m.char_form_example_dialogues_heading()}{exampleDialogues.length
-							? ` (${exampleDialogues.length})`
+							? m.char_form_count_suffix({ count: String(exampleDialogues.length) })
 							: ""}
 					</div>
 					<div class="collapse-content">

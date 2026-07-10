@@ -45,7 +45,9 @@
 		try {
 			importSummaries = await importDataFile(file);
 		} catch (err) {
-			importError = err instanceof Error ? err.message : String(err);
+			importError = m.error_generic({
+				message: err instanceof Error ? err.message : String(err)
+			});
 		} finally {
 			importing = false;
 			input.value = '';
@@ -149,11 +151,12 @@
 			<ul class="text-success text-sm">
 				{#each importSummaries as summary (summary.category)}
 					<li>
-						{m.data_tab_imported_prefix()} {categoryLabel(summary.category)}{summary.count !== undefined
-							? ` (${summary.count})`
-							: ''}
+						{m.data_tab_imported_count({
+							category: categoryLabel(summary.category),
+							count: summary.count !== undefined ? ` (${summary.count})` : ''
+						})}
 						{#if summary.skipped}
-							<span class="opacity-70">— {summary.skipped} {m.data_tab_skipped_unchanged()}</span>
+							<span class="opacity-70">— {m.data_tab_skipped_unchanged({ skipped: String(summary.skipped) })}</span>
 						{/if}
 					</li>
 				{/each}

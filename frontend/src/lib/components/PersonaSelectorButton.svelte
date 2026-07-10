@@ -76,7 +76,7 @@
 	type="button"
 	onclick={open}
 >
-	{m.persona_selector_playing_as()} {selected ? personaDisplayName(selected) : m.persona_selector_placeholder()}
+	{m.persona_selector_playing_as({ name: selected ? personaDisplayName(selected) : m.persona_selector_placeholder() })}
 	<svg
 		viewBox="0 0 24 24"
 		width="14"

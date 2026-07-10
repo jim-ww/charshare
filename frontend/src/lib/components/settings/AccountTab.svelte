@@ -47,7 +47,9 @@
 			await registerAccount({ username, description, image_url: imageUrl.trim() || undefined });
 			loadedFromProfile = true;
 		} catch (err) {
-			saveError = err instanceof Error ? err.message : String(err);
+			saveError = m.error_generic({
+				message: err instanceof Error ? err.message : String(err)
+			});
 		} finally {
 			saving = false;
 		}
@@ -65,7 +67,9 @@
 				justSaved = false;
 			}, 2000);
 		} catch (err) {
-			saveError = err instanceof Error ? err.message : String(err);
+			saveError = m.error_generic({
+				message: err instanceof Error ? err.message : String(err)
+			});
 		} finally {
 			saving = false;
 		}
@@ -109,7 +113,9 @@
 			await loadProfileForSwitchedAccount(backup.profileFields);
 			imported = true;
 		} catch (err) {
-			importError = err instanceof Error ? err.message : String(err);
+			importError = m.error_generic({
+				message: err instanceof Error ? err.message : String(err)
+			});
 		} finally {
 			input.value = '';
 		}

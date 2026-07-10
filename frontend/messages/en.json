@@ -1,6 +1,7 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
 	"hello_world": "Hello, {name} from en!",
+	"error_generic": "Something went wrong: {message}",
 
 	"landing_hero_title": "Your characters. Your chats. Your rules.",
 	"landing_hero_subtitle": "Charshare is a decentralized platform for AI characters. No account required, no moderation queue, no subscription. Everything lives on your device first — publish to the network only if you want to.",
@@ -188,6 +189,7 @@
 	"chat_sidebar_delete_confirm": "Delete",
 	"chat_sidebar_rename_title": "Rename conversation",
 	"chat_sidebar_rename_confirm": "Save",
+	"chat_sidebar_delete_message": "Delete conversation \"{name}\"? This cannot be undone.",
 
 	"chat_settings_heading": "Chat settings",
 	"chat_settings_close": "Close chat settings",
@@ -199,6 +201,7 @@
 	"chat_settings_background_add": "Add",
 
 	"chat_thread_switcher_back": "Back",
+	"chat_thread_switcher_position": "Conversation {current} of {total}",
 
 	"chat_site_import_button": "Import from another chat site",
 	"chat_site_import_heading": "Import a character you're chatting with elsewhere",
@@ -239,6 +242,7 @@
 	"char_form_description_heading": "Description",
 	"char_form_description_placeholder": "Who is this character? Appearance, background, notable traits…",
 	"char_form_image_urls_heading": "Image URLs",
+	"char_form_count_suffix": " ({count})",
 	"char_form_image_urls_body": "Links to images hosted elsewhere only (e.g.",
 	"char_form_image_urls_body_after": ") — there's no upload; the character record is small text data that's copied to every peer on the network, so images have to stay externally hosted.",
 	"char_form_add_image": "+ Add image",
@@ -264,6 +268,8 @@
 	"char_form_system_prompt_heading": "Custom system prompt",
 	"char_form_system_prompt_body": "Leave blank to use the default roleplay instructions. Only set this to override that default, e.g.:",
 	"char_form_system_prompt_placeholder": "Instructions sent to the AI describing how to roleplay this character…",
+	"char_form_error_image_url": "Image URLs must link to an image hosted elsewhere (starting with http:// or https://) — got \"{url}\"",
+	"char_form_error_too_large": "Character data is too large ({actualKb}KB, limit {limitKb}KB). Trim down the description, dialogues, or greetings.",
 	"char_form_saving": "Saving…",
 	"char_form_unsaved_changes_confirm": "You have unsaved changes. Leave this page anyway?",
 
@@ -276,6 +282,7 @@
 	"char_card_local_only": "Local only",
 	"char_card_published": "Published",
 
+	"char_image_viewer_toggle_size": "Toggle {name} image size",
 	"char_image_viewer_load_failed": "Image failed to load",
 	"char_image_viewer_previous": "Previous image",
 	"char_image_viewer_next": "Next image",
@@ -312,7 +319,7 @@
 	"user_profile_close": "Close",
 	"user_profile_close_label": "close",
 
-	"persona_selector_playing_as": "Playing as",
+	"persona_selector_playing_as": "Playing as {name}",
 	"persona_selector_placeholder": "…",
 	"persona_selector_choose_heading": "Choose your persona",
 	"persona_selector_manage": "Manage personas",
@@ -367,7 +374,7 @@
 	"general_tab_default_background_label": "Default chat background",
 	"general_tab_background_placeholder": "https://…",
 	"general_tab_default_background_hint": "Applied to new chats automatically when set. Leave empty for no default.",
-	"general_tab_opacity_label": "Message/composer opacity",
+	"general_tab_opacity_label": "Message/composer opacity ({percent}%)",
 	"general_tab_opacity_hint": "Fades chat bubbles and the composer so a chat background shows through.",
 	"general_tab_show_nsfw_label": "Show NSFW characters in Browse",
 
@@ -419,8 +426,8 @@
 	"data_tab_import_heading": "Import",
 	"data_tab_import_body": "Select a file exported from here — a single category's JSON, or a zip bundle of several. Imported characters come in as local-only drafts; imported personas and chats are added alongside what you already have.",
 	"data_tab_importing": "Importing…",
-	"data_tab_imported_prefix": "Imported",
-	"data_tab_skipped_unchanged": "unchanged, kept as-is",
+	"data_tab_imported_count": "Imported {category}{count}",
+	"data_tab_skipped_unchanged": "{skipped} unchanged, kept as-is",
 
 	"network_tab_relays_label": "GUN relays (one per line)",
 	"network_tab_hint": "Takes effect the next time the app loads.",
