@@ -20,6 +20,11 @@
 		publishMyCharacter,
 	} from "$lib/state/characters.svelte";
 	import {
+		isCharacterSaved,
+		saveCharacterLocally,
+		unsaveCharacter,
+	} from "$lib/state/savedCharacters.svelte";
+	import {
 		createChat,
 		getChats,
 		importChat,
@@ -163,6 +168,7 @@
 
 	async function handleStartChat() {
 		if (!character) return;
+		if (!isMine) void saveCharacterLocally(character, { auto: true });
 		await initPersonas();
 		const chat = await createChat(
 			character.id,
@@ -170,6 +176,15 @@
 			getSelectedPersonaId(character.id) ?? null,
 		);
 		await goto(resolve('/chats/[id]', { id: chat.id }));
+	}
+
+	function handleToggleSaved() {
+		if (!character) return;
+		if (isCharacterSaved(character.id)) {
+			void unsaveCharacter(character.id);
+		} else {
+			void saveCharacterLocally(character, { auto: false });
+		}
 	}
 
 	let importInput = $state<HTMLInputElement>();
@@ -181,6 +196,7 @@
 		if (!file) return;
 		importError = "";
 		try {
+			if (!isMine) void saveCharacterLocally(character, { auto: true });
 			await initPersonas();
 			const chat = await importChat(
 				character.id,
@@ -462,6 +478,15 @@
 							onclick={handleFork}
 							>{m.char_detail_fork()}</button
 						>
+						<button
+							class="btn btn-sm btn-ghost"
+							type="button"
+							onclick={handleToggleSaved}
+						>
+							{isCharacterSaved(character.id)
+								? m.char_detail_unsave()
+								: m.char_detail_save()}
+						</button>
 					{/if}
 				</div>
 

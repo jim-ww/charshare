@@ -10,6 +10,7 @@
 	import { initAuth } from '$lib/state/auth.svelte';
 	import { initProfile } from '$lib/state/profile.svelte';
 	import { initCharacters } from '$lib/state/characters.svelte';
+	import { initSavedCharacters } from '$lib/state/savedCharacters.svelte';
 	import { initChats } from '$lib/state/chats.svelte';
 	import NavBar from '$lib/components/NavBar.svelte';
 	import SettingsModal from '$lib/components/SettingsModal.svelte';
@@ -24,6 +25,7 @@
 		initAuth();
 		initProfile();
 		initCharacters();
+		initSavedCharacters();
 		initChats();
 	});
 

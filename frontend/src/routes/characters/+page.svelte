@@ -6,6 +6,7 @@
 		getMyCharacters,
 		isCharactersReady,
 	} from "$lib/state/characters.svelte";
+	import { getSavedCharacters } from "$lib/state/savedCharacters.svelte";
 	import { getCurrentUser } from "$lib/state/auth.svelte";
 	import CharacterCard from "$lib/components/CharacterCard.svelte";
 	import TagCarousel from "$lib/components/TagCarousel.svelte";
@@ -28,6 +29,7 @@
 	import { m } from '$lib/paraglide/messages.js';
 
 	let mineOnly = $state(false);
+	let savedOnly = $state(false);
 	let showHidden = $state(false);
 	const showNsfw = $derived(getPreferences().showNsfw);
 	const networkResults = $derived(getNetworkResults());
@@ -39,6 +41,11 @@
 	const myCharacters = $derived(
 		getMyCharacters().filter((c) => !c.deleted),
 	);
+	// Unlike myCharacters, deliberately not filtered by `!c.deleted` — a saved
+	// character stays visible (marked deleted) even once the author tombstones
+	// it, per spec: Character Management's "save character locally" behavior.
+	const savedCharacters = $derived(getSavedCharacters());
+	const savedIds = $derived(new Set(savedCharacters.map((c) => c.id)));
 	const ready = $derived(isCharactersReady());
 
 	onMount(() => {
@@ -67,7 +74,7 @@
 		// "@name"/"@pubkey" author search has no meaningful local text-match
 		// equivalent — remoteResults (browseByAuthor) is the whole answer.
 		if (!isAuthorQuery) {
-			const localMatches = myCharacters.filter(
+			const localMatches = [...myCharacters, ...savedCharacters].filter(
 				(c) => !trimmed || matchesQuery(c, trimmed),
 			);
 			for (const c of localMatches) combined.set(c.id, c);
@@ -85,6 +92,7 @@
 
 		let list = [...combined.values()];
 		if (mineOnly) list = list.filter((c) => c.author === me);
+		if (savedOnly) list = list.filter((c) => savedIds.has(c.id));
 		if (!showHidden) {
 			list = list.filter((c) => c.author === me || !isCharacterHidden(c.id));
 		}
@@ -106,6 +114,14 @@
 					bind:checked={mineOnly}
 				/>
 				<span class="label-text">{m.char_list_mine_only()}</span>
+			</label>
+			<label class="label cursor-pointer gap-2 py-0">
+				<input
+					type="checkbox"
+					class="toggle toggle-sm"
+					bind:checked={savedOnly}
+				/>
+				<span class="label-text">{m.char_list_saved_only()}</span>
 			</label>
 			<label class="label cursor-pointer gap-2 py-0">
 				<input

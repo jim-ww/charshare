@@ -99,6 +99,7 @@
 	"chats_empty_state": "Select a conversation, or start one from a character's page.",
 
 	"char_list_mine_only": "Mine only",
+	"char_list_saved_only": "Saved only",
 	"char_list_show_hidden": "Show hidden",
 	"char_list_show_nsfw": "Show NSFW",
 	"char_list_loading": "Loading…",
@@ -125,6 +126,8 @@
 	"char_detail_publish": "Publish",
 	"char_detail_delete": "Delete",
 	"char_detail_fork": "Fork",
+	"char_detail_save": "Save locally",
+	"char_detail_unsave": "Unsave",
 	"char_detail_continue_past_chat_heading": "Continue a past chat",
 	"char_detail_scenario_heading": "Scenario",
 	"char_detail_personality_heading": "Personality",
@@ -296,6 +299,8 @@
 	"char_card_block_author": "Block author",
 	"char_card_local_only": "Local only",
 	"char_card_published": "Published",
+	"char_card_save": "Save locally",
+	"char_card_unsave": "Remove from saved characters",
 
 	"char_image_viewer_toggle_size": "Toggle {name} image size",
 	"char_image_viewer_load_failed": "Image failed to load",

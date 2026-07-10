@@ -7,6 +7,8 @@
 	} from "$lib/state/characters.svelte";
 	import { setChatCharacter } from "$lib/state/chats.svelte";
 	import { retryCharacterLoad } from "$lib/state/characterCache.svelte";
+	import { getCurrentUser } from "$lib/state/auth.svelte";
+	import { saveCharacterLocally } from "$lib/state/savedCharacters.svelte";
 	import { browseByName, browseByTag } from "$lib/gun/browse";
 	import { queryWords, matchesQuery } from "$lib/state/search.svelte";
 	import { m } from '$lib/paraglide/messages.js';
@@ -86,6 +88,9 @@
 		reassigning = true;
 		error = null;
 		try {
+			if (character.author !== getCurrentUser()) {
+				void saveCharacterLocally(character, { auto: true });
+			}
 			await setChatCharacter(chatId, character.id);
 			onpicked?.();
 		} catch (err) {

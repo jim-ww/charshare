@@ -1,4 +1,5 @@
 - add button to cache some character locally? like 'save locally' or 'add to favourites', so it would always stay there, even ifs deleted from remote node or by author? but should be marked locally if author deleted it. also, should characters that have local chats, be 'saved' too, by default, if so same way, 'saved' or hidden save?
+- feat(characters page): improve tag selector, also, make them all as checkboxes, and never append to query visibly? (but append correctly formatted list in the beginning, for example) or handle them separately
 - implement 'read aloud' feature. and different providers for it. either local, or remote
 - feat: add option to reply to other comments
 - feat: add option to see all owned comments, with edit, delete buttons and links to character?

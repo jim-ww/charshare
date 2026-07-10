@@ -2,6 +2,11 @@
 	import { resolve } from "$app/paths";
 	import type { Character } from "$lib/types";
 	import { isCharacterLocalOnly } from "$lib/state/characters.svelte";
+	import {
+		isCharacterSaved,
+		saveCharacterLocally,
+		unsaveCharacter,
+	} from "$lib/state/savedCharacters.svelte";
 	import { getCurrentUser } from "$lib/state/auth.svelte";
 	import {
 		blockAuthor,
@@ -23,6 +28,17 @@
 	const isMine = $derived(character.author === getCurrentUser());
 	const hidden = $derived(isCharacterHidden(character.id));
 	const authorBlocked = $derived(isAuthorBlocked(character.author));
+	const saved = $derived(isCharacterSaved(character.id));
+
+	function toggleSaved(event: MouseEvent) {
+		event.preventDefault();
+		event.stopPropagation();
+		if (saved) {
+			void unsaveCharacter(character.id);
+		} else {
+			void saveCharacterLocally(character, { auto: false });
+		}
+	}
 
 	function toggleHidden(event: MouseEvent) {
 		event.preventDefault();
@@ -50,14 +66,26 @@
 	class="card relative bg-base-200 shadow-sm [content-visibility:auto] [contain-intrinsic-size:0_320px] hover:bg-base-300"
 	class:opacity-60={character.deleted || hidden}
 >
-	{#if character.nsfw}
-		<span
-			class="badge badge-xs badge-warning absolute left-2 top-2 z-10 badge-outline opacity-70"
-			title={m.char_card_nsfw_title()}
-		>
-			{m.char_card_nsfw_badge()}
-		</span>
-	{/if}
+	<div class="absolute left-2 top-2 z-10 flex flex-col items-start gap-1">
+		{#if character.nsfw}
+			<span
+				class="badge badge-xs badge-warning badge-outline opacity-70"
+				title={m.char_card_nsfw_title()}
+			>
+				{m.char_card_nsfw_badge()}
+			</span>
+		{/if}
+		{#if !isMine}
+			<button
+				type="button"
+				class="btn btn-xs btn-circle"
+				title={saved ? m.char_card_unsave() : m.char_card_save()}
+				onclick={toggleSaved}
+			>
+				{saved ? "★" : "☆"}
+			</button>
+		{/if}
+	</div>
 	{#if !isMine}
 		<div class="absolute right-2 top-2 z-10 flex gap-1">
 			<button

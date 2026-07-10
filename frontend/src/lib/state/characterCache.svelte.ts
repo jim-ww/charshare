@@ -1,5 +1,11 @@
 import type { Character, CharacterId } from '$lib/types';
 import { getMyCharacters } from './characters.svelte';
+import {
+	getSavedCharacter,
+	isCharacterAutoSaved,
+	isCharacterSaved,
+	saveCharacterLocally
+} from './savedCharacters.svelte';
 import { subscribeCharacterWithRetry } from '$lib/gun/characters';
 
 /** Small lookup cache for characters referenced by id outside "my
@@ -20,8 +26,12 @@ const timeoutMs: Record<CharacterId, number> = {};
 const LOAD_TIMEOUT_MS = 8000;
 const unsubscribers = new Map<CharacterId, () => void>();
 
+/** Falls back to a locally-saved copy (see state/savedCharacters.svelte.ts)
+ *  if neither "my characters" nor the live GUN cache has the doc — so a
+ *  character the user saved still resolves even if the author later deletes
+ *  it or no relay with it is reachable. */
 export function resolveCharacter(id: CharacterId): Character | undefined {
-	return getMyCharacters().find((c) => c.id === id) ?? cache[id];
+	return getMyCharacters().find((c) => c.id === id) ?? cache[id] ?? getSavedCharacter(id);
 }
 
 export function isCharacterLoadFailed(id: CharacterId): boolean {
@@ -46,6 +56,10 @@ function startSubscription(id: CharacterId): void {
 			if (result.ok) {
 				cache = { ...cache, [id]: result.doc };
 				if (failed[id]) failed = { ...failed, [id]: false };
+				// Keep an already-saved copy current (e.g. picking up the author's
+				// latest edits, or a tombstone) without changing whether it was
+				// saved manually vs. automatically.
+				if (isCharacterSaved(id)) void saveCharacterLocally(result.doc, { auto: isCharacterAutoSaved(id) });
 			}
 		},
 		() => resolveCharacter(id) !== undefined
@@ -61,7 +75,11 @@ function startSubscription(id: CharacterId): void {
  *  timeout separately flags the id as failed so the UI can stop waiting and
  *  offer recovery. */
 export function ensureCharacterLoaded(id: CharacterId): void {
-	if (resolveCharacter(id) || subscribed.has(id)) return;
+	// Deliberately doesn't early-return just because a saved copy resolves
+	// the character (unlike "my characters"/live cache) — still subscribes
+	// so a saved character picks up the author's edits, or a tombstone,
+	// instead of silently going stale forever.
+	if (getMyCharacters().some((c) => c.id === id) || cache[id] || subscribed.has(id)) return;
 	subscribed.add(id);
 	startSubscription(id);
 	armTimeout(id);

@@ -30,14 +30,6 @@ export interface CharacterFields {
 /** The full document as it's signed, published, and validated. */
 export type Character = CharacterFields & Signed & Tombstonable;
 
-/** Local-only wrapper: same fields, plus whether it's been published,
- *  and whether the user pinned a deleted-upstream copy to keep locally. */
-export interface LocalCharacterState {
-	character: Character;
-	published: boolean;
-	savedLocally: boolean; // keeps a tombstoned character usable/visible for this user only
-}
-
 /** Input shape for the create/edit form — no id/version/signature/timestamps yet,
  *  those get filled in by lib/gun/characters.ts on publish. */
 export type CharacterDraft = Omit<
