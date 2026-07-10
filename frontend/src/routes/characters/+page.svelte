@@ -156,7 +156,10 @@
 		<div
 			class="flex flex-wrap items-center justify-center gap-x-5 gap-y-1"
 		>
-			<label class="label cursor-pointer gap-2 py-0">
+			<label
+				class="label cursor-pointer gap-2 py-0"
+				title={m.char_list_filter_all_tooltip()}
+			>
 				<input
 					type="radio"
 					name="listFilter"
@@ -168,7 +171,10 @@
 					>{m.char_list_filter_all()}</span
 				>
 			</label>
-			<label class="label cursor-pointer gap-2 py-0">
+			<label
+				class="label cursor-pointer gap-2 py-0"
+				title={m.char_list_mine_only_tooltip()}
+			>
 				<input
 					type="radio"
 					name="listFilter"
@@ -180,7 +186,10 @@
 					>{m.char_list_mine_only()}</span
 				>
 			</label>
-			<label class="label cursor-pointer gap-2 py-0">
+			<label
+				class="label cursor-pointer gap-2 py-0"
+				title={m.char_list_filter_published_tooltip()}
+			>
 				<input
 					type="radio"
 					name="listFilter"
@@ -192,7 +201,10 @@
 					>{m.char_list_filter_published()}</span
 				>
 			</label>
-			<label class="label cursor-pointer gap-2 py-0">
+			<label
+				class="label cursor-pointer gap-2 py-0"
+				title={m.char_list_saved_only_tooltip()}
+			>
 				<input
 					type="radio"
 					name="listFilter"

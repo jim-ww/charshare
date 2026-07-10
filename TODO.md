@@ -1,4 +1,3 @@
-- feat(characters): add tooltips for radio buttons 'Saved only'/'Mine only'/'Published only' filter option, describing which characters are considered 'Saved'
 - feat(preferences.DataTab): when data export finishes, send data export completed notification (only when file was written completely)
 - feat(character new/edit page): check tag validator, must refuse system tags like __network__
 - feat: add option to reply to other comments

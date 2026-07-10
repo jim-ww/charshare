@@ -99,9 +99,13 @@
 	"chats_empty_state": "Select a conversation, or start one from a character's page.",
 
 	"char_list_filter_all": "All",
+	"char_list_filter_all_tooltip": "Show everything: your own characters, ones you've saved, and results from the network.",
 	"char_list_mine_only": "Owned",
+	"char_list_mine_only_tooltip": "Only characters authored by you, whether local-only drafts or already published.",
 	"char_list_saved_only": "Saved",
+	"char_list_saved_only_tooltip": "Only characters you've explicitly saved (starred) or that were auto-saved by starting a chat with them.",
 	"char_list_filter_published": "Published",
+	"char_list_filter_published_tooltip": "Only characters that are actually published to the network — hides your own unpublished local-only drafts.",
 	"char_list_show_hidden": "Show hidden",
 	"char_list_show_nsfw": "Show NSFW",
 	"char_list_loading": "Loading…",
