@@ -161,6 +161,8 @@
 	"char_detail_edited_title": "Edited by the comment's author on {time}",
 	"char_detail_comment_edit": "Edit",
 	"char_detail_comment_delete": "Delete",
+	"char_detail_comment_delete_title": "Delete comment",
+	"char_detail_comment_delete_message": "Delete this comment? This cannot be undone.",
 	"char_detail_comment_unhide": "Unhide",
 	"char_detail_comment_hide": "Hide",
 	"char_detail_hide_tooltip_hidden": "Only visible to you locally — unhide to stop hiding it",

@@ -49,6 +49,7 @@
 	import CharacterImageViewer from "$lib/components/CharacterImageViewer.svelte";
 	import PersonaSelectorButton from "$lib/components/PersonaSelectorButton.svelte";
 	import UserProfileModal from "$lib/components/UserProfileModal.svelte";
+	import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
 	import {
 		getSelectedPersonaId,
 		initPersonas,
@@ -66,6 +67,7 @@
 	let showHiddenComments = $state(false);
 	let editingCommentId = $state<string | null>(null);
 	let commentDraft = $state("");
+	let commentDeleteTarget = $state<Comment | null>(null);
 	let authorNames = $state<Record<string, string>>({});
 	let replyingToCommentId = $state<string | null>(null);
 	let replyingToTargetId = $state<string | null>(null);
@@ -308,8 +310,14 @@
 		}
 	}
 
-	async function handleDeleteComment(comment: Comment) {
-		await removeComment(id, comment.id);
+	function handleDeleteComment(comment: Comment) {
+		commentDeleteTarget = comment;
+	}
+
+	async function confirmDeleteComment() {
+		if (!commentDeleteTarget) return;
+		await removeComment(id, commentDeleteTarget.id);
+		commentDeleteTarget = null;
 	}
 
 	// Replies are flattened one level deep — replying to a reply attaches to
@@ -1047,5 +1055,15 @@
 		open={profileModalPubkey !== null}
 		pubkey={profileModalPubkey}
 		onclose={() => (profileModalPubkey = null)}
+	/>
+
+	<ConfirmDialog
+		open={commentDeleteTarget !== null}
+		title={m.char_detail_comment_delete_title()}
+		message={m.char_detail_comment_delete_message()}
+		confirmLabel={m.char_detail_comment_delete()}
+		danger
+		onconfirm={confirmDeleteComment}
+		oncancel={() => (commentDeleteTarget = null)}
 	/>
 </div>
