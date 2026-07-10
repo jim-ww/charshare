@@ -1,4 +1,4 @@
-- add button to cache some character locally? like 'save locally' or 'add to favourites', so it would always stay there, even ifs deleted from remote node or by author? but should be marked locally if author deleted it. also, should characters that have local chats, be 'saved' too, by default, if so same way, 'saved' or hidden save?
+- feat(navbar): make nav items as ghost buttons, with full nav height
 - fix(i18n): not all strings are translated with paraglide. example: src/lib/export/dataExport.ts
 - preferences(DataTab): add select all/none buttons
 - feat(characters page): improve tag selector, also, make them all as checkboxes, and never append to query visibly? (but append correctly formatted list in the beginning, for example) or handle them separately
@@ -7,7 +7,14 @@
 - feat: add option to see all owned comments, with edit, delete buttons and links to character?
 - feat: improve usability on mobiles? improve modals, small buttons/controls
 - feat(providers): implement more robust support of ollama provider, like downloading/starting ollama server?
-- feat: implement proper sorting(by updated_at,created_at), pagination in Characters browse page?
+- feat(browse): rework Browse/search to avoid fetching the entire published network unbounded on every load (currently `browseNetwork()` reads every id under the `__network__` pseudo-tag and fetches+verifies each one) — implement proper sorting (by updated_at, created_at) and pagination
+- NEXT: feat(browse): `browseByAuthor` currently filters the full network feed client-side by author instead of a targeted lookup; a native per-author index already exists implicitly (each author's characters live under their own GUN user-space graph, enumerable via `.map()`) but isn't wired up for this — use it
 - feat(core): rating system for characters? then add sorting by popularity
 - feat(core): after implementing rating system, add rating to comments? also allow to sort by rating, then created_at
 - feat(chats): add share chat url button, that would encode chat history json, as base64 string, and implement chat history viewer, that would take this base64 string from URL
+- feat(account): show a notice right after the initial "publish account" press telling the user to back up their account — there's no recovery if local storage is lost and no backup was ever taken
+- feat(characters): fork discovery — index/UI for "remixes of this character" (forking itself already works, just no way to find forks of a given character)
+- feat(import/export): TavernAI-PNG (and other third-party format) import/export adapters — only our own versioned JSON format is supported today
+- feat(identity): support multiple local identities active at once in one session (currently can only switch the single active one)
+- feat(providers): generic OpenAI-compatible proxy support for providers beyond the three built-in ones (OpenRouter/Ollama/Hugging Face)
+- consider: spam/abuse mitigation for an unmoderated, backend-less network (mass-published garbage characters/comments) — no plan yet
