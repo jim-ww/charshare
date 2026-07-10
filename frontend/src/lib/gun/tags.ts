@@ -6,6 +6,12 @@ import { createSignedPointerIndex } from './signedIndex';
  *  (leading/trailing underscores), so it can't collide with real tag names. */
 export const NETWORK_INDEX_TAG = '__network__';
 
+/** Reserved for system pseudo-tags like {@link NETWORK_INDEX_TAG} — user-entered
+ *  tags with this shape must be rejected so they can't collide with one. */
+export function isSystemTag(tag: string): boolean {
+	return /^__.+__$/.test(tag);
+}
+
 const tagIndex = createSignedPointerIndex('tags');
 
 export const getTagIndex = tagIndex.getIndex;

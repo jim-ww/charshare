@@ -299,6 +299,7 @@
 	"char_form_system_prompt_placeholder": "Instructions sent to the AI describing how to roleplay this character…",
 	"char_form_error_image_url": "Image URLs must link to an image hosted elsewhere (starting with http:// or https://) — got \"{url}\"",
 	"char_form_error_too_large": "Character data is too large ({actualKb}KB, limit {limitKb}KB). Trim down the description, dialogues, or greetings.",
+	"char_form_error_system_tag": "\"{tag}\" is a reserved system tag and can't be used here.",
 	"char_form_saving": "Saving…",
 	"char_form_unsaved_changes_confirm": "You have unsaved changes. Leave this page anyway?",
 
