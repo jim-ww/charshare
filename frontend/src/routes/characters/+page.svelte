@@ -6,6 +6,7 @@
 	import type { Character } from "$lib/types";
 	import {
 		getMyCharacters,
+		isCharacterLocalOnly,
 		isCharactersReady,
 	} from "$lib/state/characters.svelte";
 	import { getSavedCharacters } from "$lib/state/savedCharacters.svelte";
@@ -33,8 +34,8 @@
 	} from "$lib/state/search.svelte";
 	import { m } from '$lib/paraglide/messages.js';
 
-	let mineOnly = $state(false);
-	let savedOnly = $state(false);
+	type ListFilter = "all" | "mine" | "saved" | "published";
+	let listFilter = $state<ListFilter>("all");
 	let showHidden = $state(false);
 	const showNsfw = $derived(getPreferences().showNsfw);
 	const networkResults = $derived(getNetworkResults());
@@ -121,8 +122,11 @@
 		}
 
 		let list = [...combined.values()];
-		if (mineOnly) list = list.filter((c) => c.author === me);
-		if (savedOnly) list = list.filter((c) => savedIds.has(c.id));
+		if (listFilter === "mine") list = list.filter((c) => c.author === me);
+		else if (listFilter === "saved") list = list.filter((c) => savedIds.has(c.id));
+		else if (listFilter === "published") {
+			list = list.filter((c) => !isCharacterLocalOnly(c.id));
+		}
 		if (!showHidden) {
 			list = list.filter((c) => c.author === me || !isCharacterHidden(c.id));
 		}
@@ -139,19 +143,43 @@
 		<div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-1">
 			<label class="label cursor-pointer gap-2 py-0">
 				<input
-					type="checkbox"
-					class="toggle toggle-sm"
-					bind:checked={mineOnly}
+					type="radio"
+					name="listFilter"
+					class="radio radio-sm"
+					value="all"
+					bind:group={listFilter}
+				/>
+				<span class="label-text">{m.char_list_filter_all()}</span>
+			</label>
+			<label class="label cursor-pointer gap-2 py-0">
+				<input
+					type="radio"
+					name="listFilter"
+					class="radio radio-sm"
+					value="mine"
+					bind:group={listFilter}
 				/>
 				<span class="label-text">{m.char_list_mine_only()}</span>
 			</label>
 			<label class="label cursor-pointer gap-2 py-0">
 				<input
-					type="checkbox"
-					class="toggle toggle-sm"
-					bind:checked={savedOnly}
+					type="radio"
+					name="listFilter"
+					class="radio radio-sm"
+					value="saved"
+					bind:group={listFilter}
 				/>
 				<span class="label-text">{m.char_list_saved_only()}</span>
+			</label>
+			<label class="label cursor-pointer gap-2 py-0">
+				<input
+					type="radio"
+					name="listFilter"
+					class="radio radio-sm"
+					value="published"
+					bind:group={listFilter}
+				/>
+				<span class="label-text">{m.char_list_filter_published()}</span>
 			</label>
 			<label class="label cursor-pointer gap-2 py-0">
 				<input
@@ -180,7 +208,7 @@
 		<p>{m.char_list_loading()}</p>
 	{:else if results.length === 0}
 		<p class="opacity-70">
-			{#if mineOnly && !getSearchQuery().trim()}
+			{#if listFilter === "mine" && !getSearchQuery().trim()}
 				{m.char_list_empty_mine()}
 			{:else}
 				{m.char_list_empty_all()}
