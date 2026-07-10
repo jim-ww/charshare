@@ -158,7 +158,7 @@
 	"char_detail_author_badge": "author",
 	"char_detail_hidden_badge": "hidden",
 	"char_detail_edited_label": "(edited)",
-	"char_detail_edited_title": "Edited by the comment's author",
+	"char_detail_edited_title": "Edited by the comment's author on {time}",
 	"char_detail_comment_edit": "Edit",
 	"char_detail_comment_delete": "Delete",
 	"char_detail_comment_unhide": "Unhide",

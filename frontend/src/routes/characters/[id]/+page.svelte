@@ -176,6 +176,15 @@
 		return authorNames[pubkey] || `${pubkey.slice(0, 8)}…`;
 	}
 
+	// Messenger-style timestamp: just the time for today, otherwise date + time.
+	function formatCommentTime(timestamp: number): string {
+		const date = new Date(timestamp);
+		const isToday = date.toDateString() === new Date().toDateString();
+		const time = date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+		if (isToday) return time;
+		return `${date.toLocaleDateString(undefined, { month: "short", day: "numeric" })}, ${time}`;
+	}
+
 	let profileModalPubkey = $state<string | null>(null);
 
 	async function handleStartChat() {
@@ -815,10 +824,15 @@
 													{#if hidden}
 														<span class="badge badge-xs ml-1">{m.char_detail_hidden_badge()}</span>
 													{/if}
+													<span class="ml-1 font-normal opacity-60" title={formatCommentTime(comment.created_at)}>
+														{formatCommentTime(comment.created_at)}
+													</span>
 													{#if comment.updated_at !== comment.created_at}
 														<span
 															class="italic opacity-60 ml-1"
-															title={m.char_detail_edited_title()}
+															title={m.char_detail_edited_title({
+																time: formatCommentTime(comment.updated_at),
+															})}
 														>
 															{m.char_detail_edited_label()}
 														</span>
@@ -923,6 +937,19 @@
 																	{/if}
 																	{#if replyHidden}
 																		<span class="badge badge-xs ml-1">{m.char_detail_hidden_badge()}</span>
+																	{/if}
+																	<span class="ml-1 font-normal opacity-60" title={formatCommentTime(reply.created_at)}>
+																		{formatCommentTime(reply.created_at)}
+																	</span>
+																	{#if reply.updated_at !== reply.created_at}
+																		<span
+																			class="italic opacity-60 ml-1"
+																			title={m.char_detail_edited_title({
+																				time: formatCommentTime(reply.updated_at),
+																			})}
+																		>
+																			{m.char_detail_edited_label()}
+																		</span>
 																	{/if}
 																</span>
 																<div class="flex gap-1">
