@@ -28,9 +28,18 @@ interface WailsRuntimeModule {
 
 type CharshareAppBindings = typeof import("../../bindings/charshare/app");
 
+// A transient failure (e.g. the webview's internal asset server not yet
+// ready to serve this module on a cold start) must not get cached forever —
+// only cache the resolved module, so a failed first call doesn't permanently
+// break every later one for the rest of the session.
 let appModule: Promise<CharshareAppBindings> | null = null;
 function loadApp(): Promise<CharshareAppBindings> {
-	if (!appModule) appModule = import("../../bindings/charshare/app");
+	if (!appModule) {
+		appModule = import("../../bindings/charshare/app").catch((err: unknown) => {
+			appModule = null;
+			throw err;
+		});
+	}
 	return appModule;
 }
 
@@ -42,7 +51,12 @@ const RUNTIME_URL = "/wails/runtime.js";
 let runtimeModule: Promise<WailsRuntimeModule> | null = null;
 function loadRuntime(): Promise<WailsRuntimeModule> {
 	if (!runtimeModule) {
-		runtimeModule = import(/* @vite-ignore */ RUNTIME_URL) as Promise<WailsRuntimeModule>;
+		runtimeModule = (import(/* @vite-ignore */ RUNTIME_URL) as Promise<WailsRuntimeModule>).catch(
+			(err: unknown) => {
+				runtimeModule = null;
+				throw err;
+			}
+		);
 	}
 	return runtimeModule;
 }

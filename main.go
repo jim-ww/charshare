@@ -52,7 +52,8 @@ func main() {
 		Linux: application.LinuxWindow{
 			WebviewGpuPolicy: gpuPolicy,
 		},
-		DevToolsEnabled: os.Getenv("DEBUG") != "",
+		DevToolsEnabled:        os.Getenv("DEBUG") != "",
+		OpenInspectorOnStartup: os.Getenv("DEBUG") != "",
 	})
 
 	err := wailsApp.Run()
