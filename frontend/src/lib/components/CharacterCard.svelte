@@ -74,14 +74,6 @@
 	class:opacity-60={character.deleted || hidden}
 >
 	<div class="absolute left-2 top-2 z-10 flex flex-col items-start gap-1">
-		{#if character.nsfw}
-			<span
-				class="badge badge-xs badge-warning badge-outline opacity-70"
-				title={m.char_card_nsfw_title()}
-			>
-				{m.char_card_nsfw_badge()}
-			</span>
-		{/if}
 		{#if !alreadyLocal}
 			<button
 				type="button"
@@ -143,17 +135,27 @@
 		>
 			{character.name}
 		</h3>
-		<span
-			class="badge badge-xs"
-			class:badge-outline={isMine && localOnly}
-			class:badge-primary={isMine && !localOnly}
-		>
-			{#if isMine}
-				{localOnly ? m.char_card_local_only() : m.char_card_published()}
-			{:else}
-				{m.char_card_from_network()}
+		<div class="flex flex-wrap items-center justify-center gap-1">
+			<span
+				class="badge badge-xs"
+				class:badge-outline={isMine && localOnly}
+				class:badge-primary={isMine && !localOnly}
+			>
+				{#if isMine}
+					{localOnly ? m.char_card_local_only() : m.char_card_published()}
+				{:else}
+					{m.char_card_from_network()}
+				{/if}
+			</span>
+			{#if character.nsfw}
+				<span
+					class="badge badge-xs badge-warning badge-outline"
+					title={m.char_card_nsfw_title()}
+				>
+					{m.char_card_nsfw_badge()}
+				</span>
 			{/if}
-		</span>
+		</div>
 		{#if character.description}
 			<p class="line-clamp-2 text-xs opacity-80">
 				{character.description}
