@@ -1,4 +1,3 @@
-- check if local cached, but published characters are synced to connected relay
 - fix(adaptivity): improve NavBar, ChatView(and both chat sidebars), characters page adaptivity on tablets, phones (buttons overlap on each other)
 - feat(chat): add option to transcribe user spoken text
 - feat(chat): read AI responses aloud (with local models) (whisper?)

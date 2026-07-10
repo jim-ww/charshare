@@ -6,6 +6,8 @@ import {
 	removeMyCharacterEntry,
 	saveLocalOnlyCharacter
 } from '$lib/db/characters';
+import { gunPeerReady } from '$lib/gun/client';
+import { getKeyring, initAuth } from '$lib/state/auth.svelte';
 import {
 	createLocalCharacter as gunCreateLocalCharacter,
 	deleteCharacter as gunDeleteCharacter,
@@ -49,7 +51,16 @@ function normalizeLocalCharacter(character: Character): Character {
 	};
 }
 
-async function refresh(): Promise<void> {
+/** `resyncMissing` handles connecting to a relay that's never seen this
+ *  author's data before — e.g. a fresh relay, or a user who switched relays
+ *  in Preferences between sessions (see spec: configurable relays). Only
+ *  meaningful on the initial load (see initCharacters) — re-publishing on
+ *  every refresh() (e.g. right after a normal edit) would just be redundant
+ *  network writes for a relay that's reachable and already current. */
+async function refresh(options?: { resyncMissing?: boolean }): Promise<void> {
+	const resyncMissing = options?.resyncMissing ?? false;
+	if (resyncMissing) await gunPeerReady();
+	const keyring = getKeyring();
 	const entries = await loadMyCharacterEntries();
 	const resolved = await Promise.all(
 		entries.map(async (entry) => {
@@ -65,8 +76,22 @@ async function refresh(): Promise<void> {
 				await addPublishedCharacterId(entry.id, result.doc);
 				return { character: result.doc, published: true };
 			}
-			// No reachable relay (or the doc hasn't synced) — fall back to this
-			// browser's own cached copy rather than dropping the character.
+			// Not found on this relay. If we're doing a startup resync and this
+			// is our own cached, already-signed copy, the connected relay simply
+			// never got this document (new relay / relay switch) — republish the
+			// exact signed snapshot as-is rather than dropping it. Otherwise (no
+			// cache, or not our own character) this is just an unreachable relay
+			// or someone else's doc — fall back to the cache without writing.
+			if (resyncMissing && entry.character && keyring && entry.character.author === keyring.publicKey) {
+				try {
+					const republished = await gunPublishLocalCharacter(normalizeLocalCharacter(entry.character));
+					await addPublishedCharacterId(entry.id, republished);
+					return { character: republished, published: true };
+				} catch {
+					// Relay write failed (e.g. still not connected) — fall through to
+					// the cached-copy fallback below instead of losing the character.
+				}
+			}
 			return entry.character
 				? { character: normalizeLocalCharacter(entry.character), published: true }
 				: null;
@@ -77,11 +102,22 @@ async function refresh(): Promise<void> {
 	publishedMap = Object.fromEntries(valid.map((r) => [r.character.id, r.published]));
 }
 
+/** Test-only escape hatch: runs the same load/resync logic initCharacters()
+ *  gates behind its once-per-page initPromise, without needing a fresh
+ *  module instance per test. */
+export function __refreshCharactersForTests(options?: { resyncMissing?: boolean }): Promise<void> {
+	return refresh(options);
+}
+
 export function initCharacters(): Promise<void> {
 	if (!browser) return Promise.resolve();
 	if (!initPromise) {
 		initPromise = (async () => {
-			await refresh();
+			// initAuth() is called alongside initCharacters() in +layout.svelte,
+			// not awaited before it — wait here so getKeyring() inside refresh()
+			// is actually populated for the author-ownership check.
+			await initAuth();
+			await refresh({ resyncMissing: true });
 			ready = true;
 		})();
 	}
