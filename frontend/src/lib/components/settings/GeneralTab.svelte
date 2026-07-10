@@ -2,6 +2,8 @@
 	import { getPreferences, updatePreferences } from '$lib/state/preferences.svelte';
 	import { DAISYUI_THEMES, type ThemeMode } from '$lib/types';
 	import { m } from '$lib/paraglide/messages.js';
+	import { getLocale, setLocale, type Locale } from '$lib/paraglide/runtime';
+	import { AVAILABLE_LOCALES, LOCALE_NAMES } from '$lib/i18n';
 
 	const preferences = $derived(getPreferences());
 
@@ -49,6 +51,10 @@
 		if (editableTags.has((event.target as HTMLElement)?.tagName)) return;
 		event.preventDefault();
 		cycleTheme(event.key === "ArrowLeft" ? -1 : 1);
+	}
+
+	function handleLanguageChange(event: Event) {
+		setLocale((event.currentTarget as HTMLSelectElement).value as Locale);
 	}
 
 	function handleDefaultBackgroundChange(event: Event) {
@@ -207,5 +213,18 @@
 			onchange={handleShowNsfwChange}
 		/>
 		<span class="label-text">{m.general_tab_show_nsfw_label()}</span>
+	</label>
+
+	<label class="form-control w-full max-w-md">
+		<span class="label-text">{m.general_tab_language_label()}</span>
+		<select
+			class="select select-bordered w-48"
+			value={getLocale()}
+			onchange={handleLanguageChange}
+		>
+			{#each AVAILABLE_LOCALES as locale (locale)}
+				<option value={locale}>{LOCALE_NAMES[locale]}</option>
+			{/each}
+		</select>
 	</label>
 </div>
