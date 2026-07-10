@@ -60,7 +60,7 @@ export const DEFAULT_HUGGINGFACE_CONFIG: HuggingFaceProviderConfig = {
 
 export const DEFAULT_PREFERENCES: Preferences = {
 	gunRelays: DEFAULT_GUN_RELAYS,
-	theme: "dim", // best: dark forest halloween dracula night coffee dim sunset
+	theme: "sunset", // best: dark forest halloween dracula night coffee dim sunset
 	blockedTags: [],
 	blockedAuthors: [],
 	hiddenCharacterIds: [],
