@@ -9,7 +9,7 @@ const character: Character = {
 	name: 'Aria',
 	image_urls: [],
 	description: '',
-	personality: '',
+	personality: 'Aloof but curious.',
 	scenario: 'A quiet library.',
 	tags: [],
 	nsfw: false,
@@ -17,7 +17,7 @@ const character: Character = {
 	system_prompt: 'Stay in character.',
 	first_message: '',
 	alternate_greetings: [],
-	example_dialogues: [],
+	example_dialogues: ['{{user}}: Hi.\nAria: *glances up*'],
 	comments_enabled: true,
 	author: 'pubkey',
 	forked_from: null,
@@ -115,6 +115,25 @@ describe('generateUserDraft', () => {
 
 		expect(draft).toBe('a reply');
 		expect(getChat(chat.id)!.messages).toEqual([]);
+	});
+
+	it('drops the character-voice system_prompt and instructs writing for {{user}}', async () => {
+		const fetchMock = vi.fn(async (_url: string, _init: RequestInit) => sseResponse(['a reply'], 'stop'));
+		vi.stubGlobal('fetch', fetchMock);
+
+		const chat: Chat = await createChat(character.id, 'Test chat');
+		await generateUserDraft(chat, character);
+
+		const body = JSON.parse(fetchMock.mock.calls[0][1]!.body as string);
+		const systemMessage = body.messages.find((m: { role: string }) => m.role === 'system').content;
+
+		expect(systemMessage).not.toContain(character.system_prompt);
+		expect(systemMessage).not.toContain(character.name);
+		expect(systemMessage).not.toContain(character.personality);
+		expect(systemMessage).not.toContain(character.example_dialogues[0]);
+		expect(systemMessage).toContain(character.scenario);
+		expect(systemMessage).toContain('{{user}}');
+		expect(systemMessage).toContain('never speak, act, or narrate for {{char}}');
 	});
 });
 
