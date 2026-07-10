@@ -84,7 +84,7 @@
         pnpmDeps = pkgs.fetchPnpmDeps {
           inherit (finalAttrs) pname version src;
           fetcherVersion = 3;
-          hash = "sha256-9yvwvtNUJ4Edxbis0aqIYqUj3Fotib0SdZp3eZyV2uc=";
+          hash = "sha256-zGI0SwLtv376B0DgDVpRHeMqKOc0L/2wtiurOf2ADio=";
         };
 
         # legal/license/+page.ts imports the repo-root LICENSE file via a
