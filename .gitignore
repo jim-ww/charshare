@@ -1,5 +1,6 @@
 build/bin
 frontend/dist
+bin
 
 # OS
 .DS_Store
