@@ -34,7 +34,7 @@
 	} from "$lib/state/search.svelte";
 	import { m } from "$lib/paraglide/messages.js";
 
-	type ListFilter = "all" | "mine" | "saved" | "published";
+	type ListFilter = "all" | "mine" | "saved" | "published" | "network";
 	let listFilter = $state<ListFilter>("all");
 	let showHidden = $state(false);
 	const showNsfw = $derived(getPreferences().showNsfw);
@@ -131,7 +131,13 @@
 		else if (listFilter === "saved")
 			list = list.filter((c) => savedIds.has(c.id));
 		else if (listFilter === "published") {
-			list = list.filter((c) => !isCharacterLocalOnly(c.id));
+			list = list.filter(
+				(c) => c.author === me && !isCharacterLocalOnly(c.id),
+			);
+		} else if (listFilter === "network") {
+			list = list.filter(
+				(c) => c.author !== me && !savedIds.has(c.id),
+			);
 		}
 		if (!showHidden) {
 			list = list.filter(
@@ -214,6 +220,21 @@
 				/>
 				<span class="label-text"
 					>{m.char_list_saved_only()}</span
+				>
+			</label>
+			<label
+				class="label cursor-pointer gap-2 py-0"
+				title={m.char_list_filter_network_tooltip()}
+			>
+				<input
+					type="radio"
+					name="listFilter"
+					class="radio radio-sm"
+					value="network"
+					bind:group={listFilter}
+				/>
+				<span class="label-text"
+					>{m.char_list_filter_network()}</span
 				>
 			</label>
 
