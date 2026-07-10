@@ -1,7 +1,10 @@
 <script lang="ts">
 	import { resolve } from "$app/paths";
 	import type { Character } from "$lib/types";
-	import { isCharacterLocalOnly } from "$lib/state/characters.svelte";
+	import {
+		isCharacterInMyCharacters,
+		isCharacterLocalOnly,
+	} from "$lib/state/characters.svelte";
 	import {
 		isCharacterSaved,
 		saveCharacterLocally,
@@ -29,6 +32,10 @@
 	const hidden = $derived(isCharacterHidden(character.id));
 	const authorBlocked = $derived(isAuthorBlocked(character.author));
 	const saved = $derived(isCharacterSaved(character.id));
+	// Already accounted for locally either way — imported-from-another-identity
+	// characters land in myCharacters despite not being authored by me, so a
+	// "Save" prompt for them would just duplicate what's already there.
+	const alreadyLocal = $derived(isMine || isCharacterInMyCharacters(character.id));
 
 	function toggleSaved(event: MouseEvent) {
 		event.preventDefault();
@@ -75,7 +82,7 @@
 				{m.char_card_nsfw_badge()}
 			</span>
 		{/if}
-		{#if !isMine}
+		{#if !alreadyLocal}
 			<button
 				type="button"
 				class="btn btn-xs btn-circle"

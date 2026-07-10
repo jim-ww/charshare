@@ -16,6 +16,7 @@
 		exportCharacter,
 		forkCharacter,
 		getMyCharacters,
+		isCharacterInMyCharacters,
 		isCharacterLocalOnly,
 		publishMyCharacter,
 	} from "$lib/state/characters.svelte";
@@ -115,6 +116,13 @@
 	const isMine = $derived(
 		character !== null && getCurrentUser() === character.author,
 	);
+	// Already accounted for locally either way — imported-from-another-identity
+	// characters land in myCharacters despite not being authored by me, so
+	// offering to "save a copy" of them, or auto-saving one on chat start, is
+	// redundant (see isCharacterInMyCharacters).
+	const alreadyLocal = $derived(
+		isMine || (character !== null && isCharacterInMyCharacters(character.id)),
+	);
 	const pastChats = $derived(
 		getChats().filter((c) => c.character_id === id),
 	);
@@ -168,7 +176,7 @@
 
 	async function handleStartChat() {
 		if (!character) return;
-		if (!isMine) void saveCharacterLocally(character, { auto: true });
+		if (!alreadyLocal) void saveCharacterLocally(character, { auto: true });
 		await initPersonas();
 		const chat = await createChat(
 			character.id,
@@ -196,7 +204,7 @@
 		if (!file) return;
 		importError = "";
 		try {
-			if (!isMine) void saveCharacterLocally(character, { auto: true });
+			if (!alreadyLocal) void saveCharacterLocally(character, { auto: true });
 			await initPersonas();
 			const chat = await importChat(
 				character.id,
@@ -478,15 +486,17 @@
 							onclick={handleFork}
 							>{m.char_detail_fork()}</button
 						>
-						<button
-							class="btn btn-sm btn-ghost"
-							type="button"
-							onclick={handleToggleSaved}
-						>
-							{isCharacterSaved(character.id)
-								? m.char_detail_unsave()
-								: m.char_detail_save()}
-						</button>
+						{#if !alreadyLocal}
+							<button
+								class="btn btn-sm btn-ghost"
+								type="button"
+								onclick={handleToggleSaved}
+							>
+								{isCharacterSaved(character.id)
+									? m.char_detail_unsave()
+									: m.char_detail_save()}
+							</button>
+						{/if}
 					{/if}
 				</div>
 

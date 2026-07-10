@@ -29,6 +29,16 @@ export function getMyCharacters(): Character[] {
 	return myCharacters;
 }
 
+/** Whether `id` is in this browser's own local characters index — true even
+ *  when its `author` field belongs to a different identity (e.g. a full
+ *  backup restored after switching/creating accounts, see restoreCharacter).
+ *  Use this instead of an author-pubkey check to decide whether a character
+ *  is already accounted for locally, so it isn't also offered as a "save a
+ *  copy" candidate via savedCharacters. */
+export function isCharacterInMyCharacters(id: CharacterId): boolean {
+	return myCharacters.some((c) => c.id === id);
+}
+
 /** Whether `id` is a local-only (unpublished) character owned by this
  *  browser. Characters not in the local index at all (someone else's,
  *  found via browse/fork) are treated as published — they only exist

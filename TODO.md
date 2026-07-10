@@ -1,4 +1,6 @@
-- fix: do not show 'save' button on local+owned character cards in characters/ and in character view page
+- feat(navbar): make logo together with appname as one clickable ghost button, similar to other nav items
+- feat(characters): change mine-only, saved only to radio buttons and add published-only radio button
+- feat(characters): add some indication whether character is local / published (if owned) / or is from the network
 - add tooltip on characters/ 'Saved only' filter option, describing which characters are considered 'Saved'
 - feat: add option to reply to other comments
 - feat: add option to see all owned comments, with edit, delete buttons and links to character (on which comment was posted)?
