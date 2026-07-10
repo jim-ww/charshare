@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Chat, Character } from "$lib/types";
 	import { setChatImageIndex } from "$lib/state/chats.svelte";
+	import { openImageViewer } from "$lib/state/imageViewer.svelte";
 	import CharacterImageViewer from "./CharacterImageViewer.svelte";
 
 	interface Props {
@@ -9,7 +10,6 @@
 	}
 
 	let { chat, character }: Props = $props();
-	let expanded = $state(false);
 
 	// Clamp the persisted index against the current image count — the
 	// character's images can change (or be down to zero) since it was saved.
@@ -36,29 +36,7 @@
 		name={character.name}
 		class="rounded-xl shadow-lg ring-2 ring-base-100"
 		aspectSquare
-		onImageClick={() => (expanded = true)}
+		onImageClick={() => openImageViewer(chat, character)}
 		bind:index
 	/>
 </div>
-
-{#if expanded}
-	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6"
-		role="button"
-		tabindex="0"
-		onclick={() => (expanded = false)}
-		onkeydown={(e) => e.key === "Escape" && (expanded = false)}
-	>
-		<div role="presentation" onclick={(e) => e.stopPropagation()}>
-			<CharacterImageViewer
-				images={character.image_urls}
-				name={character.name}
-				class="shadow-2xl"
-				fullSize
-				onImageClick={() => (expanded = false)}
-				keyboardNav
-				bind:index
-			/>
-		</div>
-	</div>
-{/if}

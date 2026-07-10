@@ -70,7 +70,7 @@
 
 <figure
 	class="relative {fullSize
-		? 'inline-flex min-h-32 min-w-32 max-h-[90vh] max-w-[90vw] items-center justify-center'
+		? 'inline-flex min-h-32 min-w-32 max-h-[calc(100vh-1.5rem)] max-w-[calc(100vw-1.5rem)] items-center justify-center sm:max-h-[calc(100vh-3rem)] sm:max-w-[calc(100vw-3rem)]'
 		: `${aspectSquare ? 'aspect-square' : 'aspect-[3/4]'} w-full overflow-hidden bg-base-300`} rounded-box {className}"
 >
 	{#if images.length}
@@ -85,7 +85,7 @@
 					src={images[index]}
 					alt={name}
 					class={fullSize
-						? 'max-h-[90vh] max-w-[90vw] rounded-box object-contain'
+						? 'max-h-[calc(100vh-1.5rem)] max-w-[calc(100vw-1.5rem)] rounded-box object-contain sm:max-h-[calc(100vh-3rem)] sm:max-w-[calc(100vw-3rem)]'
 						: `h-full w-full ${contain ? 'object-contain' : 'object-cover'}`}
 					onload={() => (loadedSrc = images[index])}
 					onerror={() => (failedSrc = images[index])}

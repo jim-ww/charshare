@@ -13,6 +13,7 @@
 	import { initChats } from '$lib/state/chats.svelte';
 	import NavBar from '$lib/components/NavBar.svelte';
 	import SettingsModal from '$lib/components/SettingsModal.svelte';
+	import ImageViewerOverlay from '$lib/components/ImageViewerOverlay.svelte';
 	import { installWailsConsoleForward } from '$lib/wailsConsoleForward';
 
 	let { children } = $props();
@@ -81,6 +82,7 @@
 <NavBar />
 {@render children()}
 <SettingsModal />
+<ImageViewerOverlay />
 
 <div style="display:none">
 	{#each locales as locale}
