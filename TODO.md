@@ -1,4 +1,3 @@
-- feat(preferences): add option for developers(only in wails): open dev tools, that would call wails binding wailsApp.Window.Current().OpenDevTools()
 - feat(character new/edit page): check tag validator, must refuse system tags like __network__
 - feat: add option to reply to other comments
 - feat: add option to see all owned comments, with edit, delete buttons and links to character (on which comment was posted)?

@@ -56,3 +56,9 @@ func (a *App) ServiceStartup(ctx context.Context, options application.ServiceOpt
 func (a *App) Greet(name string) string {
 	return fmt.Sprintf("Hello %s, It's show time!", name)
 }
+
+// OpenDevTools opens the webview's devtools window. Only meaningful in the
+// Wails desktop build; the frontend gates this behind isWailsDesktop().
+func (a *App) OpenDevTools() {
+	a.app.Window.Current().OpenDevTools()
+}

@@ -26,6 +26,14 @@ export function IsProxyImportServerRunning(): $CancellablePromise<boolean> {
 }
 
 /**
+ * OpenDevTools opens the webview's devtools window. Only meaningful in the
+ * Wails desktop build; the frontend gates this behind isWailsDesktop().
+ */
+export function OpenDevTools(): $CancellablePromise<void> {
+    return $Call.ByID(4081882403);
+}
+
+/**
  * SaveFile opens a native "Save As" dialog defaulting to filename, then
  * writes base64Data to the chosen path. This exists because the webview's
  * usual `<a download>`/blob-URL trick has no browser chrome to catch the

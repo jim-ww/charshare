@@ -4,7 +4,7 @@
 	import { m } from '$lib/paraglide/messages.js';
 	import { getLocale, setLocale, type Locale } from '$lib/paraglide/runtime';
 	import { AVAILABLE_LOCALES, LOCALE_NAMES } from '$lib/i18n';
-	import { isWailsDesktop } from '$lib/wails';
+	import { isWailsDesktop, openDevTools } from '$lib/wails';
 	import {
 		WHISPER_MODELS,
 		isModelCached,
@@ -16,6 +16,9 @@
 	// Mic transcription (and thus its silence-timeout/model settings) isn't
 	// offered in the Wails desktop app — see ChatComposer.svelte.
 	const showMicSettings = !isWailsDesktop();
+
+	// Dev tools toggle only makes sense in the Wails desktop app.
+	const showDevToolsSetting = isWailsDesktop();
 
 	const preferences = $derived(getPreferences());
 
@@ -381,4 +384,14 @@
 			{/each}
 		</select>
 	</label>
+
+	{#if showDevToolsSetting}
+		<div class="form-control w-full max-w-md">
+			<span class="label-text mb-1 block">{m.general_tab_devtools_label()}</span>
+			<button type="button" class="btn btn-outline btn-sm w-fit" onclick={() => openDevTools()}>
+				{m.general_tab_devtools_button()}
+			</button>
+			<span class="mt-1 text-sm opacity-70">{m.general_tab_devtools_hint()}</span>
+		</div>
+	{/if}
 </div>
