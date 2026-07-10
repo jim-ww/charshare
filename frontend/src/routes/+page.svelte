@@ -3,7 +3,7 @@
 	import { goto } from "$app/navigation";
 	import { asset, resolve } from "$app/paths";
 	import { externalLink } from "$lib/wails";
-	import { m } from '$lib/paraglide/messages.js';
+	import { m } from "$lib/paraglide/messages.js";
 
 	// In the Wails desktop build, skip the marketing landing page on first
 	// launch and go straight into the app. `window.runtime` only exists in
@@ -132,7 +132,11 @@
 
 <div class="mx-auto max-w-5xl px-6 py-16">
 	<section class="flex flex-col items-center gap-6 py-16 text-center">
-		<img src={asset("/icon-192.png")} alt="Charshare" class="h-32 w-32 rounded-2xl shadow-sm" />
+		<img
+			src={asset("/icon-192.png")}
+			alt="Charshare"
+			class="h-32 w-32 rounded-2xl shadow-sm"
+		/>
 		<h1 class="text-4xl font-bold tracking-tight sm:text-5xl">
 			{m.landing_hero_title()}
 		</h1>
@@ -142,7 +146,9 @@
 		<div
 			class="flex flex-wrap items-center justify-center gap-3 pt-2"
 		>
-			<a href={resolve("/characters")} class="btn btn-primary btn-lg"
+			<a
+				href={resolve("/characters")}
+				class="btn btn-primary btn-lg"
 				>{m.landing_cta_chat()}</a
 			>
 			<a
@@ -177,9 +183,11 @@
 			{m.landing_install_heading()}
 		</h2>
 		<p class="pb-8 text-center text-base-content/70">
-			{m.landing_install_body_before()} <a href={resolve("/characters")} class="link"
+			{m.landing_install_body_before()}
+			<a href={resolve("/characters")} class="link"
 				>/characters</a
-			> {m.landing_install_body_after()}
+			>
+			{m.landing_install_body_after()}
 		</p>
 
 		<div class="mx-auto grid max-w-3xl gap-6 sm:grid-cols-2">
@@ -327,7 +335,9 @@
 				class="btn btn-soft btn-sm"
 				onclick={copyAddress}
 			>
-				{copied ? m.landing_copied() : m.landing_copy_address()}
+				{copied
+					? m.landing_copied()
+					: m.landing_copy_address()}
 			</button>
 		</div>
 	</section>
@@ -341,10 +351,11 @@
 				target="_blank"
 				rel="noreferrer"
 				use:externalLink
-				class="link link-hover">{m.landing_footer_github()}</a
+				class="link link-hover"
+				>{m.landing_footer_github()}</a
 			>
 			<a
-				href="{REPO_URL}/blob/main/LICENSE"
+				href={resolve("/legal/license")}
 				target="_blank"
 				rel="noreferrer"
 				use:externalLink
@@ -352,7 +363,9 @@
 			>
 				{m.landing_footer_license()}
 			</a>
-			<a href={resolve("/legal")} class="link link-hover">{m.landing_footer_legal()}</a>
+			<a href={resolve("/legal")} class="link link-hover"
+				>{m.landing_footer_legal()}</a
+			>
 			<a href={resolve("/characters")} class="link link-hover"
 				>{m.landing_footer_open_app()}</a
 			>

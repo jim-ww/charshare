@@ -1,8 +1,6 @@
 <script lang="ts">
 	import { resolve } from "$app/paths";
-	import { externalLink } from "$lib/wails";
 	import { m } from '$lib/paraglide/messages.js';
-	const REPO_URL = "https://github.com/jim-ww/charshare";
 </script>
 
 <svelte:head>
@@ -55,12 +53,8 @@
 			</h2>
 			<p>
 				{m.legal_no_warranty_body_before()}
-				<a
-					href="{REPO_URL}/blob/main/LICENSE"
-					target="_blank"
-					rel="noreferrer"
-					use:externalLink
-					class="link">{m.legal_no_warranty_license_link()}</a
+				<a href={resolve("/legal/license")} class="link"
+					>{m.legal_no_warranty_license_link()}</a
 				>{m.legal_no_warranty_body_after()}
 			</p>
 		</section>

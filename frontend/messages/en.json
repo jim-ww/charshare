@@ -92,6 +92,10 @@
 	"legal_no_warranty_body_after": ", which provides the software \"as is,\" without warranty of any kind, and disclaims liability to the fullest extent permitted by law. That disclaimer applies here too — use Charshare at your own risk.",
 	"legal_back_home": "← Back home",
 
+	"legal_license_page_title": "AGPLv3 License — Charshare",
+	"legal_license_heading": "AGPLv3 License",
+	"legal_back_legal": "← Back to Legal",
+
 	"chats_empty_state": "Select a conversation, or start one from a character's page.",
 
 	"char_list_mine_only": "Mine only",
