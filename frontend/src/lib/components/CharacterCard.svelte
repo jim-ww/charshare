@@ -77,7 +77,8 @@
 		{#if !alreadyLocal}
 			<button
 				type="button"
-				class="btn btn-xs btn-circle"
+				class="btn btn-xs btn-circle text-base"
+				class:text-warning={saved}
 				title={saved ? m.char_card_unsave() : m.char_card_save()}
 				onclick={toggleSaved}
 			>
