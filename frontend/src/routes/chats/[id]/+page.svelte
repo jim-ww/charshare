@@ -13,6 +13,7 @@
 		ensureCharacterLoaded,
 		isCharacterLoadFailed,
 	} from "$lib/state/characterCache.svelte";
+	import { isCharactersReady } from "$lib/state/characters.svelte";
 	import ChatThreadSwitcher from "$lib/components/ChatThreadSwitcher.svelte";
 	import ChatBubble from "$lib/components/ChatBubble.svelte";
 	import ChatComposer from "$lib/components/ChatComposer.svelte";
@@ -31,8 +32,14 @@
 	let scrollContainer = $state<HTMLDivElement | undefined>();
 	let sidebarOpen = $state(false);
 
+	// "My characters" (including local-only ones never published to GUN) load
+	// asynchronously from IndexedDB — wait for that before falling back to a
+	// GUN subscription, otherwise a local-only character race-loses to the
+	// subscription's timeout and wrongly shows the "couldn't be loaded" error.
+	const charactersReady = $derived(isCharactersReady());
+
 	$effect(() => {
-		if (chat) ensureCharacterLoaded(chat.character_id);
+		if (chat && charactersReady) ensureCharacterLoaded(chat.character_id);
 	});
 
 	// Re-run whenever a message is added and scroll it into view.
@@ -90,6 +97,10 @@
 {#if !chat}
 	<div class="flex h-full items-center justify-center text-sm opacity-70">
 		Chat not found.
+	</div>
+{:else if !charactersReady}
+	<div class="flex h-full items-center justify-center text-sm opacity-70">
+		{m.char_list_loading()}
 	</div>
 {:else if !character && characterLoadFailed}
 	<ChatCharacterRecovery chatId={chat.id} missingCharacterId={chat.character_id} mode="error" />

@@ -5,6 +5,7 @@
 	import type { Chat, CharacterId } from '$lib/types';
 	import { getChats, deleteChat, renameChat, exportChat } from '$lib/state/chats.svelte';
 	import { resolveCharacter, ensureCharacterLoaded } from '$lib/state/characterCache.svelte';
+	import { isCharactersReady } from '$lib/state/characters.svelte';
 	import Avatar from './Avatar.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import PromptDialog from './PromptDialog.svelte';
@@ -31,6 +32,7 @@
 	});
 
 	$effect(() => {
+		if (!isCharactersReady()) return;
 		for (const [characterId] of groups) {
 			ensureCharacterLoaded(characterId);
 		}

@@ -1,6 +1,6 @@
 import type { Character, CharacterId } from '$lib/types';
 import { getMyCharacters } from './characters.svelte';
-import { subscribeCharacter } from '$lib/gun/characters';
+import { getCharacter, subscribeCharacter } from '$lib/gun/characters';
 
 /** Small lookup cache for characters referenced by id outside "my
  *  characters" (e.g. chatting with someone else's character) — chat UI
@@ -18,6 +18,15 @@ let failed = $state<Record<CharacterId, boolean>>({});
  *  than being a fixed cutoff for every id forever. */
 const timeoutMs: Record<CharacterId, number> = {};
 const LOAD_TIMEOUT_MS = 8000;
+/** How often to re-ask for a not-yet-resolved character while its timeout is
+ *  still running. Public community relays (see NetworkTab/gunRelays) don't
+ *  reliably answer a `.get()`/`.on()` ask on the first try — a subscription
+ *  left running isn't enough on its own, unlike this app's other network
+ *  reads (browse/search), which implicitly get multiple tries by re-querying
+ *  several index buckets/peers. Re-issuing a one-shot getCharacter() poke
+ *  gives a flaky relay repeated chances within the same wait window. */
+const RETRY_INTERVAL_MS = 2000;
+const retryTimers = new Map<CharacterId, ReturnType<typeof setInterval>>();
 
 export function resolveCharacter(id: CharacterId): Character | undefined {
 	return getMyCharacters().find((c) => c.id === id) ?? cache[id];
@@ -32,7 +41,34 @@ function armTimeout(id: CharacterId): void {
 	timeoutMs[id] = ms;
 	setTimeout(() => {
 		if (!resolveCharacter(id)) failed = { ...failed, [id]: true };
+		stopRetrying(id);
 	}, ms);
+}
+
+function stopRetrying(id: CharacterId): void {
+	const timer = retryTimers.get(id);
+	if (timer !== undefined) {
+		clearInterval(timer);
+		retryTimers.delete(id);
+	}
+}
+
+function startRetrying(id: CharacterId): void {
+	stopRetrying(id);
+	const timer = setInterval(() => {
+		if (resolveCharacter(id)) {
+			stopRetrying(id);
+			return;
+		}
+		void getCharacter(id).then((result) => {
+			if (result.ok) {
+				cache = { ...cache, [id]: result.doc };
+				if (failed[id]) failed = { ...failed, [id]: false };
+				stopRetrying(id);
+			}
+		});
+	}, RETRY_INTERVAL_MS);
+	retryTimers.set(id, timer);
 }
 
 /** Subscribes (once per id) rather than doing a single one-shot read — GUN's
@@ -41,7 +77,12 @@ function armTimeout(id: CharacterId): void {
  *  subscription keeps listening and fills in the cache whenever real data
  *  arrives, without an arbitrary delay/retry. A timeout separately flags the
  *  id as failed so the UI can stop waiting and offer recovery — the
- *  subscription itself is left running in case data does eventually arrive. */
+ *  subscription itself is left running in case data does eventually arrive.
+ *  Subscribes synchronously and unconditionally, same as the character detail
+ *  page's own subscribeCharacter call (routes/characters/[id]/+page.svelte)
+ *  — that's the one place this reliably works, so anything more clever here
+ *  (waiting on gunPeerReady, chaining a getCharacter() pre-fetch) risks an
+ *  unhandled rejection silently skipping the subscribe entirely. */
 export function ensureCharacterLoaded(id: CharacterId): void {
 	if (resolveCharacter(id) || subscribed.has(id)) return;
 	subscribed.add(id);
@@ -49,9 +90,11 @@ export function ensureCharacterLoaded(id: CharacterId): void {
 		if (result.ok) {
 			cache = { ...cache, [id]: result.doc };
 			if (failed[id]) failed = { ...failed, [id]: false };
+			stopRetrying(id);
 		}
 	});
 	armTimeout(id);
+	startRetrying(id);
 }
 
 /** Gives a failed load more time instead of offering recovery immediately —
@@ -62,4 +105,5 @@ export function retryCharacterLoad(id: CharacterId): void {
 	failed = { ...failed, [id]: false };
 	timeoutMs[id] = (timeoutMs[id] ?? LOAD_TIMEOUT_MS) * 2;
 	armTimeout(id);
+	startRetrying(id);
 }

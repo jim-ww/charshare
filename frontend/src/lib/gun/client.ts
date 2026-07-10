@@ -67,9 +67,15 @@ export function getGun(relays: string[] = DEFAULT_GUN_RELAYS): IGunInstance {
  *  enumeration window (see signedIndex.ts:readBucket), instead of racing it
  *  and coming back empty just because no peer had connected yet. */
 export function gunPeerReady(timeoutMs = 1500): Promise<void> {
-	if (!peerConnectedPromise) return Promise.resolve();
+	// getGun() is what creates peerConnectedPromise — calling it here (it's
+	// idempotent, a no-op if the instance already exists) means callers don't
+	// have to race whichever other module happens to touch GUN first. Without
+	// this, a caller that runs before any other GUN read (e.g. characterCache
+	// on a page whose characters are all local-only elsewhere) would see
+	// peerConnectedPromise still null and skip the wait entirely.
+	if (!peerConnectedPromise && browser) getGun();
 	return Promise.race([
-		peerConnectedPromise,
+		peerConnectedPromise ?? Promise.resolve(),
 		new Promise<void>((resolve) => setTimeout(resolve, timeoutMs))
 	]);
 }
