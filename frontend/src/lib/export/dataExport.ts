@@ -3,6 +3,7 @@ import { getKeyring, setKeyring } from '$lib/state/auth.svelte';
 import { exportAccountBackup, parseAccountBackup } from '$lib/identity/backup';
 import { loadProfileForSwitchedAccount } from '$lib/state/profile.svelte';
 import { getMyCharacters, restoreCharacter } from '$lib/state/characters.svelte';
+import { getSavedCharacters, restoreSavedCharacter } from '$lib/state/savedCharacters.svelte';
 import { getPersonas, restorePersona } from '$lib/state/personas.svelte';
 import { getChats, restoreChat } from '$lib/state/chats.svelte';
 import { getPreferences, updatePreferences } from '$lib/state/preferences.svelte';
@@ -10,7 +11,7 @@ import { getMyProfile } from '$lib/state/profile.svelte';
 import { isWailsDesktop, saveFile } from '$lib/wails';
 import type { Character, Chat, Persona, Preferences } from '$lib/types';
 
-export type DataCategory = 'account' | 'characters' | 'personas' | 'chats' | 'preferences';
+export type DataCategory = 'account' | 'characters' | 'savedCharacters' | 'personas' | 'chats' | 'preferences';
 
 export const DATA_CATEGORIES: { id: DataCategory; label: string; description: string }[] = [
 	{
@@ -22,6 +23,11 @@ export const DATA_CATEGORIES: { id: DataCategory; label: string; description: st
 		id: 'characters',
 		label: 'My characters',
 		description: "Local-only drafts and characters you've published, together."
+	},
+	{
+		id: 'savedCharacters',
+		label: 'Saved characters',
+		description: "Other authors' characters you've kept as a local backup."
 	},
 	{ id: 'personas', label: 'Personas', description: 'All personas you play as.' },
 	{ id: 'chats', label: 'Chats', description: 'Every conversation, with all branches.' },
@@ -73,6 +79,11 @@ function buildCategory(category: DataCategory): { filename: string; json: string
 			return {
 				filename: categoryFilename(category),
 				json: JSON.stringify(getMyCharacters(), null, 2)
+			};
+		case 'savedCharacters':
+			return {
+				filename: categoryFilename(category),
+				json: JSON.stringify(getSavedCharacters(), null, 2)
 			};
 		case 'personas':
 			return {
@@ -165,14 +176,21 @@ function summarizeRestoreResults(
  *  files the user renamed. */
 function detectCategory(filename: string, parsed: unknown): DataCategory | null {
 	const lower = filename.toLowerCase();
-	for (const category of DATA_CATEGORIES.map((c) => c.id)) {
-		if (lower.includes(category)) return category;
+	// Longest id first — "savedCharacters" contains "characters" as a
+	// substring, so checking the shorter id first would misdetect a
+	// "charshare-savedcharacters-....json" filename as plain "characters".
+	const idsByLengthDesc = DATA_CATEGORIES.map((c) => c.id).sort((a, b) => b.length - a.length);
+	for (const category of idsByLengthDesc) {
+		if (lower.includes(category.toLowerCase())) return category;
 	}
 	if (Array.isArray(parsed)) {
 		const [first] = parsed as Record<string, unknown>[];
 		if (!first) return null;
 		if ('auto_name' in first) return 'personas';
 		if ('messages' in first && 'character_id' in first) return 'chats';
+		// A renamed characters/savedCharacters export can't be told apart by
+		// shape alone (both are Character[]) — defaults to 'characters' here,
+		// an accepted limitation since filename detection above is the normal path.
 		if ('system_prompt' in first || 'personality' in first) return 'characters';
 		return null;
 	}
@@ -201,6 +219,19 @@ async function importCharactersFile(json: string): Promise<ImportSummary> {
 		results.push(await restoreCharacter(item));
 	}
 	return summarizeRestoreResults('characters', results);
+}
+
+/** Restores a "saved characters" backup — always overwrites by id (no
+ *  version-conflict prompt like restoreCharacter needs, since saved
+ *  characters have no local edit chain of our own to protect). */
+async function importSavedCharactersFile(json: string): Promise<ImportSummary> {
+	const parsed: unknown = JSON.parse(json);
+	if (!Array.isArray(parsed)) throw new Error('Not a valid saved characters export.');
+	const results: ('added' | 'updated' | 'skipped')[] = [];
+	for (const item of parsed as Character[]) {
+		results.push(await restoreSavedCharacter(item));
+	}
+	return summarizeRestoreResults('savedCharacters', results);
 }
 
 async function importPersonasFile(json: string): Promise<ImportSummary> {
@@ -244,6 +275,8 @@ async function importOne(filename: string, json: string): Promise<ImportSummary>
 			return { category };
 		case 'characters':
 			return importCharactersFile(json);
+		case 'savedCharacters':
+			return importSavedCharactersFile(json);
 		case 'personas':
 			return importPersonasFile(json);
 		case 'chats':

@@ -12,6 +12,7 @@
 	let selected = $state<Record<DataCategory, boolean>>({
 		account: true,
 		characters: true,
+		savedCharacters: true,
 		personas: true,
 		chats: true,
 		preferences: true

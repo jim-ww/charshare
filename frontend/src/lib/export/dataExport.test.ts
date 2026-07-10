@@ -1,7 +1,53 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { categoryFilename, bundleFilename, importDataFile, DATA_CATEGORIES } from './dataExport';
 import { __setChatsForTests, createChat, getChats } from '$lib/state/chats.svelte';
 import { __setPersonasForTests, createPersona, getPersonas } from '$lib/state/personas.svelte';
+import type { Character } from '$lib/types';
+import type { SavedCharacterEntry } from '$lib/db/savedCharacters';
+
+// $lib/db/savedCharacters wraps idb-keyval, which needs a real IndexedDB that
+// isn't available under plain Node/vitest — swap it for an in-memory map,
+// same pattern as characters-relay-resync.test.ts / savedCharacters.svelte.test.ts.
+let savedCharacterStore = new Map<string, SavedCharacterEntry>();
+vi.mock('$lib/db/savedCharacters', () => ({
+	loadSavedCharacterEntries: async () => Object.fromEntries(savedCharacterStore),
+	saveCharacterEntry: async (character: Character, auto: boolean) => {
+		const existing = savedCharacterStore.get(character.id);
+		savedCharacterStore.set(character.id, { character, auto: existing ? existing.auto && auto : auto });
+	},
+	removeSavedCharacterEntry: async (id: string) => {
+		savedCharacterStore.delete(id);
+	}
+}));
+
+const { getSavedCharacters } = await import('$lib/state/savedCharacters.svelte');
+
+function makeCharacter(id: string): Character {
+	return {
+		id,
+		version: 1,
+		name: `Character ${id}`,
+		image_urls: [],
+		description: '',
+		personality: '',
+		scenario: '',
+		tags: [],
+		nsfw: false,
+		language: 'en',
+		system_prompt: '',
+		first_message: '',
+		alternate_greetings: [],
+		example_dialogues: [],
+		comments_enabled: true,
+		forked_from: null,
+		author: 'author-pub',
+		signature: 'sig',
+		created_at: 1,
+		updated_at: 1,
+		deleted: false,
+		deleted_at: null
+	};
+}
 
 function fileOf(name: string, content: string, type = 'application/json'): File {
 	return new File([content], name, { type });
@@ -10,6 +56,7 @@ function fileOf(name: string, content: string, type = 'application/json'): File 
 beforeEach(() => {
 	__setChatsForTests({});
 	__setPersonasForTests({});
+	savedCharacterStore = new Map();
 });
 
 describe('export filenames', () => {
@@ -85,6 +132,37 @@ describe('personas import', () => {
 			{ category: 'personas', count: 0, added: 0, updated: 0, skipped: 1 }
 		]);
 		expect(getPersonas()).toHaveLength(1);
+	});
+});
+
+describe('saved characters import', () => {
+	it('restores an exported saved-characters array, preserving ids', async () => {
+		const character = makeCharacter('char-1');
+		const file = fileOf(
+			'charshare-savedCharacters-2026-01-01.json',
+			JSON.stringify([character], null, 2)
+		);
+
+		const summaries = await importDataFile(file);
+
+		expect(summaries).toEqual([
+			{ category: 'savedCharacters', count: 1, added: 1, updated: 0, skipped: 0 }
+		]);
+		expect(getSavedCharacters()).toEqual([character]);
+	});
+
+	it("doesn't misdetect a saved-characters filename as plain 'characters'", async () => {
+		// "savedcharacters" contains "characters" as a substring — regression
+		// test for the filename-sniffing collision in detectCategory().
+		const character = makeCharacter('char-2');
+		const file = fileOf(
+			'charshare-savedCharacters-2026-01-01.json',
+			JSON.stringify([character], null, 2)
+		);
+
+		const [summary] = await importDataFile(file);
+
+		expect(summary.category).toBe('savedCharacters');
 	});
 });
 

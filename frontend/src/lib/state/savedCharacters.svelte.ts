@@ -59,6 +59,21 @@ export async function saveCharacterLocally(
 	entries = await loadSavedCharacterEntries();
 }
 
+/** Restores one character from a "saved characters" backup — always
+ *  overwrites by id (an import is a deliberate act, so it always wins,
+ *  unlike restoreCharacter's version-conflict handling for owned characters,
+ *  which doesn't apply here since saved characters have no local edit chain
+ *  of our own to protect). Imported entries are treated as a manual save
+ *  (`auto: false`) regardless of whether the original save was manual or
+ *  automatic — saveCharacterEntry's existing merge logic already yields that
+ *  outcome when called with `auto: false`. */
+export async function restoreSavedCharacter(character: Character): Promise<'added' | 'updated'> {
+	const existed = character.id in entries;
+	await saveCharacterEntry(character, false);
+	entries = await loadSavedCharacterEntries();
+	return existed ? 'updated' : 'added';
+}
+
 export async function unsaveCharacter(id: CharacterId): Promise<void> {
 	await removeSavedCharacterEntry(id);
 	const next = { ...entries };

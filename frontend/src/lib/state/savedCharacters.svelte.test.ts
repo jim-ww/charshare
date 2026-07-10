@@ -50,7 +50,7 @@ function makeCharacter(id: string, overrides: Partial<Character> = {}): Characte
 		created_at: 1,
 		updated_at: 1,
 		deleted: false,
-		deleted_at: undefined,
+		deleted_at: null,
 		...overrides
 	} as Character;
 }
