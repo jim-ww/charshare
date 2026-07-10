@@ -2,6 +2,7 @@
 	import { onMount } from "svelte";
 	import { resolve } from "$app/paths";
 	import { getCurrentUser, isAccountRegistered } from "$lib/state/auth.svelte";
+	import { closeSettings } from "$lib/state/settingsModal.svelte";
 	import {
 		editMyComment,
 		getMyComments,
@@ -70,6 +71,7 @@
 					<a
 						class="link link-primary text-sm"
 						href={resolve("/characters/[id]", { id: comment.character_id })}
+						onclick={closeSettings}
 					>
 						{m.my_comments_view_character()}
 					</a>

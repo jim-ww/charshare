@@ -147,7 +147,7 @@
 <div class="flex flex-col gap-4">
 	<div>
 		<span class="label-text mb-1 block">{m.general_tab_theme_label()}</span>
-		<div class="flex items-center gap-2">
+		<div class="flex flex-wrap items-center gap-2">
 			<div class="relative" bind:this={themeMenuEl}>
 				<button
 					type="button"
@@ -244,7 +244,7 @@
 					</svg>
 				</button>
 			</div>
-			<span class="mt-1 block text-sm opacity-70">{m.general_tab_theme_tip()}</span>
+			<span class="mt-1 hidden w-full text-sm opacity-70 sm:block">{m.general_tab_theme_tip()}</span>
 		</div>
 	</div>
 

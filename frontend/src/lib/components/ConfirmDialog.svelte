@@ -24,7 +24,7 @@
 </script>
 
 <dialog bind:this={dialogEl} class="modal" onclose={oncancel}>
-	<div class="modal-box">
+	<div class="modal-box max-h-[90vh] overflow-y-auto">
 		<h3 class="text-lg font-semibold">{title}</h3>
 		<p class="py-3 text-sm opacity-80">{message}</p>
 		{#if children}

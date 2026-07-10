@@ -38,7 +38,7 @@
 </script>
 
 <dialog bind:this={dialogEl} class="modal" onclose={onclose}>
-	<div class="modal-box">
+	<div class="modal-box max-h-[90vh] overflow-y-auto">
 		<h2 class="mb-3 text-xs font-semibold tracking-wide opacity-50 uppercase">
 			{m.user_profile_heading()}
 		</h2>

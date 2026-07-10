@@ -11,3 +11,21 @@ html,
 body {
 	background-color: var(--color-base-100);
 }
+
+/* daisyUI's btn-xs (24px) and circle variants fall well under the ~44px
+   touch-target guideline. Bump them up on small/touch viewports without
+   touching desktop density, where mouse pointers make the smaller size fine. */
+@media (max-width: 640px) {
+	.btn-xs {
+		height: 2rem;
+		min-height: 2rem;
+		padding-inline: 0.75rem;
+		font-size: 0.75rem;
+	}
+	.btn-circle.btn-xs {
+		width: 2.25rem;
+		height: 2.25rem;
+		min-height: 2.25rem;
+		padding-inline: 0;
+	}
+}

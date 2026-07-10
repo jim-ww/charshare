@@ -36,7 +36,7 @@
 </script>
 
 <dialog bind:this={dialogEl} class="modal" onclose={oncancel}>
-	<div class="modal-box">
+	<div class="modal-box max-h-[90vh] overflow-y-auto">
 		<h3 class="text-lg font-semibold">{title}</h3>
 		<form class="mt-3 flex flex-col gap-3" onsubmit={handleSubmit}>
 			<input
