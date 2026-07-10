@@ -25,13 +25,14 @@
 	});
 </script>
 
+<svelte:window onkeydown={(e) => entry && e.key === "Escape" && closeImageViewer()} />
+
 {#if entry}
 	<div
 		class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3 sm:p-6"
 		role="button"
 		tabindex="0"
 		onclick={closeImageViewer}
-		onkeydown={(e) => e.key === "Escape" && closeImageViewer()}
 	>
 		<div role="presentation" onclick={(e) => e.stopPropagation()}>
 			<CharacterImageViewer

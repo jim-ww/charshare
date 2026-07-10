@@ -1,4 +1,3 @@
-- fix(chat): image preview should exit on Esc press
 - add button to cache some character locally? like 'save locally' or 'add to favourites', so it would always stay there, even ifs deleted from remote node or by author? but should be marked locally if author deleted it
 - chat page doesnt load up characters, or load with retry like on 'characters' page?
 - make 'This chat's character couldn't be loaded' error appear after a bit longer period and check if it make fetch instantly on 'wait longer' press
