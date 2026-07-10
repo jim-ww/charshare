@@ -392,6 +392,9 @@
 	"general_tab_opacity_label": "Message/composer opacity ({percent}%)",
 	"general_tab_opacity_hint": "Fades chat bubbles and the composer so a chat background shows through.",
 	"general_tab_show_nsfw_label": "Show NSFW characters in Browse",
+	"general_tab_mic_silence_toggle_label": "Auto-stop mic recording on silence",
+	"general_tab_mic_silence_timeout_label": "Silence timeout ({seconds}s)",
+	"general_tab_mic_silence_hint": "When enabled, recording stops automatically after you go quiet for this long. Disable to always stop manually.",
 
 	"ai_tab_provider_label": "Provider",
 	"ai_tab_provider_openrouter": "OpenRouter",

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,7 +8,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 // ProxyImportPort is where a chat site's custom AI/API proxy setting should
@@ -28,7 +27,7 @@ type proxyImportServer struct {
 	server *http.Server
 }
 
-func (s *proxyImportServer) Start(ctx context.Context) error {
+func (s *proxyImportServer) Start(app *application.App) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -59,7 +58,7 @@ func (s *proxyImportServer) Start(ctx context.Context) error {
 			return
 		}
 
-		runtime.EventsEmit(ctx, ProxyImportReceived, string(body))
+		app.Event.Emit(ProxyImportReceived, string(body))
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
@@ -115,7 +114,7 @@ func (s *proxyImportServer) Running() bool {
 // custom-endpoint chat requests can be pointed at, to import a character's
 // persona/scenario/greeting straight from an authenticated browser chat.
 func (a *App) StartProxyImportServer() string {
-	if err := a.proxyImport.Start(a.ctx); err != nil {
+	if err := a.proxyImport.Start(a.app); err != nil {
 		return err.Error()
 	}
 	return ""

@@ -13,6 +13,8 @@ const DTYPE = {
 	decoder_model_merged: 'q4',
 } as const;
 
+// A plain singleton, cached for this worker's lifetime (the reference
+// xenova/whisper-web pattern).
 let pipelinePromise: Promise<AutomaticSpeechRecognitionPipeline> | null = null;
 
 function getPipeline(

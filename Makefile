@@ -1,7 +1,15 @@
-.PHONY: dev icons
+.PHONY: dev icons bindings
 
 dev:
-	nix develop -c wails dev -tags webkit2_41
+	nix develop -c wails3 dev
+
+# frontend/bindings/ is committed (not gitignored/regenerated at build time)
+# because the Nix package build's frontend step is a plain `pnpm run build`
+# with no network access, and nixpkgs has no wails3 CLI package to reach for
+# (v3 is alpha) — see frontend/src/lib/wails.ts's doc comment. Re-run this
+# and commit the result whenever a Go service's method signatures change.
+bindings:
+	nix develop -c wails3 generate bindings -ts -b
 
 # Regenerates all browser favicons/app icons and the Wails desktop icon from
 # the single 1024x1024 source at frontend/static/logo.png.

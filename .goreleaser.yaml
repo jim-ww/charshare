@@ -22,12 +22,13 @@ builds:
     env:
       - CGO_ENABLED=1
     # "desktop"/"production" mirror what `wails build` passes itself; without
-    # them the binary panics at startup. webkit2_41 selects the webkit2gtk
-    # ABI this nixpkgs/most current distros ship (see flake.nix).
+    # them the binary panics at startup. "gtk3" selects the GTK3/webkitgtk-4.1
+    # backend (Wails v3 defaults to GTK4/webkitgtk-6.0) — this nixpkgs/most
+    # current distros only ship the older ABI (see flake.nix).
     tags:
       - desktop
       - production
-      - webkit2_41
+      - gtk3
 
   - id: windows
     main: .

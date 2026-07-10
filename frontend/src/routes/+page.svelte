@@ -2,21 +2,18 @@
 	import { onMount } from "svelte";
 	import { goto } from "$app/navigation";
 	import { asset, resolve } from "$app/paths";
-	import { externalLink } from "$lib/wails";
+	import { externalLink, isWailsDesktop } from "$lib/wails";
 	import { m } from "$lib/paraglide/messages.js";
 
 	// In the Wails desktop build, skip the marketing landing page on first
-	// launch and go straight into the app. `window.runtime` only exists in
-	// the Wails webview, so this is a no-op for the web build. Only fires
-	// once per app start — sessionStorage (not localStorage) so the flag
-	// doesn't survive across restarts of the app; each fresh launch of the
-	// webview process gets its own session.
+	// launch and go straight into the app. isWailsDesktop() is false in the
+	// web build, so this is a no-op there. Only fires once per app start —
+	// sessionStorage (not localStorage) so the flag doesn't survive across
+	// restarts of the app; each fresh launch of the webview process gets its
+	// own session.
 	const SKIP_LANDING_KEY = "charshare:skippedInitialLanding";
 	onMount(() => {
-		if (
-			(window as unknown as { runtime?: unknown }).runtime &&
-			!sessionStorage.getItem(SKIP_LANDING_KEY)
-		) {
+		if (isWailsDesktop() && !sessionStorage.getItem(SKIP_LANDING_KEY)) {
 			sessionStorage.setItem(SKIP_LANDING_KEY, "true");
 			goto(resolve("/characters"), { replaceState: true });
 		}

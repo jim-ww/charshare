@@ -12,6 +12,7 @@
 	import { startMicRecording, type MicRecording } from "$lib/audio/recordMic";
 	import { transcribe, preloadModel } from "$lib/asr/whisperClient";
 	import { getPreferences, updatePreferences } from "$lib/state/preferences.svelte";
+	import { isWailsDesktop } from "$lib/wails";
 
 	interface Props {
 		chat: Chat;
@@ -27,8 +28,15 @@
 	let abortController: AbortController | null = null;
 	let loadedDraftFor: string | null = null;
 
+	// Mic transcription is disabled in the Wails desktop app for now — it
+	// triggers an unresolved native memory leak specific to WebKitGTK (not
+	// reproducible in Firefox with identical code, and not explained by any
+	// fix attempted so far: audio-graph node reuse, GPU-process disabling,
+	// worker recycling). Browser usage is unaffected.
 	const micSupported =
-		typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia;
+		typeof navigator !== "undefined" &&
+		!!navigator.mediaDevices?.getUserMedia &&
+		!isWailsDesktop();
 	let micRecording: MicRecording | null = null;
 	let listening = $state(false);
 	let transcribing = $state(false);
@@ -193,14 +201,22 @@
 	async function startRecording() {
 		error = null;
 		try {
-			micRecording = await startMicRecording(() => {
-				// Only auto-stop if this is still the active recording — a
-				// stale silence callback can fire after the user already
-				// pressed stop manually.
-				if (listening) void stopRecording();
-			});
+			micRecording = await startMicRecording(
+				getPreferences().micSilenceTimeoutMs,
+				() => {
+					// Only auto-stop if this is still the active recording — a
+					// stale silence callback can fire after the user already
+					// pressed stop manually.
+					if (listening) void stopRecording();
+				},
+			);
 			listening = true;
-		} catch {
+		} catch (err) {
+			// Log the real DOMException (name + message) rather than
+			// collapsing everything into one generic string — getUserMedia
+			// failures span permission denial, no device found, GStreamer
+			// backend issues, etc., and only the real error tells them apart.
+			console.error("getUserMedia failed:", err);
 			error = m.chat_composer_mic_error_permission();
 		}
 	}

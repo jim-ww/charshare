@@ -1,35 +1,50 @@
+import { isWailsDesktop } from "$lib/wails";
+
 /** Forwards browser console output and uncaught errors to the Wails Go
- *  process' stdout. WebKitGTK's inspector doesn't reliably open in this dev
- *  setup, so this is the only way to see frontend errors while running
- *  `wails dev`. `window.runtime` only exists inside the Wails webview — a
- *  no-op everywhere else (plain `pnpm dev`, tests, browsers). */
+ *  process' stdout via a custom event (v3's runtime module dropped v2's
+ *  dedicated LogInfo/LogError calls — see app.go's console-forward event
+ *  handler). WebKitGTK's inspector doesn't reliably open in this dev setup,
+ *  so this is the only way to see frontend errors while running `wails
+ *  dev`. No-op everywhere else (plain `pnpm dev`, tests, browsers). */
 export function installWailsConsoleForward(): void {
-	const runtime = (window as unknown as { runtime?: { LogError: (msg: string) => void; LogInfo: (msg: string) => void } }).runtime;
-	if (!runtime) return;
+	if (!isWailsDesktop()) return;
 
 	const stringify = (args: unknown[]) =>
 		args
-			.map((a) => (a instanceof Error ? `${a.message}\n${a.stack}` : typeof a === 'string' ? a : JSON.stringify(a)))
-			.join(' ');
+			.map((a) => (a instanceof Error ? `${a.message}\n${a.stack}` : typeof a === "string" ? a : JSON.stringify(a)))
+			.join(" ");
+
+	// Loaded lazily (rather than importing the runtime module here directly)
+	// so this file stays import-free of Wails-only paths until it's already
+	// confirmed to be running inside the desktop app.
+	const runtimeUrl = "/wails/runtime.js";
+	const emit = (level: "info" | "error", message: string) => {
+		void import(/* @vite-ignore */ runtimeUrl).then((mod) => {
+			(mod as { Events: { Emit(name: string, data: unknown): Promise<boolean> } }).Events.Emit(
+				"console:forward",
+				{ level, message },
+			);
+		});
+	};
 
 	const original = { log: console.log, warn: console.warn, error: console.error };
 	console.log = (...args) => {
-		runtime.LogInfo(stringify(args));
+		emit("info", stringify(args));
 		original.log(...args);
 	};
 	console.warn = (...args) => {
-		runtime.LogInfo(`[warn] ${stringify(args)}`);
+		emit("info", `[warn] ${stringify(args)}`);
 		original.warn(...args);
 	};
 	console.error = (...args) => {
-		runtime.LogError(stringify(args));
+		emit("error", stringify(args));
 		original.error(...args);
 	};
 
-	window.addEventListener('error', (event) => {
-		runtime.LogError(`Uncaught: ${event.message}\n${event.error?.stack ?? ''}`);
+	window.addEventListener("error", (event) => {
+		emit("error", `Uncaught: ${event.message}\n${event.error?.stack ?? ""}`);
 	});
-	window.addEventListener('unhandledrejection', (event) => {
-		runtime.LogError(`Unhandled rejection: ${String(event.reason)}`);
+	window.addEventListener("unhandledrejection", (event) => {
+		emit("error", `Unhandled rejection: ${String(event.reason)}`);
 	});
 }

@@ -25,5 +25,16 @@ export default defineConfig({
 		// that the dep-optimizer's pre-bundling breaks; excluded per the
 		// library's documented Vite setup.
 		exclude: ['gun/lib/rindexed', '@huggingface/transformers']
+	},
+	build: {
+		rollupOptions: {
+			// The Wails v3 runtime is served at this fixed path by the desktop
+			// webview's asset server at actual runtime — it never exists on disk
+			// (frontend/bindings/**/*.ts import it statically), so bundling must
+			// leave it alone rather than trying to resolve/inline it. Harmless
+			// for the plain website build too: nothing reaches this import
+			// unless wails.ts has already confirmed it's running inside Wails.
+			external: ['/wails/runtime.js']
+		}
 	}
 });

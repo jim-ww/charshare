@@ -1,6 +1,5 @@
 build/bin
 frontend/dist
-frontend/wailsjs
 
 # OS
 .DS_Store

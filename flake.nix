@@ -14,13 +14,49 @@
     flake-utils.lib.eachDefaultSystem (system: let
       pkgs = import nixpkgs {inherit system;};
 
-      # Wails' Linux backend needs webkit2gtk; this nixpkgs only ships the
-      # 4.1 ABI, so both the devShell and the package build must select it
-      # via the `webkit2_41` Go build tag (see wails' pkg/assetserver/webview).
+      # Wails v3's Linux backend defaults to GTK4 + webkitgtk-6.0; this
+      # nixpkgs only ships the older GTK3 + webkitgtk-4.1 ABI, so both the
+      # devShell and the package build select that backend via the `gtk3` Go
+      # build tag (see wails' internal/assetserver/webview's *_linux_gtk3.go
+      # files) instead.
       webkitDeps = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux [
         pkgs.gtk3
         pkgs.webkitgtk_4_1
+        # Mic recording is browser-only for now (desktop mic support was
+        # dropped — see ChatComposer.svelte), so these are commented out
+        # rather than needed. Restore alongside gstPluginPath below and the
+        # GST_PLUGIN_SYSTEM_PATH_1_0 exports if desktop mic capture returns.
+        # WebKitGTK's getUserMedia/WebRTC capture backend goes through
+        # GStreamer, not directly through PulseAudio/PipeWire — without
+        # these plugins it enumerates zero audio devices and getUserMedia
+        # fails ("Audio capture was requested but no device was found
+        # amongst 0 devices" / "GStreamer element appsink not found"),
+        # independent of the app's own mic-permission handling.
+        # gst-plugins-base: appsink/audioconvert (the missing element in
+        # the error above). gst-plugins-good: pulsesrc/autoaudiosrc, the
+        # actual PulseAudio/PipeWire (via its Pulse shim) capture source.
+        # pkgs.gst_all_1.gstreamer
+        # pkgs.gst_all_1.gst-plugins-base
+        # pkgs.gst_all_1.gst-plugins-good
       ];
+
+      # GStreamer doesn't scan Nix store paths by default the way it would
+      # FHS system dirs — needs GST_PLUGIN_SYSTEM_PATH_1_0 pointed at each
+      # plugin package's lib/gstreamer-1.0 explicitly. Commented out along
+      # with the gst_all_1 packages above — see that comment.
+      # gstPluginPath = pkgs.lib.makeSearchPathOutput "lib" "lib/gstreamer-1.0" [
+      #   pkgs.gst_all_1.gstreamer
+      #   pkgs.gst_all_1.gst-plugins-base
+      #   pkgs.gst_all_1.gst-plugins-good
+      # ];
+
+      # nixpkgs has no wails3 package yet (v3 is alpha) — run the pinned CLI
+      # straight from its module cache instead. Version must match go.mod's
+      # github.com/wailsapp/wails/v3 requirement.
+      wails3Version = "v3.0.0-alpha2.117";
+      wails3 = pkgs.writeShellScriptBin "wails3" ''
+        exec env GOFLAGS=-tags=gtk3 ${pkgs.go}/bin/go run github.com/wailsapp/wails/v3/cmd/wails3@${wails3Version} "$@"
+      '';
 
       # Lets Linux desktop environments (GNOME/KDE/etc.) show a launcher entry
       # with an icon for `nix profile install`/systemPackages users — without
@@ -48,8 +84,16 @@
         pnpmDeps = pkgs.fetchPnpmDeps {
           inherit (finalAttrs) pname version src;
           fetcherVersion = 3;
-          hash = "sha256-y5jNDJn4ZAXOeR+VXqaBAsp9QZnOt97JJYorkoqGg58=";
+          hash = "sha256-9yvwvtNUJ4Edxbis0aqIYqUj3Fotib0SdZp3eZyV2uc=";
         };
+
+        # legal/license/+page.ts imports the repo-root LICENSE file via a
+        # relative path that reaches outside frontend/ — but frontendDist's
+        # src is scoped to just frontend/, so that file doesn't exist here
+        # unless copied in at the same relative position first.
+        preBuild = ''
+          cp ${./LICENSE} ../LICENSE
+        '';
 
         buildPhase = ''
           runHook preBuild
@@ -69,12 +113,29 @@
         version = "0.0.1";
         src = ./.;
 
-        vendorHash = "sha256-SsH+FqUKzk/ktC1izlYBojhMOZ1o4SeGz80GqdSU9Bc=";
+        vendorHash = "sha256-hP8M9yoEo0nU+Pxse6W3k/DSv3DCtEQzUlG/XPKOKNo=";
+
+        # `go mod vendor` (buildGoModule's default) unconditionally resolves
+        # every dependency's go:embed patterns for every GOOS/GOARCH, and
+        # Wails v3's alpha releases ship a Windows-only embed
+        # (internal/webview2/webviewloader: arm64/WebView2Loader.dll) that's
+        # missing from the published module zip — this fails even though
+        # we're building for linux and never touch that package. proxyVendor
+        # uses `go mod download` instead, which doesn't do that resolution.
+        proxyVendor = true;
+
+        # buildGoModule's vendor-fetch derivation inherits preBuild by
+        # default, which would otherwise drag in frontendDist (and its
+        # unrelated build) just to compute the Go module hash.
+        overrideModAttrs = _: {
+          preBuild = "";
+        };
 
         # "desktop" and "production" mirror what `wails build` normally
         # passes itself; without them the binary panics at startup with
         # "Wails applications will not build without the correct build tags".
-        tags = ["desktop" "production" "webkit2_41"];
+        # "gtk3" selects the GTK3/webkitgtk-4.1 backend — see webkitDeps above.
+        tags = ["desktop" "production" "gtk3"];
 
         nativeBuildInputs = [pkgs.pkg-config pkgs.makeWrapper pkgs.ffmpeg];
         buildInputs = webkitDeps;
@@ -111,6 +172,7 @@
             --set GIO_EXTRA_MODULES "${glib-networking}/lib/gio/modules" \
             --set SSL_CERT_FILE "${cacert}/etc/ssl/certs/ca-bundle.crt" \
             --set NIX_SSL_CERT_FILE "${cacert}/etc/ssl/certs/ca-bundle.crt"
+            # --set GST_PLUGIN_SYSTEM_PATH_1_0 (gstPluginPath, commented out above)
         '';
 
         meta = {
@@ -123,7 +185,7 @@
         buildInputs =
           [
             pkgs.go
-            pkgs.wails
+            wails3
             pkgs.nodejs
             pkgs.pnpm
             pkgs.pkg-config
@@ -132,10 +194,10 @@
           ]
           ++ webkitDeps;
 
-        # Picked up by plain `go build`/`go run` in this shell. `wails
-        # build`/`wails dev` add their own "desktop"/"production"/"dev"
-        # tags themselves, so only the webkit ABI tag is needed here.
-        GOFLAGS = "-tags=webkit2_41";
+        # Picked up by plain `go build`/`go run` in this shell. `wails3
+        # build`/`wails3 dev` add their own "desktop"/"production"/"dev"
+        # tags themselves, so only the webkit backend tag is needed here.
+        GOFLAGS = "-tags=gtk3";
 
         # Without GSettings schemas on XDG_DATA_DIRS, GTK/WebKitGTK fall back
         # to a default font config that renders text tiny/wrong-sized in the
@@ -149,6 +211,7 @@
           export GIO_EXTRA_MODULES="${pkgs.glib-networking}/lib/gio/modules";
           export SSL_CERT_FILE="${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
           export NIX_SSL_CERT_FILE="${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+          # export GST_PLUGIN_SYSTEM_PATH_1_0 (gstPluginPath, commented out above);
         '';
       };
     });

@@ -3,8 +3,6 @@ package main
 import (
 	"encoding/base64"
 	"os"
-
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // SaveFile opens a native "Save As" dialog defaulting to filename, then
@@ -13,9 +11,7 @@ import (
 // download in Wails' Linux webkit backend, so it silently does nothing.
 // Returns an error message on failure, or "" on success/cancel.
 func (a *App) SaveFile(filename string, base64Data string) string {
-	path, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
-		DefaultFilename: filename,
-	})
+	path, err := a.app.Dialog.SaveFile().SetFilename(filename).PromptForSingleSelection()
 	if err != nil {
 		return err.Error()
 	}

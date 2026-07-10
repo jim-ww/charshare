@@ -4,6 +4,11 @@
 	import { m } from '$lib/paraglide/messages.js';
 	import { getLocale, setLocale, type Locale } from '$lib/paraglide/runtime';
 	import { AVAILABLE_LOCALES, LOCALE_NAMES } from '$lib/i18n';
+	import { isWailsDesktop } from '$lib/wails';
+
+	// Mic transcription (and thus its silence-timeout setting) isn't offered
+	// in the Wails desktop app — see ChatComposer.svelte.
+	const showMicSettings = !isWailsDesktop();
 
 	const preferences = $derived(getPreferences());
 
@@ -67,6 +72,19 @@
 
 	function handleShowNsfwChange(event: Event) {
 		updatePreferences({ showNsfw: (event.currentTarget as HTMLInputElement).checked });
+	}
+
+	const micSilenceEnabled = $derived(preferences.micSilenceTimeoutMs !== null);
+
+	function handleMicSilenceToggle(event: Event) {
+		const enabled = (event.currentTarget as HTMLInputElement).checked;
+		updatePreferences({ micSilenceTimeoutMs: enabled ? 1500 : null });
+	}
+
+	function handleMicSilenceTimeoutChange(event: Event) {
+		updatePreferences({
+			micSilenceTimeoutMs: Number((event.currentTarget as HTMLInputElement).value),
+		});
 	}
 </script>
 
@@ -214,6 +232,39 @@
 		/>
 		<span class="label-text">{m.general_tab_show_nsfw_label()}</span>
 	</label>
+
+	{#if showMicSettings}
+		<div class="form-control w-full max-w-md">
+			<label class="label w-fit cursor-pointer gap-2">
+				<input
+					type="checkbox"
+					class="toggle"
+					checked={micSilenceEnabled}
+					onchange={handleMicSilenceToggle}
+				/>
+				<span class="label-text">{m.general_tab_mic_silence_toggle_label()}</span>
+			</label>
+			{#if micSilenceEnabled}
+				<label class="mt-2 block">
+					<span class="label-text">
+						{m.general_tab_mic_silence_timeout_label({
+							seconds: (preferences.micSilenceTimeoutMs! / 1000).toFixed(1),
+						})}
+					</span>
+					<input
+						class="range"
+						type="range"
+						min="500"
+						max="5000"
+						step="250"
+						value={preferences.micSilenceTimeoutMs}
+						oninput={handleMicSilenceTimeoutChange}
+					/>
+				</label>
+			{/if}
+			<span class="mt-1 text-sm opacity-70">{m.general_tab_mic_silence_hint()}</span>
+		</div>
+	{/if}
 
 	<label class="form-control w-full max-w-md">
 		<span class="label-text">{m.general_tab_language_label()}</span>
