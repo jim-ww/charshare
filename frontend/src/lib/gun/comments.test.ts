@@ -4,7 +4,7 @@ import Gun from 'gun/gun.js';
 import { __setGunForTests, getGun, gunPath } from './client';
 import { __setKeyringForTests } from '$lib/state/auth.svelte';
 import { generateKeyring } from '$lib/crypto/keys';
-import { postComment, editComment, deleteComment, getCommentsForCharacter } from './comments';
+import { postComment, editComment, deleteComment, getCommentsForCharacter, getCommentsAuthoredBy } from './comments';
 
 const RADATA_DIR = `test-radata-comments-${crypto.randomUUID()}`;
 let mainKeyring: Awaited<ReturnType<typeof generateKeyring>>;
@@ -114,6 +114,50 @@ describe('postComment / getCommentsForCharacter', () => {
 		await expect(editComment(comment.id, 'Hijacked')).rejects.toThrow('Only the author can edit this comment.');
 
 		__setKeyringForTests(await generateKeyring());
+	});
+});
+
+describe('getCommentsAuthoredBy', () => {
+	it("finds comments posted by the given pubkey via their own protected-space pointer", async () => {
+		const keyring = await generateKeyring();
+		__setKeyringForTests(keyring);
+		const characterId = `char-${crypto.randomUUID()}`;
+		const comment = await postComment(characterId, 'Mine, discoverable');
+
+		const found = await getCommentsAuthoredBy(keyring.publicKey);
+		expect(found.map((c) => c.id)).toEqual([comment.id]);
+	});
+
+	it("doesn't surface another author's comments", async () => {
+		const keyring = await generateKeyring();
+		__setKeyringForTests(keyring);
+		const characterId = `char-${crypto.randomUUID()}`;
+		await postComment(characterId, 'Belongs to keyring');
+
+		const otherKeyring = await generateKeyring();
+		expect(await getCommentsAuthoredBy(otherKeyring.publicKey)).toEqual([]);
+	});
+
+	it('excludes a tombstoned comment', async () => {
+		const keyring = await generateKeyring();
+		__setKeyringForTests(keyring);
+		const characterId = `char-${crypto.randomUUID()}`;
+		const comment = await postComment(characterId, 'Will be deleted');
+		await deleteComment(comment.id);
+
+		expect(await getCommentsAuthoredBy(keyring.publicKey)).toEqual([]);
+	});
+
+	it('reflects an edit', async () => {
+		const keyring = await generateKeyring();
+		__setKeyringForTests(keyring);
+		const characterId = `char-${crypto.randomUUID()}`;
+		const comment = await postComment(characterId, 'Original');
+		await editComment(comment.id, 'Edited');
+
+		const found = await getCommentsAuthoredBy(keyring.publicKey);
+		expect(found).toHaveLength(1);
+		expect(found[0].content).toBe('Edited');
 	});
 });
 

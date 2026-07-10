@@ -13,6 +13,7 @@
 	import AiTab from "./settings/AiTab.svelte";
 	import ContentTab from "./settings/ContentTab.svelte";
 	import DataTab from "./settings/DataTab.svelte";
+	import CommentsTab from "./settings/CommentsTab.svelte";
 	import { m } from '$lib/paraglide/messages.js';
 
 	const tabs: { id: SettingsTab; label: string }[] = [
@@ -22,6 +23,7 @@
 		{ id: "network", label: m.settings_tab_network() },
 		{ id: "ai", label: m.settings_tab_ai() },
 		{ id: "content", label: m.settings_tab_content() },
+		{ id: "comments", label: m.settings_tab_comments() },
 		{ id: "data", label: m.settings_tab_data() },
 	];
 
@@ -69,6 +71,8 @@
 				<AiTab />
 			{:else if activeTab === "content"}
 				<ContentTab />
+			{:else if activeTab === "comments"}
+				<CommentsTab />
 			{:else if activeTab === "data"}
 				<DataTab />
 			{/if}

@@ -2,7 +2,7 @@ import type { CharacterId, Comment, CommentId, Keyring, PubKey, Verified } from 
 import { signDocument } from '$lib/crypto/sign';
 import { getKeyring, requireAccount } from '$lib/state/auth.svelte';
 import { getDocument, putDocument, type Validator } from './document';
-import { getGun, gunPath } from './client';
+import { authorNode, ensureGunUserAuth, getGun, gunPath, gunPeerReady, type GunNode } from './client';
 import { createSignedPointerIndex } from './signedIndex';
 
 function commentPath(id: CommentId): string {
@@ -61,6 +61,78 @@ export async function getCommentsForCharacter(characterId: CharacterId): Promise
 		.sort((a, b) => a.created_at - b.created_at);
 }
 
+/** Per-comment pointer (commentId -> character_id) under the author's own
+ *  protected GUN space, letting "my comments" enumerate what a user has
+ *  posted without a network-wide scan. Unlike commentIndex above, this needs
+ *  no app-level signature/ownership check at all: GUN's own user-auth
+ *  already rejects writes to `~pubkey/...` not signed by that keypair, and
+ *  each pointer is its own child key (not a shared array), so even the same
+ *  account writing from two devices at once can't lose an update to a
+ *  read-modify-write race. */
+function authoredCommentsNode(pubkey: PubKey): GunNode {
+	return authorNode(getGun(), pubkey, ['comments-authored']);
+}
+
+const AUTHORED_PUT_TIMEOUT_MS = 3000;
+
+async function indexAuthoredComment(commentId: CommentId, characterId: CharacterId, keyring: Keyring): Promise<void> {
+	await ensureGunUserAuth(keyring.pair);
+	await new Promise<void>((resolve) => {
+		let settled = false;
+		const timer = setTimeout(() => {
+			if (!settled) {
+				settled = true;
+				resolve();
+			}
+		}, AUTHORED_PUT_TIMEOUT_MS);
+		authoredCommentsNode(keyring.publicKey)
+			.get(commentId)
+			.put(characterId, () => {
+				if (settled) return;
+				settled = true;
+				clearTimeout(timer);
+				resolve();
+			});
+	});
+}
+
+const ENUMERATE_AUTHORED_TIMEOUT_MS = 1000;
+
+/** Lists the (verified, non-deleted) comments `pubkey` has posted, discovered
+ *  via their own protected-space pointer node rather than a network scan.
+ *  Same trust model as getCommentsForCharacter: the pointer is discovery-only
+ *  and every result is re-verified via getComment, with an author cross-check
+ *  since GUN's own write protection only proves who wrote the *pointer*, not
+ *  that the pointed-at comment itself hasn't since changed hands. */
+export async function getCommentsAuthoredBy(pubkey: PubKey): Promise<Comment[]> {
+	const ids = await new Promise<string[]>((resolve) => {
+		const ids: string[] = [];
+		let settled = false;
+		function finish() {
+			if (settled) return;
+			settled = true;
+			resolve(ids);
+		}
+		gunPeerReady().then(() => {
+			if (settled) return;
+			setTimeout(finish, ENUMERATE_AUTHORED_TIMEOUT_MS);
+			authoredCommentsNode(pubkey)
+				.map()
+				.once((data: unknown, childKey: string) => {
+					if (settled || data === null || data === undefined) return;
+					ids.push(childKey);
+				});
+		});
+	});
+	const results = await Promise.all(ids.map((id) => getComment(id as CommentId)));
+	return results
+		.filter((r) => r.ok)
+		.map((r) => r.doc)
+		.filter((c) => !c.deleted)
+		.filter((c) => c.author === pubkey)
+		.sort((a, b) => b.created_at - a.created_at);
+}
+
 async function signAndPublish(draft: Omit<Comment, 'signature' | 'updated_at'>, keyring: Keyring): Promise<Comment> {
 	const withTimestamp = { ...draft, updated_at: Date.now(), signature: '' };
 	const signature = await signDocument(withTimestamp, keyring);
@@ -104,6 +176,7 @@ export async function postComment(
 		keyring
 	);
 	await commentIndex.addToIndex(characterId, doc.id, keyring);
+	await indexAuthoredComment(doc.id, characterId, keyring);
 	return doc;
 }
 

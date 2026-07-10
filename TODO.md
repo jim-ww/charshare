@@ -1,6 +1,3 @@
-- feat(comments): show created_at, updated_at dates
-- fix(background): html background stays the same, no matter what theme selected
-- feat: add option to see all owned comments, with edit, delete buttons and links to character (on which comment was posted)?
 - fix: in wails, after pressing post comment, they are not appear as posted right away
 - feat: improve usability on mobiles? improve modals, small buttons/controls
 - feat(providers): implement more robust support of ollama provider, like downloading/starting ollama server?
@@ -16,3 +13,4 @@
 - feat(identity): support multiple local identities active at once in one session (currently can only switch the single active one)
 - feat(providers): generic OpenAI-compatible proxy support for providers beyond the three built-in ones (OpenRouter/Ollama/Hugging Face)
 - consider: spam/abuse mitigation for an unmoderated, backend-less network (mass-published garbage characters/comments) — no plan yet
+- consider: move all top-level postings (comments, tags, usernames) under user-space?
