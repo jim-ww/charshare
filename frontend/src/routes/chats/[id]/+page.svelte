@@ -21,6 +21,7 @@
 	import ChatCharacterRecovery from "$lib/components/ChatCharacterRecovery.svelte";
 	import { getPreferences } from "$lib/state/preferences.svelte";
 	import { initPersonas } from "$lib/state/personas.svelte";
+	import { m } from "$lib/paraglide/messages.js";
 
 	untrack(() => void initPersonas());
 
@@ -104,7 +105,7 @@
 {:else}
 	<div class="flex h-full">
 		<div class="flex h-full min-w-0 flex-1 flex-col">
-			<div class="flex items-center justify-between">
+			<div class="flex flex-wrap items-center justify-between gap-1">
 				<ChatThreadSwitcher {chat} />
 				<button
 					class="btn btn-sm m-2 ml-auto gap-2"
@@ -135,7 +136,7 @@
 					{/each}
 				</div>
 				{#if character}
-					<div class="fixed bottom-3 left-3 z-20">
+					<div class="absolute bottom-3 left-3 z-20 max-w-[40%]">
 						<ChatCharacterImage
 							{chat}
 							{character}
@@ -157,10 +158,20 @@
 			{/if}
 		</div>
 		{#if sidebarOpen}
-			<ChatSettingsSidebar
-				{chat}
-				onclose={() => (sidebarOpen = false)}
-			/>
+			<div
+				class="fixed inset-0 z-30 bg-black/40 lg:hidden"
+				role="button"
+				tabindex="0"
+				aria-label={m.chat_settings_close()}
+				onclick={() => (sidebarOpen = false)}
+				onkeydown={(e) => e.key === "Escape" && (sidebarOpen = false)}
+			></div>
+			<div class="fixed inset-y-0 right-0 z-40 lg:static lg:z-auto">
+				<ChatSettingsSidebar
+					{chat}
+					onclose={() => (sidebarOpen = false)}
+				/>
+			</div>
 		{/if}
 	</div>
 {/if}

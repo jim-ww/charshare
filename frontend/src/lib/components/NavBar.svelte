@@ -45,17 +45,45 @@
 </script>
 
 <nav
-	class="navbar sticky top-0 z-30 flex items-center border-b border-base-300 bg-base-100/80 px-4 backdrop-blur"
+	class="navbar sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-base-300 bg-base-100/80 px-2 backdrop-blur sm:px-4"
 >
-	<div class="flex flex-1 items-center gap-6">
-		<a href={resolve("/")} class="flex items-center gap-2 text-xl font-bold leading-none tracking-tight">
+	<div class="flex shrink-0 items-center gap-3 md:gap-6">
+		<div class="dropdown md:hidden">
+			<button
+				tabindex="0"
+				class="btn btn-ghost btn-sm px-2"
+				type="button"
+				aria-label={m.navbar_nav_characters()}
+			>
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					class="h-5 w-5"
+				>
+					<path d="M4 6h16M4 12h16M4 18h16" />
+				</svg>
+			</button>
+			<ul class="menu dropdown-content menu-sm z-10 mt-3 w-40 rounded-box bg-base-200 p-2 shadow">
+				{#each navLinks as { href, label } (href)}
+					<li>
+						<a {href} class={isActive(href) ? 'text-primary' : ''}>{label}</a>
+					</li>
+				{/each}
+			</ul>
+		</div>
+		<a href={resolve("/")} class="flex shrink-0 items-center gap-2 text-xl font-bold leading-none tracking-tight">
 			<img src={asset("/icon-192.png")} alt="" class="h-6 w-6 rounded-md" />
-			charshare
+			<span class="hidden sm:inline">charshare</span>
 		</a>
 		{#each navLinks as { href, label } (href)}
 			<a
 				{href}
-				class="text-base font-medium leading-none {isActive(href)
+				class="hidden text-base font-medium leading-none md:inline {isActive(href)
 					? 'text-primary'
 					: 'text-base-content/70 hover:text-base-content'}"
 			>
@@ -63,27 +91,28 @@
 			</a>
 		{/each}
 	</div>
-	<form class="flex flex-1 max-w-2xl gap-2 justify-center mx-4" onsubmit={handleSearch}>
+	<form class="flex min-w-0 flex-1 items-center gap-2 px-1 sm:mx-4" onsubmit={handleSearch}>
 		<input
-			class="input input-bordered input-sm w-full"
+			class="input input-bordered input-sm w-full min-w-0"
 			placeholder={m.navbar_search_placeholder()}
 			value={getSearchQuery()}
 			oninput={(e) => setSearchQuery(e.currentTarget.value)}
 		/>
 		<button
-			class="btn btn-sm btn-primary"
+			class="btn btn-sm btn-primary shrink-0"
 			type="submit"
 			disabled={isSearching()}
 		>
 			{isSearching() ? "…" : m.navbar_search_button()}
 		</button>
 	</form>
-	<div class="flex flex-1 items-center justify-end gap-2">
+	<div class="flex shrink-0 items-center gap-2">
 		<a href={resolve("/characters/new")} class="btn btn-sm btn-primary">
-			{m.navbar_new_character()}
+			<span class="hidden sm:inline">{m.navbar_new_character()}</span>
+			<span class="sm:hidden">+</span>
 		</a>
 		<button
-			class="btn btn-sm btn-ghost gap-2"
+			class="btn btn-sm btn-ghost gap-2 px-2"
 			type="button"
 			aria-label={m.navbar_account_settings()}
 			onclick={() => openSettings("account")}
@@ -97,7 +126,7 @@
 					{/if}
 				</div>
 			</div>
-			<span class="max-w-40 truncate">{displayName}</span>
+			<span class="hidden max-w-40 truncate lg:inline">{displayName}</span>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
 				viewBox="0 0 24 24"
@@ -106,7 +135,7 @@
 				stroke-width="2"
 				stroke-linecap="round"
 				stroke-linejoin="round"
-				class="h-4 w-4 opacity-70"
+				class="hidden h-4 w-4 opacity-70 lg:inline"
 			>
 				<path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
 				<path

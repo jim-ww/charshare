@@ -8,6 +8,7 @@
 	import Avatar from './Avatar.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import PromptDialog from './PromptDialog.svelte';
+	import { isChatSidebarOpen, closeChatSidebar } from '$lib/state/chatSidebar.svelte';
 	import { m } from '$lib/paraglide/messages.js';
 
 	const chats = $derived(getChats());
@@ -101,7 +102,26 @@
 	</div>
 {/snippet}
 
-<aside class="flex w-80 shrink-0 flex-col gap-1 overflow-y-auto p-2">
+{#if isChatSidebarOpen()}
+	<div
+		class="fixed inset-0 z-20 bg-black/40 md:hidden"
+		role="button"
+		tabindex="0"
+		aria-label={m.chat_sidebar_no_conversations()}
+		onclick={closeChatSidebar}
+		onkeydown={(e) => e.key === 'Escape' && closeChatSidebar()}
+	></div>
+{/if}
+
+<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
+<aside
+	class="z-30 flex w-72 shrink-0 flex-col gap-1 overflow-y-auto bg-base-100 p-2 transition-transform max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:h-full max-md:shadow-xl md:w-80 md:translate-x-0 {isChatSidebarOpen()
+		? 'max-md:translate-x-0'
+		: 'max-md:-translate-x-full'}"
+	onclick={(e) => {
+		if ((e.target as HTMLElement).closest('a')) closeChatSidebar();
+	}}
+>
 	{#each groups as [characterId, characterChats] (characterId)}
 		{@const character = resolveCharacter(characterId)}
 		{@const latest = characterChats[0]}
