@@ -127,6 +127,8 @@
 	"char_detail_edit": "Edit",
 	"char_detail_publishing": "Publishing…",
 	"char_detail_publish": "Publish",
+	"char_detail_republishing": "Republishing…",
+	"char_detail_republish": "Republish",
 	"char_detail_delete": "Delete",
 	"char_detail_fork": "Fork",
 	"char_detail_save": "Save locally",

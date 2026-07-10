@@ -242,6 +242,23 @@
 		}
 	}
 
+	let republishing = $state(false);
+
+	/** Re-writes this already-published character's exact signed snapshot to
+	 *  whichever relay is currently configured — for when a relay switch or a
+	 *  relay that never got this document leaves it missing there, without
+	 *  waiting for the automatic resync that only runs on app startup (see
+	 *  refresh()'s resyncMissing in characters.svelte.ts). */
+	async function handleRepublish() {
+		if (!character) return;
+		republishing = true;
+		try {
+			await publishMyCharacter(character.id);
+		} finally {
+			republishing = false;
+		}
+	}
+
 	function handleExport() {
 		if (!character) return;
 		const blob = new Blob([exportCharacter(character)], {
@@ -472,6 +489,17 @@
 								{publishing
 									? m.char_detail_publishing()
 									: m.char_detail_publish()}
+							</button>
+						{:else}
+							<button
+								class="btn btn-sm btn-ghost"
+								type="button"
+								disabled={republishing}
+								onclick={handleRepublish}
+							>
+								{republishing
+									? m.char_detail_republishing()
+									: m.char_detail_republish()}
 							</button>
 						{/if}
 						<button

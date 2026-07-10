@@ -1,5 +1,6 @@
 - feat(character view): add republish button, that would try to write to current relay character again
-- add tooltip on characters/ 'Saved only' filter option, describing which characters are considered 'Saved'
+- feat(characters): add tooltips for radio buttons 'Saved only'/'Mine only'/'Published only' filter option, describing which characters are considered 'Saved'
+- characters: remove 'only' word from radio buttons, change 'Published' to 'Network'
 - feat: add option to reply to other comments
 - feat: add option to see all owned comments, with edit, delete buttons and links to character (on which comment was posted)?
 - feat: improve usability on mobiles? improve modals, small buttons/controls
