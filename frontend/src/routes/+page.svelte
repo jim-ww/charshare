@@ -351,13 +351,7 @@
 				class="link link-hover"
 				>{m.landing_footer_github()}</a
 			>
-			<a
-				href={resolve("/legal/license")}
-				target="_blank"
-				rel="noreferrer"
-				use:externalLink
-				class="link link-hover"
-			>
+			<a href={resolve("/legal/license")} class="link link-hover">
 				{m.landing_footer_license()}
 			</a>
 			<a href={resolve("/legal")} class="link link-hover"
