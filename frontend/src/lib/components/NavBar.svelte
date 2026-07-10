@@ -80,7 +80,10 @@
 				{/each}
 			</ul>
 		</div>
-		<a href={resolve("/")} class="flex shrink-0 items-center gap-2 text-xl font-bold leading-none tracking-tight">
+		<a
+			href={resolve("/")}
+			class="btn btn-ghost flex h-auto min-h-0 shrink-0 items-center gap-2 rounded-none px-2 text-xl font-bold leading-none tracking-tight md:h-16 md:min-h-16"
+		>
 			<img src={asset("/icon-192.png")} alt="" class="h-6 w-6 rounded-md" />
 			<span class="hidden sm:inline">charshare</span>
 		</a>
