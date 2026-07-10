@@ -8,6 +8,10 @@
 	} from "$lib/ai/chat";
 	import { setChatDraft, getActivePath } from "$lib/state/chats.svelte";
 	import { m } from '$lib/paraglide/messages.js';
+	import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
+	import { startMicRecording, type MicRecording } from "$lib/audio/recordMic";
+	import { transcribe, preloadModel } from "$lib/asr/whisperClient";
+	import { getPreferences, updatePreferences } from "$lib/state/preferences.svelte";
 
 	interface Props {
 		chat: Chat;
@@ -22,6 +26,15 @@
 	let error = $state<string | null>(null);
 	let abortController: AbortController | null = null;
 	let loadedDraftFor: string | null = null;
+
+	const micSupported =
+		typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia;
+	let micRecording: MicRecording | null = null;
+	let listening = $state(false);
+	let transcribing = $state(false);
+	let showMicConsent = $state(false);
+	// null = not downloading; a number = download in progress, percent complete
+	let downloadProgress = $state<number | null>(null);
 
 	// Up/down arrow history navigation over the user's own past messages
 	// (oldest to newest). -1 means "showing the draft"; 0 is the most recent
@@ -162,6 +175,86 @@
 		historyIndex = -1;
 	}
 
+	async function handleMicClick() {
+		if (listening) {
+			await stopRecording();
+			return;
+		}
+		if (!getPreferences().whisperConsentGiven) {
+			showMicConsent = true;
+			return;
+		}
+		// Already consented: preloadModel resolves quickly (and reports 100%
+		// almost immediately) when the model is already cached, so this is a
+		// no-op download bar in the common case, not a repeat prompt.
+		await downloadModelThenRecord();
+	}
+
+	async function startRecording() {
+		error = null;
+		try {
+			micRecording = await startMicRecording(() => {
+				// Only auto-stop if this is still the active recording — a
+				// stale silence callback can fire after the user already
+				// pressed stop manually.
+				if (listening) void stopRecording();
+			});
+			listening = true;
+		} catch {
+			error = m.chat_composer_mic_error_permission();
+		}
+	}
+
+	async function stopRecording() {
+		const recording = micRecording;
+		micRecording = null;
+		listening = false;
+		if (!recording) return;
+		transcribing = true;
+		try {
+			const audio = await recording.stop();
+			const text = await transcribe(audio);
+			if (text) {
+				content = content ? content.trimEnd() + " " + text : text;
+				historyIndex = -1;
+			}
+		} catch (err) {
+			error = m.chat_composer_mic_error_transcribe({
+				message: err instanceof Error ? err.message : String(err),
+			});
+		} finally {
+			transcribing = false;
+		}
+	}
+
+	async function handleMicConsentConfirm() {
+		showMicConsent = false;
+		await updatePreferences({ whisperConsentGiven: true });
+		await downloadModelThenRecord();
+	}
+
+	function handleMicConsentCancel() {
+		showMicConsent = false;
+	}
+
+	async function downloadModelThenRecord() {
+		error = null;
+		downloadProgress = 0;
+		try {
+			await preloadModel((percent) => {
+				downloadProgress = percent;
+			});
+		} catch (err) {
+			downloadProgress = null;
+			error = m.chat_composer_mic_error_transcribe({
+				message: err instanceof Error ? err.message : String(err),
+			});
+			return;
+		}
+		downloadProgress = null;
+		await startRecording();
+	}
+
 	async function handleGenerateForMe() {
 		generating = true;
 		error = null;
@@ -223,6 +316,62 @@
 				</svg>
 			{/if}
 		</button>
+		{#if micSupported}
+			<button
+				class="btn btn-sm btn-circle btn-ghost absolute bottom-2 left-12"
+				class:text-error={listening}
+				type="button"
+				disabled={transcribing || downloadProgress !== null}
+				aria-label={listening
+					? m.chat_composer_mic_stop()
+					: m.chat_composer_mic_start()}
+				title={downloadProgress !== null
+					? m.chat_composer_mic_downloading({ percent: downloadProgress })
+					: transcribing
+						? m.chat_composer_mic_transcribing()
+						: listening
+							? m.chat_composer_mic_recording()
+							: m.chat_composer_mic_start()}
+				onclick={handleMicClick}
+			>
+				{#if downloadProgress !== null}
+					<div
+						class="radial-progress text-xs"
+						style="--value:{downloadProgress}; --size:1.1rem; --thickness: 2px;"
+						role="progressbar"
+						aria-valuenow={downloadProgress}
+					></div>
+				{:else if transcribing}
+					<span class="loading loading-spinner loading-xs"
+					></span>
+				{:else if listening}
+					<span class="loading loading-ring loading-xs text-error"
+					></span>
+				{:else}
+					<svg
+						viewBox="0 0 24 24"
+						width="18"
+						height="18"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<rect
+							x="9"
+							y="2"
+							width="6"
+							height="11"
+							rx="3"
+						/>
+						<path d="M5 10v1a7 7 0 0 0 14 0v-1" />
+						<path d="M12 18v3M9 21h6" />
+					</svg>
+				{/if}
+			</button>
+		{/if}
 		<button
 			class="btn btn-sm btn-primary btn-soft btn-circle absolute right-2 bottom-2"
 			type="submit"
@@ -266,3 +415,12 @@
 		<p class="text-error text-sm">{error}</p>
 	{/if}
 </form>
+
+<ConfirmDialog
+	open={showMicConsent}
+	title={m.chat_composer_mic_consent_title()}
+	message={m.chat_composer_mic_consent_message()}
+	confirmLabel={m.chat_composer_mic_consent_confirm()}
+	onconfirm={handleMicConsentConfirm}
+	oncancel={handleMicConsentCancel}
+/>

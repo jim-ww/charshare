@@ -92,4 +92,5 @@ export interface Preferences {
   defaultBackground: string; // applied to newly-created chats when non-empty
   chatOpacity: number; // 0-100, applied to message bubbles and composer over the chat background
   showNsfw: boolean; // include NSFW characters in Browse results, other than your own
+  whisperConsentGiven: boolean; // user agreed to download the local speech-to-text model
 }

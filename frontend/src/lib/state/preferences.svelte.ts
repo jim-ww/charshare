@@ -69,6 +69,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
 	defaultBackground: "",
 	chatOpacity: 100,
 	showNsfw: false,
+	whisperConsentGiven: false,
 	provider: DEFAULT_HUGGINGFACE_CONFIG,
 	providerConfigs: {
 		openrouter: DEFAULT_OPENROUTER_CONFIG,
@@ -122,6 +123,7 @@ export function initPreferences(): Promise<void> {
 					defaultBackground: preferences.defaultBackground ?? "",
 					chatOpacity: preferences.chatOpacity ?? 100,
 					showNsfw: preferences.showNsfw ?? false,
+					whisperConsentGiven: preferences.whisperConsentGiven ?? false,
 					providerConfigs: {
 						...DEFAULT_PREFERENCES.providerConfigs,
 						...preferences.providerConfigs,

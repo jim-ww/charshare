@@ -20,6 +20,10 @@ export default defineConfig({
 	// runtime; 'gun' and 'gun/sea' still need normal pre-bundling for their
 	// CJS->ESM default-export interop.
 	optimizeDeps: {
-		exclude: ['gun/lib/rindexed']
+		// gun/lib/rindexed: see above comment.
+		// @huggingface/transformers: ships its own WASM/worker asset loading
+		// that the dep-optimizer's pre-bundling breaks; excluded per the
+		// library's documented Vite setup.
+		exclude: ['gun/lib/rindexed', '@huggingface/transformers']
 	}
 });

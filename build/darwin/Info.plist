@@ -23,6 +23,8 @@
         <string>true</string>
         <key>NSHumanReadableCopyright</key>
         <string>{{.Info.Copyright}}</string>
+        <key>NSMicrophoneUsageDescription</key>
+        <string>Used only when you press the mic button in chat, to transcribe your voice locally on this device. Audio is never sent anywhere.</string>
         {{if .Info.FileAssociations}}
         <key>CFBundleDocumentTypes</key>
         <array>

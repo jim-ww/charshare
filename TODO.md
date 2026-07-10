@@ -1,4 +1,12 @@
+- add button to cache some character locally? or 'add to favourites', so it would always stay there, even if deleted?
+- make 'This chat's character couldn't be loaded' error appear after a bit longer period
+- download failed several times in wails + need to approve microphone
+- fix(chat): image preview position, that adaptivity commit broke
+- feat(chat message bubbles): make character name a link
+- fix(chat): image preview should exit on Esc press
 - feat(chat): add option to transcribe user spoken text
 - feat(chat): read AI responses aloud (with local models) (whisper?)
+- feat: add option to reply to other comments
+- feat: add option to see all owned comments, with edit, delete buttons and links to character
 - feat: implement proper sorting(by updated_at,created_at), pagination in Characters browse page?
 - feat(core): rating system for characters? then add sorting by popularity
