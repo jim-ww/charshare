@@ -16,7 +16,6 @@
 	import ChatThreadSwitcher from "$lib/components/ChatThreadSwitcher.svelte";
 	import ChatBubble from "$lib/components/ChatBubble.svelte";
 	import ChatComposer from "$lib/components/ChatComposer.svelte";
-	import ChatCharacterImage from "$lib/components/ChatCharacterImage.svelte";
 	import ChatSettingsSidebar from "$lib/components/ChatSettingsSidebar.svelte";
 	import ChatCharacterRecovery from "$lib/components/ChatCharacterRecovery.svelte";
 	import { getPreferences } from "$lib/state/preferences.svelte";
@@ -135,14 +134,6 @@
 						{/if}
 					{/each}
 				</div>
-				{#if character}
-					<div class="absolute bottom-3 left-3 z-20 max-w-[40%]">
-						<ChatCharacterImage
-							{chat}
-							{character}
-						/>
-					</div>
-				{/if}
 			</div>
 			{#if character}
 				<div

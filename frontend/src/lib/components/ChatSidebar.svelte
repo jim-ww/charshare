@@ -8,6 +8,7 @@
 	import Avatar from './Avatar.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import PromptDialog from './PromptDialog.svelte';
+	import ChatCharacterImage from './ChatCharacterImage.svelte';
 	import { isChatSidebarOpen, closeChatSidebar } from '$lib/state/chatSidebar.svelte';
 	import { m } from '$lib/paraglide/messages.js';
 
@@ -42,6 +43,10 @@
 	}
 
 	const activeId = $derived(page.params.id);
+	const activeChat = $derived(chats.find((c) => c.id === activeId));
+	const activeCharacter = $derived(
+		activeChat ? resolveCharacter(activeChat.character_id) : undefined
+	);
 
 	let deleteTarget = $state<Chat | null>(null);
 	let renameTarget = $state<Chat | null>(null);
@@ -115,14 +120,15 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
 <aside
-	class="z-30 flex w-72 shrink-0 flex-col gap-1 overflow-y-auto bg-base-100 p-2 transition-transform max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:h-full max-md:shadow-xl md:w-80 md:translate-x-0 {isChatSidebarOpen()
+	class="z-30 flex w-72 shrink-0 flex-col bg-base-100 transition-transform max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:h-full max-md:shadow-xl md:w-80 md:translate-x-0 {isChatSidebarOpen()
 		? 'max-md:translate-x-0'
 		: 'max-md:-translate-x-full'}"
 	onclick={(e) => {
 		if ((e.target as HTMLElement).closest('a')) closeChatSidebar();
 	}}
 >
-	{#each groups as [characterId, characterChats] (characterId)}
+	<div class="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-2">
+		{#each groups as [characterId, characterChats] (characterId)}
 		{@const character = resolveCharacter(characterId)}
 		{@const latest = characterChats[0]}
 		<div class="rounded-box" class:bg-base-200={activeId === latest.id && !expanded[characterId]}>
@@ -179,6 +185,12 @@
 	{:else}
 		<p class="p-3 text-center text-sm opacity-60">{m.chat_sidebar_no_conversations()}</p>
 	{/each}
+	</div>
+	{#if activeChat && activeCharacter}
+		<div class="w-full shrink-0 p-2">
+			<ChatCharacterImage chat={activeChat} character={activeCharacter} />
+		</div>
+	{/if}
 </aside>
 
 <ConfirmDialog

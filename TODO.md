@@ -1,4 +1,4 @@
-- fix(chat): image preview position, that adaptivity commit broke
+- set html's color to current theme's one too? on initial load + change
 - add button to cache some character locally? like 'save locally' or 'add to favourites', so it would always stay there, even ifs deleted from remote node or by author? but should be marked locally if author deleted it
 - chat page doesnt load up characters, or load with retry like on 'characters' page?
 - make 'This chat's character couldn't be loaded' error appear after a bit longer period and check if it make fetch instantly on 'wait longer' press
@@ -11,3 +11,4 @@
 - feat: implement proper sorting(by updated_at,created_at), pagination in Characters browse page?
 - feat(core): rating system for characters? then add sorting by popularity
 - feat(core): after implementing rating system, add rating to comments? also allow to sort by rating, then created_at
+- feat(chats): add share chat url button, that would encode chat history json, as base64 string, and implement chat history viewer, that would take this base64 string from URL
