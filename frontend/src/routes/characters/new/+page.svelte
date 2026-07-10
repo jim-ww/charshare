@@ -5,6 +5,7 @@
 	import { createOrEditCharacter, importCharacterDraft } from '$lib/state/characters.svelte';
 	import CharacterForm from '$lib/components/CharacterForm.svelte';
 	import ChatSiteImportPanel from '$lib/components/ChatSiteImportPanel.svelte';
+	import { m } from '$lib/paraglide/messages.js';
 
 	let localOnly = $state(true);
 	let importedDraft = $state<CharacterDraft | undefined>(undefined);
@@ -40,11 +41,11 @@
 
 <div class="p-4">
 	<div class="mx-auto mb-4 flex max-w-6xl items-center justify-between">
-		<h1 class="text-xl font-semibold">New character</h1>
+		<h1 class="text-xl font-semibold">{m.char_new_heading()}</h1>
 		<div class="flex items-center gap-2">
 			<ChatSiteImportPanel onimport={handleChatSiteImport} />
 			<button class="btn btn-sm" type="button" onclick={() => importInput?.click()}>
-				Import from JSON
+				{m.char_import_json()}
 			</button>
 			<input
 				bind:this={importInput}
@@ -61,7 +62,7 @@
 	{#key formKey}
 		<CharacterForm
 			draft={importedDraft}
-			submitLabel="Create character"
+			submitLabel={m.char_submit_create()}
 			onsubmit={handleSubmit}
 			bind:localOnly
 			showLocalOnlyToggle

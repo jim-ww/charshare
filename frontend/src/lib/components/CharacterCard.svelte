@@ -11,6 +11,7 @@
 		unblockAuthor,
 		unhideCharacter,
 	} from "$lib/state/preferences.svelte";
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		character: Character;
@@ -52,9 +53,9 @@
 	{#if character.nsfw}
 		<span
 			class="badge badge-xs badge-warning absolute left-2 top-2 z-10 badge-outline opacity-70"
-			title="NSFW"
+			title={m.char_card_nsfw_title()}
 		>
-			nsfw
+			{m.char_card_nsfw_badge()}
 		</span>
 	{/if}
 	{#if !isMine}
@@ -63,8 +64,8 @@
 				type="button"
 				class="btn btn-xs btn-circle"
 				title={hidden
-					? "Unhide character"
-					: "Hide character"}
+					? m.char_card_unhide()
+					: m.char_card_hide()}
 				onclick={toggleHidden}
 			>
 				{hidden ? "🙈" : "👁"}
@@ -73,8 +74,8 @@
 				type="button"
 				class="btn btn-xs btn-circle"
 				title={authorBlocked
-					? "Unblock author"
-					: "Block author"}
+					? m.char_card_unblock_author()
+					: m.char_card_block_author()}
 				onclick={toggleAuthorBlocked}
 			>
 				{authorBlocked ? "🔓" : "🚫"}
@@ -113,7 +114,7 @@
 				class:badge-outline={localOnly}
 				class:badge-primary={!localOnly}
 			>
-				{localOnly ? "Local only" : "Published"}
+				{localOnly ? m.char_card_local_only() : m.char_card_published()}
 			</span>
 		{/if}
 		{#if character.description}

@@ -6,6 +6,7 @@
 		type DataCategory,
 		type ImportSummary
 	} from '$lib/export/dataExport';
+	import { m } from '$lib/paraglide/messages.js';
 
 	let exportEverything = $state(true);
 	let selected = $state<Record<DataCategory, boolean>>({
@@ -54,15 +55,14 @@
 
 <div class="flex flex-col gap-6">
 	<div>
-		<h3 class="font-semibold">Your data stays on this device</h3>
+		<h3 class="font-semibold">{m.data_tab_local_heading()}</h3>
 		<p class="text-sm opacity-70">
-			Chats, personas, and local-only (unpublished) characters are never sent over the network —
-			this browser is the only copy. Back them up here if you don't want to risk losing them.
+			{m.data_tab_local_body()}
 		</p>
 	</div>
 
 	<div class="flex flex-col gap-3">
-		<h3 class="font-semibold">Export</h3>
+		<h3 class="font-semibold">{m.data_tab_export_heading()}</h3>
 		<div class="flex flex-col gap-1">
 			<label class="flex cursor-pointer items-center gap-2">
 				<input
@@ -72,7 +72,7 @@
 					checked={exportEverything}
 					onchange={() => (exportEverything = true)}
 				/>
-				<span class="label-text">Export everything</span>
+				<span class="label-text">{m.data_tab_export_everything()}</span>
 			</label>
 			<label class="flex cursor-pointer items-center gap-2">
 				<input
@@ -82,7 +82,7 @@
 					checked={!exportEverything}
 					onchange={() => (exportEverything = false)}
 				/>
-				<span class="label-text">Choose what to export</span>
+				<span class="label-text">{m.data_tab_choose_export()}</span>
 			</label>
 		</div>
 
@@ -118,21 +118,19 @@
 			disabled={nothingSelected}
 			onclick={handleExport}
 		>
-			Download
+			{m.data_tab_download()}
 		</button>
 		<p class="text-xs opacity-60">
-			One category downloads as a single JSON file; multiple categories are bundled into a zip.
+			{m.data_tab_download_hint()}
 		</p>
 	</div>
 
 	<div class="divider"></div>
 
 	<div class="flex flex-col gap-2">
-		<h3 class="font-semibold">Import</h3>
+		<h3 class="font-semibold">{m.data_tab_import_heading()}</h3>
 		<p class="text-sm opacity-70">
-			Select a file exported from here — a single category's JSON, or a zip bundle of several.
-			Imported characters come in as local-only drafts; imported personas and chats are added
-			alongside what you already have.
+			{m.data_tab_import_body()}
 		</p>
 		<input
 			class="file-input file-input-bordered file-input-sm"
@@ -142,7 +140,7 @@
 			onchange={handleImportFile}
 		/>
 		{#if importing}
-			<p class="text-sm opacity-60">Importing…</p>
+			<p class="text-sm opacity-60">{m.data_tab_importing()}</p>
 		{/if}
 		{#if importError}
 			<p class="text-error text-sm">{importError}</p>
@@ -151,11 +149,11 @@
 			<ul class="text-success text-sm">
 				{#each importSummaries as summary (summary.category)}
 					<li>
-						Imported {categoryLabel(summary.category)}{summary.count !== undefined
+						{m.data_tab_imported_prefix()} {categoryLabel(summary.category)}{summary.count !== undefined
 							? ` (${summary.count})`
 							: ''}
 						{#if summary.skipped}
-							<span class="opacity-70">— {summary.skipped} unchanged, kept as-is</span>
+							<span class="opacity-70">— {summary.skipped} {m.data_tab_skipped_unchanged()}</span>
 						{/if}
 					</li>
 				{/each}

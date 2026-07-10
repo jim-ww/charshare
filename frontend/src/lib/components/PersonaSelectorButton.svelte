@@ -11,6 +11,7 @@
 		selectPersonaForCharacter,
 	} from "$lib/state/personas.svelte";
 	import { openSettings } from "$lib/state/settingsModal.svelte";
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		characterId: CharacterId;
@@ -75,7 +76,7 @@
 	type="button"
 	onclick={open}
 >
-	Playing as {selected ? personaDisplayName(selected) : "…"}
+	{m.persona_selector_playing_as()} {selected ? personaDisplayName(selected) : m.persona_selector_placeholder()}
 	<svg
 		viewBox="0 0 24 24"
 		width="14"
@@ -95,17 +96,17 @@
 	<div class="modal-box flex flex-col gap-3">
 		<div class="flex items-center justify-between gap-2">
 			<h3 class="text-lg font-semibold">
-				Choose your persona
+				{m.persona_selector_choose_heading()}
 			</h3>
 			<button
 				class="btn btn-xs btn-ghost"
 				type="button"
-				onclick={manage}>Manage personas</button
+				onclick={manage}>{m.persona_selector_manage()}</button
 			>
 		</div>
 		<input
 			class="input input-bordered w-full"
-			placeholder="Search personas…"
+			placeholder={m.persona_selector_search_placeholder()}
 			bind:value={search}
 		/>
 		<ul class="flex max-h-48 flex-col gap-1 overflow-y-auto">
@@ -124,21 +125,21 @@
 				</li>
 			{:else}
 				<li class="px-1 py-2 text-sm opacity-60">
-					No personas match.
+					{m.persona_selector_no_match()}
 				</li>
 			{/each}
 		</ul>
 
-		<div class="divider">or create a new one</div>
+		<div class="divider">{m.persona_selector_or_create()}</div>
 		<form class="flex flex-col gap-2" onsubmit={handleCreate}>
 			<input
 				class="input input-bordered w-full"
-				placeholder="Name"
+				placeholder={m.persona_selector_name_placeholder()}
 				bind:value={creatingName}
 			/>
 			<textarea
 				class="textarea textarea-bordered w-full"
-				placeholder="Description (optional)"
+				placeholder={m.persona_selector_description_placeholder()}
 				bind:value={creatingDescription}
 			></textarea>
 			<button
@@ -146,11 +147,11 @@
 				type="submit"
 				disabled={!creatingName.trim()}
 			>
-				Create &amp; use
+				{m.persona_selector_create_and_use()}
 			</button>
 		</form>
 	</div>
 	<form method="dialog" class="modal-backdrop">
-		<button aria-label="Close persona selector">close</button>
+		<button aria-label={m.persona_selector_close()}>{m.persona_selector_close_label()}</button>
 	</form>
 </dialog>

@@ -7,6 +7,7 @@
 	import { subscribeCharacter } from '$lib/gun/characters';
 	import { createOrEditCharacter, getMyCharacters, isCharacterLocalOnly } from '$lib/state/characters.svelte';
 	import CharacterForm from '$lib/components/CharacterForm.svelte';
+	import { m } from '$lib/paraglide/messages.js';
 
 	const id = $derived(page.params.id as string);
 
@@ -49,12 +50,12 @@
 </script>
 
 <div class="p-4">
-	<h1 class="mx-auto mb-4 max-w-6xl text-xl font-semibold">Edit character</h1>
+	<h1 class="mx-auto mb-4 max-w-6xl text-xl font-semibold">{m.char_edit_heading()}</h1>
 	{#if notFound}
-		<p class="text-error">Character not found.</p>
+		<p class="text-error">{m.char_not_found()}</p>
 	{:else if !character}
-		<p>Loading…</p>
+		<p>{m.char_list_loading()}</p>
 	{:else}
-		<CharacterForm initial={character} submitLabel="Save changes" onsubmit={handleSubmit} />
+		<CharacterForm initial={character} submitLabel={m.char_submit_save()} onsubmit={handleSubmit} />
 	{/if}
 </div>

@@ -8,6 +8,7 @@
 	import Avatar from './Avatar.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import PromptDialog from './PromptDialog.svelte';
+	import { m } from '$lib/paraglide/messages.js';
 
 	const chats = $derived(getChats());
 
@@ -85,17 +86,17 @@
 			tabindex="0"
 			class="btn btn-ghost btn-xs px-1"
 			type="button"
-			aria-label="More options"
+			aria-label={m.chat_sidebar_more_options()}
 		>
 			⋮
 		</button>
 		<ul class="menu dropdown-content menu-sm z-10 w-40 rounded-box bg-base-200 p-1 shadow">
-			<li><button type="button" onclick={() => handleExport(chat)}>Export</button></li>
-			<li><button type="button" onclick={() => handleRename(chat)}>Rename</button></li>
+			<li><button type="button" onclick={() => handleExport(chat)}>{m.chat_sidebar_export()}</button></li>
+			<li><button type="button" onclick={() => handleRename(chat)}>{m.chat_sidebar_rename()}</button></li>
 			<li>
-				<a href={`${resolve('/chats/[id]', { id: chat.id })}?pick-character`}>Choose character</a>
+				<a href={`${resolve('/chats/[id]', { id: chat.id })}?pick-character`}>{m.chat_sidebar_choose_character()}</a>
 			</li>
-			<li><button type="button" class="text-error" onclick={() => handleDelete(chat)}>Delete</button></li>
+			<li><button type="button" class="text-error" onclick={() => handleDelete(chat)}>{m.chat_sidebar_delete()}</button></li>
 		</ul>
 	</div>
 {/snippet}
@@ -115,7 +116,7 @@
 				</a>
 				<a href={resolve('/chats/[id]', { id: latest.id })} class="min-w-0 flex-1">
 					<div class="truncate text-base font-medium">
-						{character?.name ?? 'Unknown character'}
+						{character?.name ?? m.chat_sidebar_unknown_character()}
 					</div>
 					{#if latest.name !== character?.name}
 						<div class="truncate text-sm opacity-60">{latest.name}</div>
@@ -126,7 +127,7 @@
 						class="btn btn-xs btn-ghost shrink-0"
 						type="button"
 						onclick={() => toggle(characterId)}
-						aria-label="Show other conversations"
+						aria-label={m.chat_sidebar_show_other_conversations()}
 					>
 						{characterChats.length} {expanded[characterId] ? '▴' : '▾'}
 					</button>
@@ -156,15 +157,15 @@
 			{/if}
 		</div>
 	{:else}
-		<p class="p-3 text-center text-sm opacity-60">No conversations yet.</p>
+		<p class="p-3 text-center text-sm opacity-60">{m.chat_sidebar_no_conversations()}</p>
 	{/each}
 </aside>
 
 <ConfirmDialog
 	open={deleteTarget !== null}
-	title="Delete conversation"
+	title={m.chat_sidebar_delete_title()}
 	message={`Delete conversation "${deleteTarget?.name ?? ''}"? This cannot be undone.`}
-	confirmLabel="Delete"
+	confirmLabel={m.chat_sidebar_delete_confirm()}
 	danger
 	onconfirm={confirmDelete}
 	oncancel={() => (deleteTarget = null)}
@@ -172,9 +173,9 @@
 
 <PromptDialog
 	open={renameTarget !== null}
-	title="Rename conversation"
+	title={m.chat_sidebar_rename_title()}
 	initialValue={renameTarget?.name ?? ''}
-	confirmLabel="Save"
+	confirmLabel={m.chat_sidebar_rename_confirm()}
 	onconfirm={confirmRename}
 	oncancel={() => (renameTarget = null)}
 />

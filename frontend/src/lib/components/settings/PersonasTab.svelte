@@ -12,6 +12,7 @@
 		personaDisplayName,
 		updatePersona
 	} from '$lib/state/personas.svelte';
+	import { m } from '$lib/paraglide/messages.js';
 
 	untrack(() => void initPersonas());
 
@@ -43,7 +44,7 @@
 		if (!editingId) return;
 		const name = editName.trim();
 		if (!name) {
-			error = "Persona name can't be blank.";
+			error = m.personas_tab_name_blank_error();
 			return;
 		}
 		await updatePersona(editingId, { name, description: editDescription });
@@ -96,14 +97,13 @@
 </script>
 
 {#if !ready}
-	<p>Loading personas…</p>
+	<p>{m.personas_tab_loading()}</p>
 {:else}
 	<div class="flex flex-col gap-4">
 		<div>
-			<h3 class="font-semibold">Personas</h3>
+			<h3 class="font-semibold">{m.personas_tab_heading()}</h3>
 			<p class="text-sm opacity-70">
-				Masks you can wear while chatting with characters. Personas are stored only in this
-				browser — they're never published.
+				{m.personas_tab_body()}
 			</p>
 		</div>
 
@@ -119,12 +119,12 @@
 							<input class="input input-bordered input-sm w-full" bind:value={editName} />
 							<textarea
 								class="textarea textarea-bordered textarea-sm w-full"
-								placeholder="Description (optional)"
+								placeholder={m.personas_tab_description_placeholder()}
 								bind:value={editDescription}
 							></textarea>
 							<div class="flex gap-2">
-								<button class="btn btn-sm btn-primary" type="button" onclick={saveEdit}>Save</button>
-								<button class="btn btn-sm" type="button" onclick={cancelEdit}>Cancel</button>
+								<button class="btn btn-sm btn-primary" type="button" onclick={saveEdit}>{m.personas_tab_save()}</button>
+								<button class="btn btn-sm" type="button" onclick={cancelEdit}>{m.personas_tab_cancel()}</button>
 							</div>
 						</div>
 					{:else}
@@ -136,9 +136,9 @@
 								{/if}
 							</div>
 							<div class="flex shrink-0 gap-1">
-								<button class="btn btn-xs" type="button" onclick={() => startEdit(persona)}>Edit</button>
+								<button class="btn btn-xs" type="button" onclick={() => startEdit(persona)}>{m.personas_tab_edit()}</button>
 								<button class="btn btn-xs" type="button" onclick={() => handleExport(persona)}
-									>Export</button
+									>{m.personas_tab_export()}</button
 								>
 								<button
 									class="btn btn-xs btn-error"
@@ -146,7 +146,7 @@
 									disabled={personas.length <= 1}
 									onclick={() => handleDelete(persona.id)}
 								>
-									Delete
+									{m.personas_tab_delete()}
 								</button>
 							</div>
 						</div>
@@ -158,20 +158,20 @@
 		<div class="divider"></div>
 
 		<form class="flex flex-col gap-2" onsubmit={handleCreate}>
-			<h3 class="font-semibold">New persona</h3>
-			<input class="input input-bordered input-sm w-full" placeholder="Name" bind:value={creatingName} />
+			<h3 class="font-semibold">{m.personas_tab_new_heading()}</h3>
+			<input class="input input-bordered input-sm w-full" placeholder={m.personas_tab_name_placeholder()} bind:value={creatingName} />
 			<textarea
 				class="textarea textarea-bordered textarea-sm w-full"
-				placeholder="Description (optional)"
+				placeholder={m.personas_tab_description_placeholder()}
 				bind:value={creatingDescription}
 			></textarea>
 			<button class="btn btn-sm btn-primary self-start" type="submit" disabled={!creatingName.trim()}>
-				Create
+				{m.personas_tab_create()}
 			</button>
 		</form>
 
 		<div>
-			<h3 class="font-semibold">Import a persona</h3>
+			<h3 class="font-semibold">{m.personas_tab_import_heading()}</h3>
 			<input
 				bind:this={importInput}
 				class="file-input file-input-bordered file-input-sm mt-2"

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		open: boolean;
@@ -10,7 +11,7 @@
 		oncancel: () => void;
 	}
 
-	let { open, title, initialValue = '', confirmLabel = 'Save', onconfirm, oncancel }: Props = $props();
+	let { open, title, initialValue = '', confirmLabel = m.prompt_dialog_default_confirm(), onconfirm, oncancel }: Props = $props();
 
 	let dialogEl: HTMLDialogElement | undefined;
 	let value = $state('');
@@ -45,7 +46,7 @@
 				onkeydown={(e) => e.key === 'Escape' && oncancel()}
 			/>
 			<div class="modal-action">
-				<button class="btn btn-sm" type="button" onclick={oncancel}>Cancel</button>
+				<button class="btn btn-sm" type="button" onclick={oncancel}>{m.prompt_dialog_cancel()}</button>
 				<button class="btn btn-sm btn-primary" type="submit" disabled={!value.trim()}>
 					{confirmLabel}
 				</button>
@@ -53,6 +54,6 @@
 		</form>
 	</div>
 	<form method="dialog" class="modal-backdrop">
-		<button aria-label="Cancel">close</button>
+		<button aria-label={m.prompt_dialog_cancel()}>{m.prompt_dialog_close_label()}</button>
 	</form>
 </dialog>

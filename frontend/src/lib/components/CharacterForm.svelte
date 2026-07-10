@@ -8,6 +8,7 @@
 	import { LANGUAGES } from "$lib/languages";
 	import { PREDEFINED_TAGS } from "$lib/data/tags";
 	import { DEFAULT_SYSTEM_PROMPT } from "$lib/data/defaultSystemPrompt";
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		initial?: Character;
@@ -258,7 +259,7 @@
 		if (!isDirty) return;
 		if (
 			!confirm(
-				"You have unsaved changes. Leave this page anyway?",
+				m.char_form_unsaved_changes_confirm(),
 			)
 		) {
 			navigation.cancel();
@@ -352,7 +353,7 @@
 			class="order-2 flex flex-col gap-3 lg:order-1 lg:col-span-1"
 		>
 			<div class="form-control">
-				<span class="label-text">Image</span>
+				<span class="label-text">{m.char_form_image_label()}</span>
 				<CharacterImageViewer
 					images={imageUrls
 						.map((u) => u.trim())
@@ -362,16 +363,16 @@
 				/>
 			</div>
 			<label class="form-control">
-				<span class="label-text">Name</span>
+				<span class="label-text">{m.char_form_name_label()}</span>
 				<input
 					class="input input-bordered w-full"
 					required
 					bind:value={name}
-					placeholder="e.g. Aria Nightshade"
+					placeholder={m.char_form_name_placeholder()}
 				/>
 			</label>
 			<label class="form-control">
-				<span class="label-text">Language</span>
+				<span class="label-text">{m.char_form_language_label()}</span>
 				<select
 					class="select select-bordered w-full"
 					required
@@ -379,7 +380,7 @@
 				>
 					{#if language && !LANGUAGES.some(([code]) => code === language)}
 						<option value={language}
-							>{language} (unrecognized)</option
+							>{language} {m.char_form_language_unrecognized()}</option
 						>
 					{/if}
 					{#each LANGUAGES as [code, name] (code)}
@@ -393,11 +394,11 @@
 				<span
 					class="label-text flex items-center gap-1.5"
 				>
-					Tags (comma-separated)
+					{m.char_form_tags_label()}
 					<button
 						type="button"
 						class="btn btn-circle btn-ghost btn-xs"
-						title="Tag guidelines"
+						title={m.char_form_tag_guidelines_title()}
 						onclick={() =>
 							tagGuidelinesEl?.showModal()}
 					>
@@ -410,7 +411,7 @@
 						class="input input-bordered w-full"
 						bind:value={tagsText}
 						autocomplete="off"
-						placeholder="fantasy, adventurer, tsundere"
+						placeholder={m.char_form_tags_placeholder()}
 						onfocus={() =>
 							(tagSuggestionsOpen = true)}
 						onblur={() =>
@@ -462,36 +463,29 @@
 			<dialog bind:this={tagGuidelinesEl} class="modal">
 				<div class="modal-box">
 					<h3 class="text-lg font-bold">
-						Tag guidelines
+						{m.char_form_tag_guidelines_heading()}
 					</h3>
 					<ul
 						class="mt-2 list-disc pl-5 text-sm opacity-80"
 					>
 						<li>
-							Lowercase only, e.g. <code
+							{m.char_form_tag_guidelines_lowercase()} <code
 								>fantasy</code
-							>, not
+							>, {m.char_form_tag_guidelines_not()}
 							<code>Fantasy</code>.
 						</li>
 						<li>
-							Use hyphens instead of
-							spaces, e.g. <code
+							{m.char_form_tag_guidelines_hyphens()} <code
 								>monster-girl</code
-							>, not
+							>, {m.char_form_tag_guidelines_not()}
 							<code>monster girl</code
 							>.
 						</li>
 						<li>
-							Separate multiple tags
-							with commas.
+							{m.char_form_tag_guidelines_separate()}
 						</li>
 						<li>
-							Pick from the
-							suggestions where
-							possible so the same
-							concept isn't spelled
-							differently across
-							characters.
+							{m.char_form_tag_guidelines_pick()}
 						</li>
 					</ul>
 					<div class="modal-action">
@@ -501,14 +495,14 @@
 							onclick={() =>
 								tagGuidelinesEl?.close()}
 						>
-							Got it
+							{m.char_form_tag_guidelines_got_it()}
 						</button>
 					</div>
 				</div>
 				<button
 					type="button"
 					class="modal-backdrop"
-					aria-label="Close"
+					aria-label={m.char_form_close()}
 					onclick={() => tagGuidelinesEl?.close()}
 				></button>
 			</dialog>
@@ -518,7 +512,7 @@
 					class="checkbox"
 					bind:checked={nsfw}
 				/>
-				<span class="label-text">NSFW</span>
+				<span class="label-text">{m.char_form_nsfw_label()}</span>
 			</label>
 			<label class="flex items-center gap-2">
 				<input
@@ -526,7 +520,7 @@
 					class="checkbox"
 					bind:checked={commentsEnabled}
 				/>
-				<span class="label-text">Comments enabled</span>
+				<span class="label-text">{m.char_form_comments_enabled_label()}</span>
 			</label>
 			{#if showLocalOnlyToggle}
 				<label
@@ -544,15 +538,12 @@
 							).checked)}
 					/>
 					<span class="label-text">
-						Keep local-only (not published
-						to the network — no comments,
-						only visible to you)
+						{m.char_form_keep_local_only_label()}
 					</span>
 				</label>
 				{#if !registered}
 					<p class="text-xs opacity-60">
-						You're browsing as a guest, so
-						new characters stay local-only.
+						{m.char_form_guest_notice_before()}
 						<button
 							type="button"
 							class="link"
@@ -560,8 +551,8 @@
 								openSettings(
 									"account",
 								)}
-							>Create an account</button
-						> to publish to the network.
+							>{m.char_form_guest_create_account()}</button
+						> {m.char_form_guest_notice_after()}
 					</p>
 				{/if}
 			{/if}
@@ -578,13 +569,13 @@
 					<div
 						class="collapse-title label-text font-medium"
 					>
-						Description
+						{m.char_form_description_heading()}
 					</div>
 					<div class="collapse-content">
 						<textarea
 							class="textarea textarea-bordered field-sizing-content min-h-24 w-full"
 							bind:value={description}
-							placeholder="Who is this character? Appearance, background, notable traits…"
+							placeholder={m.char_form_description_placeholder()}
 						></textarea>
 					</div>
 				</div>
@@ -595,22 +586,16 @@
 					<div
 						class="collapse-title label-text font-medium"
 					>
-						Image URLs{imageUrls.length
+						{m.char_form_image_urls_heading()}{imageUrls.length
 							? ` (${imageUrls.length})`
 							: ""}
 					</div>
 					<div class="collapse-content">
 						<div class="form-control gap-2">
 							<p class="text-sm opacity-70">
-								Links to images hosted
-								elsewhere only (e.g. <code
+								{m.char_form_image_urls_body()} <code
 									>https://example.com/image.png</code
-								>) — there's no upload; the
-								character record is small
-								text data that's copied to
-								every peer on the network,
-								so images have to stay
-								externally hosted.
+								>{m.char_form_image_urls_body_after()}
 							</p>
 							<div
 								class="flex items-center justify-end"
@@ -620,8 +605,7 @@
 									class="btn btn-ghost btn-sm"
 									onclick={addImageUrl}
 								>
-									+ Add
-									image
+									{m.char_form_add_image()}
 								</button>
 							</div>
 							{#each imageUrls as _, i}
@@ -650,7 +634,7 @@
 									<button
 										type="button"
 										class="btn btn-ghost btn-sm cursor-grab active:cursor-grabbing"
-										aria-label="Drag to reorder"
+										aria-label={m.char_form_drag_reorder()}
 										draggable="true"
 										ondragstart={() =>
 											handleImageDragStart(
@@ -663,7 +647,7 @@
 									<button
 										type="button"
 										class="btn btn-ghost btn-sm w-10 tabular-nums"
-										aria-label={`Preview image ${i + 1}`}
+										aria-label={`${m.char_form_preview_image()} ${i + 1}`}
 										onclick={() =>
 											showInViewer(
 												i,
@@ -679,12 +663,12 @@
 												i
 											]
 										}
-										placeholder="https://…"
+										placeholder={m.char_form_image_url_placeholder()}
 									/>
 									<button
 										type="button"
 										class="btn btn-ghost btn-sm"
-										aria-label="Remove image"
+										aria-label={m.char_form_remove_image()}
 										onclick={() =>
 											removeImageUrl(
 												i,
@@ -704,13 +688,13 @@
 					<div
 						class="collapse-title label-text font-medium"
 					>
-						Personality
+						{m.char_form_personality_heading()}
 					</div>
 					<div class="collapse-content">
 						<textarea
 							class="textarea textarea-bordered field-sizing-content min-h-24 w-full"
 							bind:value={personality}
-							placeholder="How do they act, speak, and think? e.g. blunt, secretly caring, quick to anger…"
+							placeholder={m.char_form_personality_placeholder()}
 						></textarea>
 					</div>
 				</div>
@@ -721,13 +705,13 @@
 					<div
 						class="collapse-title label-text font-medium"
 					>
-						Scenario
+						{m.char_form_scenario_heading()}
 					</div>
 					<div class="collapse-content">
 						<textarea
 							class="textarea textarea-bordered field-sizing-content min-h-24 w-full"
 							bind:value={scenario}
-							placeholder="The setting or situation the chat starts in…"
+							placeholder={m.char_form_scenario_placeholder()}
 						></textarea>
 					</div>
 				</div>
@@ -739,7 +723,7 @@
 					<div
 						class="collapse-title label-text font-medium"
 					>
-						First message
+						{m.char_form_first_message_heading()}
 					</div>
 					<div class="collapse-content">
 						<textarea
@@ -759,7 +743,7 @@
 					<div
 						class="collapse-title label-text font-medium"
 					>
-						Alternate greetings{alternateGreetings.length
+						{m.char_form_alternate_greetings_heading()}{alternateGreetings.length
 							? ` (${alternateGreetings.length})`
 							: ""}
 					</div>
@@ -770,16 +754,14 @@
 							>
 								<span
 									class="label-text"
-									>Alternate
-									greetings</span
+									>{m.char_form_alternate_greetings_heading()}</span
 								>
 								<button
 									type="button"
 									class="btn btn-ghost btn-sm"
 									onclick={addGreeting}
 								>
-									+ Add
-									greeting
+									{m.char_form_add_greeting()}
 								</button>
 							</div>
 							{#each alternateGreetings as _, i}
@@ -793,13 +775,13 @@
 												i
 											]
 										}
-										placeholder="An alternate opening message…"
+										placeholder={m.char_form_greeting_placeholder()}
 
 									></textarea>
 									<button
 										type="button"
 										class="btn btn-ghost btn-sm"
-										aria-label="Remove greeting"
+										aria-label={m.char_form_remove_greeting()}
 										onclick={() =>
 											removeGreeting(
 												i,
@@ -820,7 +802,7 @@
 					<div
 						class="collapse-title label-text font-medium"
 					>
-						Example dialogues{exampleDialogues.length
+						{m.char_form_example_dialogues_heading()}{exampleDialogues.length
 							? ` (${exampleDialogues.length})`
 							: ""}
 					</div>
@@ -831,20 +813,16 @@
 							>
 								<span
 									class="label-text"
-									>Example
-									exchanges
-									showing
-									how
+									>{m.char_form_example_dialogues_label()}
 									{"{{char}}"}
-									talks</span
+									{m.char_form_example_dialogues_talks()}</span
 								>
 								<button
 									type="button"
 									class="btn btn-ghost btn-sm"
 									onclick={addExampleDialogue}
 								>
-									+ Add
-									example
+									{m.char_form_add_example()}
 								</button>
 							</div>
 							{#each exampleDialogues as _, i}
@@ -864,7 +842,7 @@
 									<button
 										type="button"
 										class="btn btn-ghost btn-sm"
-										aria-label="Remove example dialogue"
+										aria-label={m.char_form_remove_example_dialogue()}
 										onclick={() =>
 											removeExampleDialogue(
 												i,
@@ -885,17 +863,13 @@
 					<div
 						class="collapse-title label-text font-medium"
 					>
-						Custom system prompt
+						{m.char_form_system_prompt_heading()}
 					</div>
 					<div
 						class="collapse-content flex flex-col gap-2"
 					>
 						<p class="text-sm opacity-70">
-							Leave blank to use the
-							default roleplay
-							instructions. Only set
-							this to override that
-							default, e.g.:
+							{m.char_form_system_prompt_body()}
 						</p>
 						<p
 							class="whitespace-pre-wrap rounded-box bg-base-300 p-2 text-xs opacity-60"
@@ -907,7 +881,7 @@
 							bind:value={
 								systemPrompt
 							}
-							placeholder="Instructions sent to the AI describing how to roleplay this character…"
+							placeholder={m.char_form_system_prompt_placeholder()}
 						></textarea>
 					</div>
 				</div>
@@ -917,7 +891,7 @@
 
 	<div class="flex items-center gap-4">
 		<button class="btn btn-primary" type="submit" disabled={saving}>
-			{saving ? "Saving…" : submitLabel}
+			{saving ? m.char_form_saving() : submitLabel}
 		</button>
 		{#if error}
 			<p class="text-error text-sm">{error}</p>

@@ -25,6 +25,7 @@
 		runSearch,
 		setSearchQuery,
 	} from "$lib/state/search.svelte";
+	import { m } from '$lib/paraglide/messages.js';
 
 	let mineOnly = $state(false);
 	let showHidden = $state(false);
@@ -104,7 +105,7 @@
 					class="toggle toggle-sm"
 					bind:checked={mineOnly}
 				/>
-				<span class="label-text">Mine only</span>
+				<span class="label-text">{m.char_list_mine_only()}</span>
 			</label>
 			<label class="label cursor-pointer gap-2 py-0">
 				<input
@@ -112,7 +113,7 @@
 					class="toggle toggle-sm"
 					bind:checked={showHidden}
 				/>
-				<span class="label-text">Show hidden</span>
+				<span class="label-text">{m.char_list_show_hidden()}</span>
 			</label>
 			<label class="label cursor-pointer gap-2 py-0">
 				<input
@@ -124,19 +125,19 @@
 							showNsfw: e.currentTarget.checked,
 						})}
 				/>
-				<span class="label-text">Show NSFW</span>
+				<span class="label-text">{m.char_list_show_nsfw()}</span>
 			</label>
 		</div>
 	</div>
 
 	{#if !ready}
-		<p>Loading…</p>
+		<p>{m.char_list_loading()}</p>
 	{:else if results.length === 0}
 		<p class="opacity-70">
 			{#if mineOnly && !getSearchQuery().trim()}
-				You haven't created any characters yet.
+				{m.char_list_empty_mine()}
 			{:else}
-				No characters found.
+				{m.char_list_empty_all()}
 			{/if}
 		</p>
 	{:else}

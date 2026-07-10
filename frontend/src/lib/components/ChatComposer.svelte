@@ -7,6 +7,7 @@
 		generateUserDraft,
 	} from "$lib/ai/chat";
 	import { setChatDraft, getActivePath } from "$lib/state/chats.svelte";
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		chat: Chat;
@@ -188,7 +189,7 @@
 		<textarea
 			class="textarea textarea-bordered w-full pb-10"
 			rows="4"
-			placeholder="Message… (Enter to send, Shift+Enter for a new line)"
+			placeholder={m.chat_composer_placeholder()}
 			bind:value={content}
 			onkeydown={handleKeydown}
 			oninput={handleInput}
@@ -198,9 +199,9 @@
 			type="button"
 			disabled={generating}
 			aria-label={generating
-				? "Generating…"
-				: "Generate for me"}
-			title={generating ? "Generating…" : "Generate for me"}
+				? m.chat_composer_generating()
+				: m.chat_composer_generate_for_me()}
+			title={generating ? m.chat_composer_generating() : m.chat_composer_generate_for_me()}
 			onclick={handleGenerateForMe}
 		>
 			{#if generating}
@@ -227,7 +228,7 @@
 		<button
 			class="btn btn-sm btn-primary btn-soft btn-circle absolute right-2 bottom-2"
 			type="submit"
-			aria-label={sending ? "Stop" : "Send"}
+			aria-label={sending ? m.chat_composer_stop() : m.chat_composer_send()}
 		>
 			{#if sending}
 				<svg

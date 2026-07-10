@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { PREDEFINED_TAGS } from "$lib/data/tags";
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		onpick: (tag: string) => void;
@@ -43,7 +44,7 @@
 		<button
 			type="button"
 			class="btn btn-circle btn-ghost btn-sm shrink-0"
-			title={expanded ? "Show tags as carousel" : "Show all tags"}
+			title={expanded ? m.tag_carousel_show_as_carousel() : m.tag_carousel_show_all()}
 			onclick={() => (expanded = !expanded)}
 		>
 			<svg

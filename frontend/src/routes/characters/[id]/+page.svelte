@@ -47,6 +47,7 @@
 		getSelectedPersonaId,
 		initPersonas,
 	} from "$lib/state/personas.svelte";
+	import { m } from '$lib/paraglide/messages.js';
 
 	const id = $derived(page.params.id as string);
 
@@ -277,12 +278,12 @@
 
 <div class="mx-auto max-w-5xl p-4">
 	<a href={resolve('/characters')} class="btn btn-ghost btn-sm mb-4">
-		&larr; Back
+		{m.char_detail_back()}
 	</a>
 	{#if notFound}
-		<p class="text-error">Character not found.</p>
+		<p class="text-error">{m.char_not_found()}</p>
 	{:else if !character}
-		<p>Loading…</p>
+		<p>{m.char_list_loading()}</p>
 	{:else}
 		<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 			<div class="flex flex-col gap-4">
@@ -329,15 +330,15 @@
 								class:badge-primary={!localOnly}
 							>
 								{localOnly
-									? "Local only"
-									: "Published"}
+									? m.char_detail_local_only()
+									: m.char_detail_published()}
 							</span>
 						{/if}
 					</h1>
 					<div
 						class="mt-1 flex items-center gap-1.5 text-sm opacity-70"
 					>
-						<span>By:</span>
+						<span>{m.char_detail_by()}</span>
 						<button
 							class="btn btn-xs btn-outline rounded-full"
 							type="button"
@@ -389,7 +390,7 @@
 						<a
 							class="btn btn-soft btn-block"
 							href={resolve('/chats/[id]', { id: latestChat.id })}
-							>Continue latest chat</a
+							>{m.char_detail_continue_latest_chat()}</a
 						>
 					{/if}
 					<button
@@ -397,7 +398,7 @@
 						type="button"
 						onclick={handleStartChat}
 					>
-						Start new chat
+						{m.char_detail_start_new_chat()}
 					</button>
 				</div>
 
@@ -410,7 +411,7 @@
 						onclick={() =>
 							importInput?.click()}
 					>
-						Import chat
+						{m.char_detail_import_chat()}
 					</button>
 					<input
 						bind:this={importInput}
@@ -423,13 +424,13 @@
 						class="btn btn-sm btn-ghost"
 						type="button"
 						onclick={handleExport}
-						>Export</button
+						>{m.char_detail_export()}</button
 					>
 					{#if isMine}
 						<a
 							class="btn btn-sm btn-ghost"
 							href={resolve('/characters/[id]/edit', { id: character.id })}
-							>Edit</a
+							>{m.char_detail_edit()}</a
 						>
 						{#if localOnly}
 							<button
@@ -439,8 +440,8 @@
 								onclick={handlePublish}
 							>
 								{publishing
-									? "Publishing…"
-									: "Publish"}
+									? m.char_detail_publishing()
+									: m.char_detail_publish()}
 							</button>
 						{/if}
 						<button
@@ -448,14 +449,14 @@
 							type="button"
 							onclick={handleDelete}
 						>
-							Delete
+							{m.char_detail_delete()}
 						</button>
 					{:else}
 						<button
 							class="btn btn-sm btn-ghost"
 							type="button"
 							onclick={handleFork}
-							>Fork</button
+							>{m.char_detail_fork()}</button
 						>
 					{/if}
 				</div>
@@ -471,7 +472,7 @@
 						<h2
 							class="mb-1 text-sm font-semibold opacity-70"
 						>
-							Continue a past chat
+							{m.char_detail_continue_past_chat_heading()}
 						</h2>
 						<ul class="flex flex-col gap-1">
 							{#each pastChats as chat (chat.id)}
@@ -498,7 +499,7 @@
 						<div
 							class="collapse-title font-medium"
 						>
-							Scenario
+							{m.char_detail_scenario_heading()}
 						</div>
 						<div
 							class="collapse-content whitespace-pre-wrap text-sm opacity-80"
@@ -516,7 +517,7 @@
 						<div
 							class="collapse-title font-medium"
 						>
-							Personality
+							{m.char_detail_personality_heading()}
 						</div>
 						<div
 							class="collapse-content whitespace-pre-wrap text-sm opacity-80"
@@ -534,7 +535,7 @@
 						<div
 							class="collapse-title font-medium"
 						>
-							First message(s)
+							{m.char_detail_first_messages_heading()}
 						</div>
 						<div
 							class="collapse-content flex flex-col gap-2 text-sm opacity-80"
@@ -565,7 +566,7 @@
 						<div
 							class="collapse-title font-medium"
 						>
-							Example dialogues
+							{m.char_detail_example_dialogues_heading()}
 						</div>
 						<div
 							class="collapse-content flex flex-col gap-2 text-sm opacity-80"
@@ -592,7 +593,7 @@
 						<div
 							class="collapse-title font-medium"
 						>
-							Custom system prompt
+							{m.char_detail_system_prompt_heading()}
 						</div>
 						<div
 							class="collapse-content whitespace-pre-wrap text-sm opacity-80"
@@ -604,15 +605,12 @@
 
 				<div class="mt-4">
 					<h2 class="mb-2 text-lg font-semibold">
-						Comments
+						{m.char_detail_comments_heading()}
 					</h2>
 
 					{#if localOnly}
 						<p class="text-sm opacity-60">
-							Local-only characters
-							can't have comments —
-							publish this character
-							to enable them.
+							{m.char_detail_local_only_no_comments()}
 						</p>
 					{:else if character.comments_enabled}
 						<form
@@ -621,7 +619,7 @@
 						>
 							<textarea
 								class="textarea textarea-bordered w-full text-sm"
-								placeholder="Write a comment…"
+								placeholder={m.char_detail_comment_placeholder()}
 								bind:value={
 									newComment
 								}
@@ -634,23 +632,14 @@
 									!newComment.trim()}
 							>
 								{posting
-									? "Posting…"
-									: "Post comment"}
+									? m.char_detail_posting()
+									: m.char_detail_post_comment()}
 							</button>
 							{#if !isAccountRegistered()}
 								<p
 									class="text-xs opacity-60"
 								>
-									You'll
-									need an
-									account
-									to post
-									— click
-									"Post
-									comment"
-									to
-									create
-									one.
+									{m.char_detail_account_needed_notice()}
 								</p>
 							{/if}
 						</form>
@@ -659,14 +648,13 @@
 							<p
 								class="text-sm opacity-60"
 							>
-								Loading
-								comments…
+								{m.char_detail_loading_comments()}
 							</p>
 						{:else if comments.length === 0}
 							<p
 								class="text-sm opacity-60"
 							>
-								No comments yet.
+								{m.char_detail_no_comments()}
 							</p>
 						{:else}
 							{@const visibleComments = comments.filter(
@@ -678,11 +666,11 @@
 									class="toggle toggle-xs"
 									bind:checked={showHiddenComments}
 								/>
-								<span class="label-text text-xs">Show hidden</span>
+								<span class="label-text text-xs">{m.char_detail_show_hidden()}</span>
 							</label>
 							{#if visibleComments.length === 0}
 								<p class="text-sm opacity-60">
-									All comments are hidden.
+									{m.char_detail_all_comments_hidden()}
 								</p>
 							{:else}
 								<ul
@@ -706,18 +694,18 @@
 													{#if comment.author === character.author}
 														<span
 															class="badge badge-xs badge-primary ml-1"
-															>author</span
+															>{m.char_detail_author_badge()}</span
 														>
 													{/if}
 													{#if hidden}
-														<span class="badge badge-xs ml-1">hidden</span>
+														<span class="badge badge-xs ml-1">{m.char_detail_hidden_badge()}</span>
 													{/if}
 													{#if comment.updated_at !== comment.created_at}
 														<span
 															class="italic opacity-60 ml-1"
-															title="Edited by the comment's author"
+															title={m.char_detail_edited_title()}
 														>
-															(edited)
+															{m.char_detail_edited_label()}
 														</span>
 													{/if}
 												</span>
@@ -732,7 +720,7 @@
 																		comment,
 																	)}
 															>
-																Edit
+																{m.char_detail_comment_edit()}
 															</button>
 															<button
 																class="btn btn-xs btn-ghost"
@@ -742,21 +730,21 @@
 																		comment,
 																	)}
 															>
-																Delete
+																{m.char_detail_comment_delete()}
 															</button>
 														{:else}
 															<button
 																class="btn btn-xs btn-ghost"
 																type="button"
 																title={hidden
-																	? "Only visible to you locally — unhide to stop hiding it"
-																	: "Hide this comment locally, for you only"}
+																	? m.char_detail_hide_tooltip_hidden()
+																	: m.char_detail_hide_tooltip_visible()}
 																onclick={() =>
 																	handleToggleHideComment(
 																		comment,
 																	)}
 															>
-																{hidden ? "Unhide" : "Hide"}
+																{hidden ? m.char_detail_comment_unhide() : m.char_detail_comment_hide()}
 															</button>
 														{/if}
 													</div>
@@ -776,7 +764,7 @@
 																comment,
 															)}
 													>
-														Save
+														{m.char_detail_comment_save()}
 													</button>
 													<button
 														class="btn btn-xs"
@@ -785,7 +773,7 @@
 															(editingCommentId =
 																null)}
 													>
-														Cancel
+														{m.char_detail_comment_cancel()}
 													</button>
 												</div>
 											{:else}
@@ -802,8 +790,7 @@
 						{/if}
 					{:else}
 						<p class="text-sm opacity-60">
-							Comments are disabled
-							for this character.
+							{m.char_detail_comments_disabled()}
 						</p>
 					{/if}
 				</div>

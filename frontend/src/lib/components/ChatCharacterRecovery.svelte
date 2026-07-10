@@ -9,6 +9,7 @@
 	import { retryCharacterLoad } from "$lib/state/characterCache.svelte";
 	import { browseByName, browseByTag } from "$lib/gun/browse";
 	import { queryWords, matchesQuery } from "$lib/state/search.svelte";
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		chatId: ChatId;
@@ -132,7 +133,7 @@
 	<div>
 		{#if mode === "error"}
 			<h2 class="font-semibold">
-				This chat's character couldn't be loaded
+				{m.chat_recovery_error_heading()}
 			</h2>
 			<p class="opacity-70">
 				<code class="text-xs">{missingCharacterId}</code
@@ -147,15 +148,14 @@
 				class="btn btn-sm btn-soft mt-2"
 				onclick={waitLonger}
 			>
-				Wait longer
+				{m.chat_recovery_wait_longer()}
 			</button>
 		{:else}
 			<h2 class="font-semibold">
-				Choose a character for this chat
+				{m.chat_recovery_manual_heading()}
 			</h2>
 			<p class="opacity-70">
-				Switches this conversation to a different
-				character.
+				{m.chat_recovery_manual_body()}
 			</p>
 			{#if oncancel}
 				<button
@@ -163,7 +163,7 @@
 					class="btn btn-sm btn-ghost mt-2"
 					onclick={oncancel}
 				>
-					Cancel
+					{m.chat_recovery_cancel()}
 				</button>
 			{/if}
 		{/if}
@@ -180,7 +180,7 @@
 			<input
 				type="text"
 				class="grow"
-				placeholder="Search your characters, or the network by name/tag…"
+				placeholder={m.chat_recovery_search_placeholder()}
 				bind:value={query}
 				oninput={() => runSearch()}
 			/>
@@ -198,7 +198,7 @@
 					onclick={() => pickCharacter(character)}
 				>
 					{character.name}
-					<span class="opacity-50">(yours)</span>
+					<span class="opacity-50">{m.chat_recovery_yours_badge()}</span>
 				</button>
 			{/each}
 			{#each networkResults as character (character.id)}
@@ -214,10 +214,10 @@
 		</div>
 	</div>
 
-	<div class="divider text-xs">or</div>
+	<div class="divider text-xs">{m.chat_recovery_or()}</div>
 
 	<div class="flex flex-col gap-1">
-		<span class="label-text">Upload a character JSON file</span>
+		<span class="label-text">{m.chat_recovery_upload_label()}</span>
 		<input
 			class="file-input file-input-bordered file-input-sm"
 			type="file"

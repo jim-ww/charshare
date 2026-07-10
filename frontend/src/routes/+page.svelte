@@ -3,6 +3,7 @@
 	import { goto } from "$app/navigation";
 	import { asset, resolve } from "$app/paths";
 	import { externalLink } from "$lib/wails";
+	import { m } from '$lib/paraglide/messages.js';
 
 	// In the Wails desktop build, skip the marketing landing page on first
 	// launch and go straight into the app. `window.runtime` only exists in
@@ -34,47 +35,47 @@
 
 	const strengths = [
 		{
-			title: "No account needed",
-			body: "Generate a local identity and start creating characters and chatting immediately. Publishing to the network is optional, and only your choice.",
+			title: m.landing_strength_no_account_title(),
+			body: m.landing_strength_no_account_body(),
 		},
 		{
-			title: "Your data stays yours",
-			body: "Chats, personas, and preferences never leave your device — no server of ours ever sees them. You also pick your own AI provider, so even the messages you send to generate a reply go straight to a service you chose, not one we run.",
+			title: m.landing_strength_your_data_title(),
+			body: m.landing_strength_your_data_body(),
 		},
 		{
-			title: "Ungovernable by design",
-			body: "No company, no terms of service, no moderation queue. Nobody has the power to tell you what characters you can write, ban your account, or take away your access — because there's no server, and no one, in a position to.",
+			title: m.landing_strength_ungovernable_title(),
+			body: m.landing_strength_ungovernable_body(),
 		},
 		{
-			title: "Free, as in freedom",
-			body: "Charshare is AGPLv3 software you run and own a copy of. Modify it, fork it, self-host a relay — the code you can read is the whole product.",
+			title: m.landing_strength_free_title(),
+			body: m.landing_strength_free_body(),
 		},
 	];
 
 	const techTabs = [
 		{
 			id: "architecture",
-			label: "Architecture",
-			heading: "No backend, no server",
-			body: "Charshare has no server component at all — download it as a desktop app, or run the exact same code as a static site deployed from any CDN. Anything you publish travels over GUN, a peer-to-peer graph database, through relays that anyone can run. When you chat, your device talks directly to whichever AI provider you've configured — there's no proxy of ours in between.",
+			label: m.landing_tech_architecture_label(),
+			heading: m.landing_tech_architecture_heading(),
+			body: m.landing_tech_architecture_body(),
 		},
 		{
 			id: "identity",
-			label: "Identity & Signing",
-			heading: "Your keypair is your account",
-			body: "Every user and character is identified by a public key, not a separate username or database row. Documents are canonicalized and signed with GUN SEA (ECDSA P-256); peers verify signatures client-side before trusting anything. That signature is cryptographic proof of ownership — only the holder of the private key can publish an edit, so authorship can't be forged or reassigned by anyone else, including a relay. There's no password to leak, because there's no password.",
+			label: m.landing_tech_identity_label(),
+			heading: m.landing_tech_identity_heading(),
+			body: m.landing_tech_identity_body(),
 		},
 		{
 			id: "selfhost",
-			label: "Self-hosting",
-			heading: "Run your own relay",
-			body: "Sensible default relays are provided, but every relay is user-configurable and self-hostable. Nothing about using Charshare requires trusting a relay you didn't choose — data is signed and verified independent of which relay carried it.",
+			label: m.landing_tech_selfhost_label(),
+			heading: m.landing_tech_selfhost_heading(),
+			body: m.landing_tech_selfhost_body(),
 		},
 		{
 			id: "license",
-			label: "License",
-			heading: "AGPLv3, distributed as software",
-			body: "Charshare is licensed AGPLv3: free to run, study, modify, and redistribute. It's built and shipped as software you own a copy of — as a desktop binary or a static site you host yourself — not a service you rent. There is no subscription, and there's nothing to cancel.",
+			label: m.landing_tech_license_label(),
+			heading: m.landing_tech_license_heading(),
+			body: m.landing_tech_license_body(),
 		},
 	];
 
@@ -84,37 +85,37 @@
 	const providerTabs = [
 		{
 			id: "huggingface",
-			label: "Hugging Face",
-			heading: "Hugging Face",
+			label: m.landing_provider_huggingface_label(),
+			heading: m.landing_provider_huggingface_label(),
 			steps: [
-				"Create a Hugging Face account and generate an access token with inference permissions.",
-				'In Charshare Settings → AI tab, select "Hugging Face" and paste in your token.',
-				"Enter the model id you want to use for inference.",
-				"Start chatting — calls go directly from your browser to Hugging Face's inference API.",
+				m.landing_provider_huggingface_step1(),
+				m.landing_provider_huggingface_step2(),
+				m.landing_provider_huggingface_step3(),
+				m.landing_provider_huggingface_step4(),
 			],
 		},
 		{
 			id: "openrouter",
-			label: "OpenRouter",
-			heading: "OpenRouter",
+			label: m.landing_provider_openrouter_label(),
+			heading: m.landing_provider_openrouter_label(),
 			steps: [
-				"Create an account at openrouter.ai and generate an API key.",
-				"In Charshare, open Settings (your avatar, top right) → AI tab.",
-				'Select "OpenRouter" as the provider and paste in your API key.',
-				"Enter a model id, e.g. openai/gpt-4o or any model listed on OpenRouter.",
-				"Start chatting — requests go straight from your browser to OpenRouter; your key never leaves your device.",
+				m.landing_provider_openrouter_step1(),
+				m.landing_provider_openrouter_step2(),
+				m.landing_provider_openrouter_step3(),
+				m.landing_provider_openrouter_step4(),
+				m.landing_provider_openrouter_step5(),
 			],
 		},
 		{
 			id: "ollama",
-			label: "Ollama",
-			heading: "Ollama",
+			label: m.landing_provider_ollama_label(),
+			heading: m.landing_provider_ollama_label(),
 			steps: [
-				"Install Ollama on your own machine (or a server you control) and pull a model, e.g. ollama pull llama3.",
-				"Make sure Ollama is running and reachable — by default at http://localhost:11434.",
-				'In Charshare Settings → AI tab, select "Ollama" and enter the server URL.',
-				"Enter the model name you pulled.",
-				"No API key needed — the model runs entirely on hardware you control.",
+				m.landing_provider_ollama_step1(),
+				m.landing_provider_ollama_step2(),
+				m.landing_provider_ollama_step3(),
+				m.landing_provider_ollama_step4(),
+				m.landing_provider_ollama_step5(),
 			],
 		},
 	];
@@ -133,19 +134,16 @@
 	<section class="flex flex-col items-center gap-6 py-16 text-center">
 		<img src={asset("/icon-192.png")} alt="Charshare" class="h-32 w-32 rounded-2xl shadow-sm" />
 		<h1 class="text-4xl font-bold tracking-tight sm:text-5xl">
-			Your characters. Your chats. Your rules.
+			{m.landing_hero_title()}
 		</h1>
 		<p class="max-w-2xl text-lg text-base-content/70">
-			Charshare is a decentralized platform for AI characters.
-			No account required, no moderation queue, no
-			subscription. Everything lives on your device first —
-			publish to the network only if you want to.
+			{m.landing_hero_subtitle()}
 		</p>
 		<div
 			class="flex flex-wrap items-center justify-center gap-3 pt-2"
 		>
 			<a href={resolve("/characters")} class="btn btn-primary btn-lg"
-				>Chat with characters</a
+				>{m.landing_cta_chat()}</a
 			>
 			<a
 				href={REPO_URL}
@@ -154,7 +152,7 @@
 				rel="noreferrer"
 				use:externalLink
 			>
-				View source
+				{m.landing_cta_view_source()}
 			</a>
 		</div>
 	</section>
@@ -176,13 +174,12 @@
 
 	<section class="py-12">
 		<h2 class="pb-2 text-center text-2xl font-bold tracking-tight">
-			Install
+			{m.landing_install_heading()}
 		</h2>
 		<p class="pb-8 text-center text-base-content/70">
-			Run Charshare as a desktop app, or just use it in your
-			browser at <a href={resolve("/characters")} class="link"
+			{m.landing_install_body_before()} <a href={resolve("/characters")} class="link"
 				>/characters</a
-			> above — no install required either way.
+			> {m.landing_install_body_after()}
 		</p>
 
 		<div class="mx-auto grid max-w-3xl gap-6 sm:grid-cols-2">
@@ -191,12 +188,10 @@
 			>
 				<div class="card-body">
 					<h3 class="card-title text-base">
-						Download a binary
+						{m.landing_download_binary_heading()}
 					</h3>
 					<p class="text-base-content/70">
-						Prebuilt desktop binaries for Linux,
-						macOS, and Windows are published on
-						GitHub Releases.
+						{m.landing_download_binary_body()}
 					</p>
 					<div class="card-actions pt-2">
 						<a
@@ -206,7 +201,7 @@
 							rel="noreferrer"
 							use:externalLink
 						>
-							GitHub Releases
+							{m.landing_github_releases()}
 						</a>
 					</div>
 				</div>
@@ -217,12 +212,10 @@
 			>
 				<div class="card-body">
 					<h3 class="card-title text-base">
-						Nix
+						{m.landing_nix_heading()}
 					</h3>
 					<p class="text-base-content/70">
-						If you have Nix with flakes enabled,
-						you can run Charshare without
-						installing anything:
+						{m.landing_nix_body()}
 					</p>
 					<pre
 						class="mt-1 overflow-x-auto rounded-box bg-base-200 p-3 text-sm"><code
@@ -235,11 +228,10 @@
 
 	<section class="py-12">
 		<h2 class="pb-2 text-center text-2xl font-bold tracking-tight">
-			Getting started
+			{m.landing_getting_started_heading()}
 		</h2>
 		<p class="pb-8 text-center text-base-content/70">
-			Charshare works with several AI providers — pick
-			whichever fits how you want to run it.
+			{m.landing_getting_started_body()}
 		</p>
 
 		<div class="mx-auto flex max-w-3xl flex-col gap-6 sm:flex-row">
@@ -283,10 +275,10 @@
 
 	<section class="py-12">
 		<h2 class="pb-2 text-center text-2xl font-bold tracking-tight">
-			How it works
+			{m.landing_how_it_works_heading()}
 		</h2>
 		<p class="pb-8 text-center text-base-content/70">
-			A closer look at how Charshare works under the hood.
+			{m.landing_how_it_works_body()}
 		</p>
 
 		<div role="tablist" class="tabs-boxed tabs justify-center">
@@ -315,19 +307,17 @@
 
 	<section class="py-12">
 		<h2 class="pb-2 text-center text-2xl font-bold tracking-tight">
-			Support the project
+			{m.landing_support_heading()}
 		</h2>
 		<p class="pb-6 text-center text-base-content/70">
-			Charshare has no subscription and no ads, and never
-			will. If you'd like to support it anyway, donations are
-			welcome via Monero.
+			{m.landing_support_body()}
 		</p>
 
 		<div
 			class="mx-auto flex max-w-xl flex-col items-center gap-3 rounded-box border border-base-300 bg-base-100 p-6"
 		>
 			<span class="text-sm font-medium text-base-content/70"
-				>XMR address</span
+				>{m.landing_xmr_label()}</span
 			>
 			<code class="break-all text-center text-sm"
 				>{XMR_ADDRESS}</code
@@ -337,7 +327,7 @@
 				class="btn btn-soft btn-sm"
 				onclick={copyAddress}
 			>
-				{copied ? "Copied!" : "Copy address"}
+				{copied ? m.landing_copied() : m.landing_copy_address()}
 			</button>
 		</div>
 	</section>
@@ -351,7 +341,7 @@
 				target="_blank"
 				rel="noreferrer"
 				use:externalLink
-				class="link link-hover">GitHub</a
+				class="link link-hover">{m.landing_footer_github()}</a
 			>
 			<a
 				href="{REPO_URL}/blob/main/LICENSE"
@@ -360,11 +350,11 @@
 				use:externalLink
 				class="link link-hover"
 			>
-				AGPLv3 License
+				{m.landing_footer_license()}
 			</a>
-			<a href={resolve("/legal")} class="link link-hover">Legal</a>
+			<a href={resolve("/legal")} class="link link-hover">{m.landing_footer_legal()}</a>
 			<a href={resolve("/characters")} class="link link-hover"
-				>Open the app</a
+				>{m.landing_footer_open_app()}</a
 			>
 		</div>
 	</footer>

@@ -6,6 +6,7 @@
 	import { getMyProfile } from '$lib/state/profile.svelte';
 	import { getPersona, personaDisplayName } from '$lib/state/personas.svelte';
 	import Avatar from './Avatar.svelte';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		chat: Chat;
@@ -19,7 +20,7 @@
 	// The persona the user was playing as when this chat was created — falls
 	// back to the real profile username for chats from before personas existed.
 	const persona = $derived(chat.persona_id ? getPersona(chat.persona_id) : undefined);
-	const userName = $derived(persona ? personaDisplayName(persona) : (getMyProfile()?.username ?? 'You'));
+	const userName = $derived(persona ? personaDisplayName(persona) : (getMyProfile()?.username ?? m.chat_bubble_default_user_name()));
 
 	const displayName = $derived(message.role === 'character' ? character.name : userName);
 
@@ -132,8 +133,8 @@
 				<button
 					class="btn btn-sm btn-ghost btn-circle text-error"
 					type="button"
-					aria-label="Delete message"
-					title="Delete message"
+					aria-label={m.chat_bubble_delete_message()}
+					title={m.chat_bubble_delete_message()}
 					onclick={() => deleteMessage(chatId, message.id)}
 				>
 					<svg
@@ -157,8 +158,8 @@
 				<button
 					class="btn btn-sm btn-ghost btn-circle"
 					type="button"
-					aria-label="Edit message"
-					title="Edit message"
+					aria-label={m.chat_bubble_edit_message()}
+					title={m.chat_bubble_edit_message()}
 					onclick={startEdit}
 				>
 					<svg
@@ -191,18 +192,18 @@
 			<div class="mt-1 flex items-center gap-1">
 				{#if message.role === 'user'}
 					<button class="btn btn-xs btn-primary" type="button" onclick={saveAndResend}>
-						Send
+						{m.chat_bubble_send()}
 					</button>
 					<button class="btn btn-xs btn-ghost" type="button" onclick={saveEditOnly}>
-						Save only
+						{m.chat_bubble_save_only()}
 					</button>
 				{:else}
-					<button class="btn btn-xs" type="button" onclick={saveEditOnly}>Save</button>
+					<button class="btn btn-xs" type="button" onclick={saveEditOnly}>{m.chat_bubble_save()}</button>
 				{/if}
-				<button class="btn btn-xs" type="button" onclick={() => (editing = false)}>Cancel</button>
+				<button class="btn btn-xs" type="button" onclick={() => (editing = false)}>{m.chat_bubble_cancel()}</button>
 			</div>
 		{:else if message.role === 'character' && message.content === ''}
-			<p class="italic opacity-60">Replying…</p>
+			<p class="italic opacity-60">{m.chat_bubble_replying()}</p>
 		{:else}
 			<p class="whitespace-pre-wrap">{@html formattedContent}</p>
 		{/if}
@@ -227,8 +228,8 @@
 				class="btn btn-xs btn-ghost"
 				type="button"
 				disabled={regenerating}
-				aria-label="Regenerate response"
-				title="Regenerate response"
+				aria-label={m.chat_bubble_regenerate_response()}
+				title={m.chat_bubble_regenerate_response()}
 				onclick={handleRegenerate}
 			>
 				<svg

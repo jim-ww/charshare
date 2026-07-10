@@ -2,6 +2,7 @@
 	import type { PubKey, User } from "$lib/types";
 	import { getProfile } from "$lib/gun/users";
 	import Avatar from "./Avatar.svelte";
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		open: boolean;
@@ -39,12 +40,12 @@
 <dialog bind:this={dialogEl} class="modal" onclose={onclose}>
 	<div class="modal-box">
 		<h2 class="mb-3 text-xs font-semibold tracking-wide opacity-50 uppercase">
-			User profile
+			{m.user_profile_heading()}
 		</h2>
 		{#if loading}
-			<p class="text-sm opacity-60">Loading profile…</p>
+			<p class="text-sm opacity-60">{m.user_profile_loading()}</p>
 		{:else if open && (notFound || !pubkey)}
-			<p class="text-sm opacity-60">Profile not found.</p>
+			<p class="text-sm opacity-60">{m.user_profile_not_found()}</p>
 		{:else if profile}
 			<div class="flex items-center gap-4">
 				<Avatar
@@ -56,10 +57,10 @@
 					<h3 class="text-xl font-semibold">
 						{profile.username
 							? `@${profile.username}`
-							: "Unnamed user"}
+							: m.user_profile_unnamed()}
 					</h3>
 					<p class="text-xs opacity-60">
-						Joined {new Date(
+						{m.user_profile_joined()} {new Date(
 							profile.created_at,
 						).toLocaleDateString()}
 					</p>
@@ -73,13 +74,13 @@
 					<p
 						class="text-xs font-semibold tracking-wide opacity-50 uppercase"
 					>
-						Description
+						{m.user_profile_description_heading()}
 					</p>
 					<p
 						class="mt-0.5 whitespace-pre-wrap opacity-80"
 					>
 						{profile.description ||
-							"No description."}
+							m.user_profile_no_description()}
 					</p>
 				</div>
 
@@ -87,7 +88,7 @@
 					<p
 						class="text-xs font-semibold tracking-wide opacity-50 uppercase"
 					>
-						ID (public key)
+						{m.user_profile_id_heading()}
 					</p>
 					<p
 						class="mt-0.5 rounded bg-base-200 p-2 font-mono text-xs break-all"
@@ -102,11 +103,11 @@
 			<button
 				class="btn btn-sm"
 				type="button"
-				onclick={onclose}>Close</button
+				onclick={onclose}>{m.user_profile_close()}</button
 			>
 		</div>
 	</div>
 	<form method="dialog" class="modal-backdrop">
-		<button aria-label="Close">close</button>
+		<button aria-label={m.user_profile_close()}>{m.user_profile_close_label()}</button>
 	</form>
 </dialog>

@@ -1,100 +1,72 @@
 <script lang="ts">
 	import { resolve } from "$app/paths";
 	import { externalLink } from "$lib/wails";
+	import { m } from '$lib/paraglide/messages.js';
 	const REPO_URL = "https://github.com/jim-ww/charshare";
 </script>
 
 <svelte:head>
-	<title>Legal — Charshare</title>
+	<title>{m.legal_page_title()}</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl px-6 py-16">
-	<h1 class="pb-8 text-3xl font-bold tracking-tight">Legal</h1>
+	<h1 class="pb-8 text-3xl font-bold tracking-tight">{m.legal_heading()}</h1>
 
 	<div class="flex flex-col gap-8 text-base-content/80">
 		<section>
 			<h2 class="pb-2 text-xl font-semibold text-base-content">
-				Charshare is software, not a service
+				{m.legal_software_not_service_heading()}
 			</h2>
 			<p>
-				Charshare is not a service we operate. It's a static
-				site you can run from any CDN, or a desktop app you
-				download and run locally — either way, the same code
-				runs entirely on your device. We don't run a backend,
-				don't host a database of user content, and don't have
-				any account system of our own to moderate. Anything
-				you choose to publish is sent directly, peer-to-peer,
-				over the GUN network, through relays that anyone
-				(including you) can run.
+				{m.legal_software_not_service_body()}
 			</p>
 		</section>
 
 		<section>
 			<h2 class="pb-2 text-xl font-semibold text-base-content">
-				We have no ability to moderate or remove content
+				{m.legal_no_moderation_heading()}
 			</h2>
 			<p>
-				Because there is no central server, we have no
-				technical ability to review, approve, take down, or
-				otherwise control what any user publishes to the
-				network, and no account system through which to ban
-				anyone. Local blocking tools (blocked tags, blocked
-				authors, hidden characters) exist for your own client,
-				but they don't remove anything from the network — they
-				only affect what your own client shows you.
+				{m.legal_no_moderation_body()}
 			</p>
 		</section>
 
 		<section>
 			<h2 class="pb-2 text-xl font-semibold text-base-content">
-				You are responsible for what you publish
+				{m.legal_your_responsibility_heading()}
 			</h2>
 			<p>
-				If you publish a character, comment, or profile to the
-				network, you are solely responsible for that content
-				and for complying with the laws that apply to you in
-				your jurisdiction. We do not review, endorse, or take
-				responsibility for content published by any user,
-				including you.
+				{m.legal_your_responsibility_body()}
 			</p>
 		</section>
 
 		<section>
 			<h2 class="pb-2 text-xl font-semibold text-base-content">
-				Third-party AI providers
+				{m.legal_third_party_heading()}
 			</h2>
 			<p>
-				Charshare does not run or proxy any AI model. You
-				configure your own AI provider (e.g. OpenRouter,
-				Hugging Face, or a self-hosted Ollama instance) and
-				your own credentials. When you chat, requests go
-				directly from your device to the provider you chose —
-				any data sent that way is governed by that provider's
-				own terms and privacy practices, not by us.
+				{m.legal_third_party_body()}
 			</p>
 		</section>
 
 		<section>
 			<h2 class="pb-2 text-xl font-semibold text-base-content">
-				No warranty
+				{m.legal_no_warranty_heading()}
 			</h2>
 			<p>
-				Charshare is licensed under the
+				{m.legal_no_warranty_body_before()}
 				<a
 					href="{REPO_URL}/blob/main/LICENSE"
 					target="_blank"
 					rel="noreferrer"
 					use:externalLink
-					class="link">AGPLv3</a
-				>, which provides the software "as is," without
-				warranty of any kind, and disclaims liability to the
-				fullest extent permitted by law. That disclaimer
-				applies here too — use Charshare at your own risk.
+					class="link">{m.legal_no_warranty_license_link()}</a
+				>{m.legal_no_warranty_body_after()}
 			</p>
 		</section>
 	</div>
 
 	<div class="pt-12">
-		<a href={resolve("/")} class="link link-hover">&larr; Back home</a>
+		<a href={resolve("/")} class="link link-hover">{m.legal_back_home()}</a>
 	</div>
 </div>

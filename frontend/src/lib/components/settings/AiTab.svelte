@@ -6,6 +6,7 @@
 		resetAdvancedProviderDefaults
 	} from '$lib/state/preferences.svelte';
 	import type { ProviderConfig } from '$lib/types';
+	import { m } from '$lib/paraglide/messages.js';
 
 	const preferences = $derived(getPreferences());
 	const provider = $derived(preferences.provider);
@@ -23,56 +24,56 @@
 
 <div class="flex flex-col gap-3">
 	<label class="form-control">
-		<span class="label-text">Provider</span>
+		<span class="label-text">{m.ai_tab_provider_label()}</span>
 		<select
 			class="select select-bordered w-full"
 			value={provider.provider}
 			onchange={(e) => switchProvider(e.currentTarget.value as ProviderConfig['provider'])}
 		>
-			<option value="openrouter">OpenRouter</option>
-			<option value="ollama">Ollama</option>
-			<option value="huggingface">Hugging Face</option>
+			<option value="openrouter">{m.ai_tab_provider_openrouter()}</option>
+			<option value="ollama">{m.ai_tab_provider_ollama()}</option>
+			<option value="huggingface">{m.ai_tab_provider_huggingface()}</option>
 		</select>
 	</label>
 
 	{#if provider.provider === 'openrouter'}
 		<label class="form-control">
-			<span class="label-text">OpenRouter API key</span>
+			<span class="label-text">{m.ai_tab_openrouter_key_label()}</span>
 			<input
 				class="input input-bordered w-full"
 				type="password"
 				value={provider.apiKey}
 				oninput={(e) => update('apiKey', e.currentTarget.value)}
 			/>
-			<span class="text-sm opacity-70">Stored locally only, never published.</span>
+			<span class="text-sm opacity-70">{m.ai_tab_stored_locally()}</span>
 		</label>
 	{:else if provider.provider === 'ollama'}
 		<label class="form-control">
-			<span class="label-text">Ollama server URL</span>
+			<span class="label-text">{m.ai_tab_ollama_url_label()}</span>
 			<input
 				class="input input-bordered w-full"
 				value={provider.baseUrl}
 				oninput={(e) => update('baseUrl', e.currentTarget.value)}
 			/>
 			<span class="text-sm opacity-70">
-				Local or self-hosted Ollama instance. No API key needed.
+				{m.ai_tab_ollama_hint()}
 			</span>
 		</label>
 	{:else}
 		<label class="form-control">
-			<span class="label-text">Hugging Face API key</span>
+			<span class="label-text">{m.ai_tab_huggingface_key_label()}</span>
 			<input
 				class="input input-bordered w-full"
 				type="password"
 				value={provider.apiKey}
 				oninput={(e) => update('apiKey', e.currentTarget.value)}
 			/>
-			<span class="text-sm opacity-70">Stored locally only, never published.</span>
+			<span class="text-sm opacity-70">{m.ai_tab_stored_locally()}</span>
 		</label>
 	{/if}
 
 	<label class="form-control">
-		<span class="label-text">Model</span>
+		<span class="label-text">{m.ai_tab_model_label()}</span>
 		<input
 			class="input input-bordered w-full"
 			value={provider.model}
@@ -87,16 +88,16 @@
 			checked={provider.disable_thinking}
 			onchange={(e) => update('disable_thinking', e.currentTarget.checked)}
 		/>
-		<span class="label-text">Disable thinking/reasoning</span>
+		<span class="label-text">{m.ai_tab_disable_thinking_label()}</span>
 	</label>
 
 	<div class="collapse-arrow bg-base-200 collapse">
 		<input type="checkbox" />
-		<div class="collapse-title font-semibold">Advanced</div>
+		<div class="collapse-title font-semibold">{m.ai_tab_advanced_heading()}</div>
 		<div class="collapse-content flex flex-col gap-3">
 			<div class="grid grid-cols-2 gap-3">
 				<label class="form-control">
-					<span class="label-text">Temperature</span>
+					<span class="label-text">{m.ai_tab_temperature_label()}</span>
 					<input
 						class="input input-bordered"
 						type="number"
@@ -106,7 +107,7 @@
 					/>
 				</label>
 				<label class="form-control">
-					<span class="label-text">Max tokens</span>
+					<span class="label-text">{m.ai_tab_max_tokens_label()}</span>
 					<input
 						class="input input-bordered"
 						type="number"
@@ -115,7 +116,7 @@
 					/>
 				</label>
 				<label class="form-control">
-					<span class="label-text">Context size</span>
+					<span class="label-text">{m.ai_tab_context_size_label()}</span>
 					<input
 						class="input input-bordered"
 						type="number"
@@ -124,7 +125,7 @@
 					/>
 				</label>
 				<label class="form-control">
-					<span class="label-text">Top-K</span>
+					<span class="label-text">{m.ai_tab_top_k_label()}</span>
 					<input
 						class="input input-bordered"
 						type="number"
@@ -133,7 +134,7 @@
 					/>
 				</label>
 				<label class="form-control">
-					<span class="label-text">Top-P</span>
+					<span class="label-text">{m.ai_tab_top_p_label()}</span>
 					<input
 						class="input input-bordered"
 						type="number"
@@ -143,7 +144,7 @@
 					/>
 				</label>
 				<label class="form-control">
-					<span class="label-text">Repetition penalty</span>
+					<span class="label-text">{m.ai_tab_repetition_penalty_label()}</span>
 					<input
 						class="input input-bordered"
 						type="number"
@@ -153,7 +154,7 @@
 					/>
 				</label>
 				<label class="form-control">
-					<span class="label-text">Frequency penalty</span>
+					<span class="label-text">{m.ai_tab_frequency_penalty_label()}</span>
 					<input
 						class="input input-bordered"
 						type="number"
@@ -161,13 +162,13 @@
 						value={provider.frequency_penalty}
 						oninput={(e) => update('frequency_penalty', Number(e.currentTarget.value))}
 						disabled={provider.provider === 'ollama'}
-						title={provider.provider === 'ollama' ? 'Not supported by Ollama' : undefined}
+						title={provider.provider === 'ollama' ? m.ai_tab_frequency_penalty_unsupported() : undefined}
 					/>
 				</label>
 			</div>
 
 			<label class="form-control">
-				<span class="label-text">Forbidden words/phrases (comma-separated)</span>
+				<span class="label-text">{m.ai_tab_forbidden_words_label()}</span>
 				<input
 					class="input input-bordered w-full"
 					value={provider.forbidden_words.join(', ')}
@@ -187,7 +188,7 @@
 				type="button"
 				onclick={() => resetAdvancedProviderDefaults()}
 			>
-				Reset defaults
+				{m.ai_tab_reset_defaults()}
 			</button>
 		</div>
 	</div>

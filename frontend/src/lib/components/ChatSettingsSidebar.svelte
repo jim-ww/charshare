@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Chat } from '$lib/types';
 	import { addChatBackground, removeChatBackground, setChatActiveBackground } from '$lib/state/chats.svelte';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		chat: Chat;
@@ -20,14 +21,14 @@
 
 <div class="flex h-full w-72 shrink-0 flex-col gap-4 border-l border-base-300 bg-base-100 p-4">
 	<div class="flex items-center justify-between">
-		<h3 class="font-semibold">Chat settings</h3>
-		<button class="btn btn-xs btn-ghost" type="button" onclick={onclose} aria-label="Close chat settings">
+		<h3 class="font-semibold">{m.chat_settings_heading()}</h3>
+		<button class="btn btn-xs btn-ghost" type="button" onclick={onclose} aria-label={m.chat_settings_close()}>
 			✕
 		</button>
 	</div>
 
 	<div class="flex flex-col gap-2">
-		<span class="label-text">Background</span>
+		<span class="label-text">{m.chat_settings_background_label()}</span>
 
 		<div class="grid grid-cols-3 gap-2">
 			<button
@@ -36,7 +37,7 @@
 				type="button"
 				onclick={() => setChatActiveBackground(chat.id, null)}
 			>
-				None
+				{m.chat_settings_background_none()}
 			</button>
 			{#each chat.backgrounds as url (url)}
 				<div class="group relative">
@@ -48,12 +49,12 @@
 						type="button"
 						title={url}
 						onclick={() => setChatActiveBackground(chat.id, url)}
-						aria-label="Use this background"
+						aria-label={m.chat_settings_background_use()}
 					></button>
 					<button
 						class="btn btn-xs btn-circle btn-error absolute -top-2 -right-2 hidden group-hover:flex"
 						type="button"
-						aria-label="Delete background"
+						aria-label={m.chat_settings_background_delete()}
 						onclick={() => removeChatBackground(chat.id, url)}
 					>
 						✕
@@ -66,11 +67,11 @@
 			<input
 				class="input input-bordered input-sm flex-1"
 				type="url"
-				placeholder="https://…"
+				placeholder={m.chat_settings_background_placeholder()}
 				bind:value={newUrl}
 				onkeydown={(e) => e.key === 'Enter' && handleAdd()}
 			/>
-			<button class="btn btn-sm" type="button" onclick={handleAdd}>Add</button>
+			<button class="btn btn-sm" type="button" onclick={handleAdd}>{m.chat_settings_background_add()}</button>
 		</div>
 	</div>
 </div>

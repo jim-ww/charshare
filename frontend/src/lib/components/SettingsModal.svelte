@@ -13,15 +13,16 @@
 	import AiTab from "./settings/AiTab.svelte";
 	import ContentTab from "./settings/ContentTab.svelte";
 	import DataTab from "./settings/DataTab.svelte";
+	import { m } from '$lib/paraglide/messages.js';
 
 	const tabs: { id: SettingsTab; label: string }[] = [
-		{ id: "account", label: "Account" },
-		{ id: "personas", label: "Personas" },
-		{ id: "general", label: "General" },
-		{ id: "network", label: "Network" },
-		{ id: "ai", label: "AI" },
-		{ id: "content", label: "Content" },
-		{ id: "data", label: "Data" },
+		{ id: "account", label: m.settings_tab_account() },
+		{ id: "personas", label: m.settings_tab_personas() },
+		{ id: "general", label: m.settings_tab_general() },
+		{ id: "network", label: m.settings_tab_network() },
+		{ id: "ai", label: m.settings_tab_ai() },
+		{ id: "content", label: m.settings_tab_content() },
+		{ id: "data", label: m.settings_tab_data() },
 	];
 
 	let dialogEl: HTMLDialogElement | undefined;
@@ -74,6 +75,6 @@
 		</div>
 	</div>
 	<form method="dialog" class="modal-backdrop">
-		<button aria-label="Close settings">close</button>
+		<button aria-label={m.settings_close()}>{m.settings_close_label()}</button>
 	</form>
 </dialog>

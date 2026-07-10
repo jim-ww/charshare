@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { getPreferences, updatePreferences } from '$lib/state/preferences.svelte';
 	import { DAISYUI_THEMES, type ThemeMode } from '$lib/types';
+	import { m } from '$lib/paraglide/messages.js';
 
 	const preferences = $derived(getPreferences());
 
@@ -67,7 +68,7 @@
 
 <div class="flex flex-col gap-4">
 	<div>
-		<span class="label-text mb-1 block">Theme</span>
+		<span class="label-text mb-1 block">{m.general_tab_theme_label()}</span>
 		<div class="flex items-center gap-2">
 			<div class="relative" bind:this={themeMenuEl}>
 				<button
@@ -139,7 +140,7 @@
 				<button
 					type="button"
 					class="btn btn-outline btn-sm join-item"
-					aria-label="Previous theme"
+					aria-label={m.general_tab_previous_theme()}
 					onclick={() => cycleTheme(-1)}
 				>
 					<svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -153,7 +154,7 @@
 				<button
 					type="button"
 					class="btn btn-outline btn-sm join-item"
-					aria-label="Next theme"
+					aria-label={m.general_tab_next_theme()}
 					onclick={() => cycleTheme(1)}
 				>
 					<svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -165,26 +166,26 @@
 					</svg>
 				</button>
 			</div>
-			<span class="mt-1 block text-sm opacity-70">Tip: use the ← → arrow keys to switch themes.</span>
+			<span class="mt-1 block text-sm opacity-70">{m.general_tab_theme_tip()}</span>
 		</div>
 	</div>
 
 	<label class="form-control w-full max-w-md">
-		<span class="label-text">Default chat background</span>
+		<span class="label-text">{m.general_tab_default_background_label()}</span>
 		<input
 			class="input input-bordered w-full"
 			type="url"
-			placeholder="https://…"
+			placeholder={m.general_tab_background_placeholder()}
 			value={preferences.defaultBackground}
 			onchange={handleDefaultBackgroundChange}
 		/>
 		<span class="mt-1 text-sm opacity-70">
-			Applied to new chats automatically when set. Leave empty for no default.
+			{m.general_tab_default_background_hint()}
 		</span>
 	</label>
 
 	<label class="form-control w-full max-w-md">
-		<span class="label-text">Message/composer opacity ({preferences.chatOpacity}%)</span>
+		<span class="label-text">{m.general_tab_opacity_label()} ({preferences.chatOpacity}%)</span>
 		<input
 			class="range"
 			type="range"
@@ -194,7 +195,7 @@
 			oninput={handleChatOpacityChange}
 		/>
 		<span class="mt-1 text-sm opacity-70">
-			Fades chat bubbles and the composer so a chat background shows through.
+			{m.general_tab_opacity_hint()}
 		</span>
 	</label>
 
@@ -205,6 +206,6 @@
 			checked={preferences.showNsfw}
 			onchange={handleShowNsfwChange}
 		/>
-		<span class="label-text">Show NSFW characters in Browse</span>
+		<span class="label-text">{m.general_tab_show_nsfw_label()}</span>
 	</label>
 </div>

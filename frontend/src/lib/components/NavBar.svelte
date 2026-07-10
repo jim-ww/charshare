@@ -11,6 +11,7 @@
 		runSearch,
 		setSearchQuery,
 	} from "$lib/state/search.svelte";
+	import { m } from '$lib/paraglide/messages.js';
 
 	const user = $derived(getCurrentUser());
 	const profile = $derived(getMyProfile());
@@ -19,12 +20,12 @@
 		registered
 			? profile?.username ||
 					(user ? `${user.slice(0, 6)}…${user.slice(-4)}` : "")
-			: "Guest — sign in",
+			: m.navbar_guest_sign_in(),
 	);
 
 	const navLinks = [
-		{ href: resolve("/characters"), label: "Characters" },
-		{ href: resolve("/chats"), label: "Chats" },
+		{ href: resolve("/characters"), label: m.navbar_nav_characters() },
+		{ href: resolve("/chats"), label: m.navbar_nav_chats() },
 	];
 	const isActive = (href: string) => page.url.pathname.startsWith(href);
 
@@ -65,7 +66,7 @@
 	<form class="flex flex-1 max-w-2xl gap-2 justify-center mx-4" onsubmit={handleSearch}>
 		<input
 			class="input input-bordered input-sm w-full"
-			placeholder="Search by name, tag, or @username/@pubkey…"
+			placeholder={m.navbar_search_placeholder()}
 			value={getSearchQuery()}
 			oninput={(e) => setSearchQuery(e.currentTarget.value)}
 		/>
@@ -74,17 +75,17 @@
 			type="submit"
 			disabled={isSearching()}
 		>
-			{isSearching() ? "…" : "Search"}
+			{isSearching() ? "…" : m.navbar_search_button()}
 		</button>
 	</form>
 	<div class="flex flex-1 items-center justify-end gap-2">
 		<a href={resolve("/characters/new")} class="btn btn-sm btn-primary">
-			+ New Character
+			{m.navbar_new_character()}
 		</a>
 		<button
 			class="btn btn-sm btn-ghost gap-2"
 			type="button"
-			aria-label="Account settings"
+			aria-label={m.navbar_account_settings()}
 			onclick={() => openSettings("account")}
 		>
 			<div class="avatar {profile?.image_url ? '' : 'avatar-placeholder'}">

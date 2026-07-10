@@ -3,6 +3,7 @@
 	import { resolve } from '$app/paths';
 	import type { Chat } from '$lib/types';
 	import { getChats } from '$lib/state/chats.svelte';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		chat: Chat;
@@ -33,7 +34,7 @@
 			type="button"
 			onclick={() => goto(resolve('/characters/[id]', { id: chat.character_id }))}
 		>
-			Back
+			{m.chat_thread_switcher_back()}
 		</button>
 		<button class="btn btn-xs" type="button" disabled={index <= 0} onclick={() => go(-1)}>
 			‹

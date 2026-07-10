@@ -10,6 +10,7 @@
 	import { exportAccountBackup, parseAccountBackup } from '$lib/identity/backup';
 	import { categoryFilename } from '$lib/export/dataExport';
 	import { clearProfileForLogout } from '$lib/state/profile.svelte';
+	import { m } from '$lib/paraglide/messages.js';
 
 	const profileReady = $derived(isProfileReady());
 	const registered = $derived(isAccountRegistered());
@@ -84,10 +85,7 @@
 	}
 
 	async function handleLogout() {
-		const confirmed = confirm(
-			'Log out of this account? Make sure you have downloaded a backup first — ' +
-				'there is no way to recover this account without it.'
-		);
+		const confirmed = confirm(m.account_tab_logout_confirm());
 		if (!confirmed) return;
 		await logout();
 		clearProfileForLogout();
@@ -119,39 +117,37 @@
 </script>
 
 {#if !profileReady}
-	<p>Loading account…</p>
+	<p>{m.account_tab_loading()}</p>
 {:else if !registered}
 	<div class="flex flex-col gap-6">
 		<div>
-			<h3 class="font-semibold">You're browsing as a guest</h3>
+			<h3 class="font-semibold">{m.account_tab_guest_heading()}</h3>
 			<p class="text-sm opacity-70">
-				Talking to characters, chats, personas and preferences all work locally without an
-				account. Create an account only if you want to publish characters or post comments —
-				it's not required otherwise.
+				{m.account_tab_guest_body()}
 			</p>
 		</div>
 
 		<form class="flex flex-col gap-3" onsubmit={handleRegister}>
-			<h3 class="font-semibold">Create an account</h3>
+			<h3 class="font-semibold">{m.account_tab_create_heading()}</h3>
 			<label class="form-control">
-				<span class="label-text">Username</span>
+				<span class="label-text">{m.account_tab_username_label()}</span>
 				<input class="input input-bordered w-full" bind:value={username} required />
 			</label>
 			<label class="form-control">
-				<span class="label-text">Description</span>
+				<span class="label-text">{m.account_tab_description_label()}</span>
 				<textarea class="textarea textarea-bordered w-full" bind:value={description}></textarea>
 			</label>
 			<label class="form-control">
-				<span class="label-text">Image URL</span>
+				<span class="label-text">{m.account_tab_image_url_label()}</span>
 				<input
 					class="input input-bordered w-full"
 					type="url"
-					placeholder="https://…"
+					placeholder={m.account_tab_image_url_placeholder()}
 					bind:value={imageUrl}
 				/>
 			</label>
 			<button class="btn btn-primary self-start" type="submit" disabled={saving}>
-				{saving ? 'Creating…' : 'Create account'}
+				{saving ? m.account_tab_creating() : m.account_tab_create_account()}
 			</button>
 			{#if saveError}
 				<p class="text-error text-sm">{saveError}</p>
@@ -161,9 +157,9 @@
 		<div class="divider"></div>
 
 		<div>
-			<h3 class="font-semibold">Already have an account?</h3>
+			<h3 class="font-semibold">{m.account_tab_have_account_heading()}</h3>
 			<p class="text-sm opacity-70">
-				Select a backup file to sign in with an existing account on this browser.
+				{m.account_tab_have_account_body()}
 			</p>
 			<div class="mt-2 flex flex-col gap-2">
 				<input
@@ -176,7 +172,7 @@
 					<p class="text-error text-sm">{importError}</p>
 				{/if}
 				{#if imported}
-					<p class="text-success text-sm">Signed in.</p>
+					<p class="text-success text-sm">{m.account_tab_signed_in()}</p>
 				{/if}
 			</div>
 		</div>
@@ -185,28 +181,28 @@
 	<div class="flex flex-col gap-6">
 		<form class="flex flex-col gap-3" onsubmit={handleSave}>
 			<label class="form-control">
-				<span class="label-text">Username</span>
+				<span class="label-text">{m.account_tab_username_label()}</span>
 				<input class="input input-bordered w-full" bind:value={username} />
 			</label>
 			<label class="form-control">
-				<span class="label-text">Description</span>
+				<span class="label-text">{m.account_tab_description_label()}</span>
 				<textarea class="textarea textarea-bordered w-full" bind:value={description}></textarea>
 			</label>
 			<label class="form-control">
-				<span class="label-text">Image URL</span>
+				<span class="label-text">{m.account_tab_image_url_label()}</span>
 				<input
 					class="input input-bordered w-full"
 					type="url"
-					placeholder="https://…"
+					placeholder={m.account_tab_image_url_placeholder()}
 					bind:value={imageUrl}
 				/>
 			</label>
 			<div class="flex items-center gap-2">
 				<button class="btn btn-primary self-start" type="submit" disabled={saving}>
-					{saving ? 'Saving…' : 'Save profile'}
+					{saving ? m.account_tab_saving() : m.account_tab_save_profile()}
 				</button>
 				{#if justSaved}
-					<span class="text-success text-sm">Saved!</span>
+					<span class="text-success text-sm">{m.account_tab_saved()}</span>
 				{/if}
 			</div>
 			{#if saveError}
@@ -217,20 +213,19 @@
 		<div class="divider"></div>
 
 		<div>
-			<h3 class="font-semibold">Back up your account</h3>
+			<h3 class="font-semibold">{m.account_tab_backup_heading()}</h3>
 			<p class="text-sm opacity-70">
-				Download a file that lets you use this account on another device or browser.
+				{m.account_tab_backup_body()}
 			</p>
 			<button class="btn btn-sm mt-2" type="button" onclick={handleExport}
-				>Download backup</button
+				>{m.account_tab_download_backup()}</button
 			>
 		</div>
 
 		<div>
-			<h3 class="font-semibold">Switch account</h3>
+			<h3 class="font-semibold">{m.account_tab_switch_heading()}</h3>
 			<p class="text-sm opacity-70">
-				Select a backup file to switch this browser to that account. Keep this file safe — it's
-				the only way to access your account, and it can't be recovered if lost.
+				{m.account_tab_switch_body()}
 			</p>
 			<div class="mt-2 flex flex-col gap-2">
 				<input
@@ -243,7 +238,7 @@
 					<p class="text-error text-sm">{importError}</p>
 				{/if}
 				{#if imported}
-					<p class="text-success text-sm">Switched to the imported account.</p>
+					<p class="text-success text-sm">{m.account_tab_switched()}</p>
 				{/if}
 			</div>
 		</div>
@@ -251,13 +246,12 @@
 		<div class="divider"></div>
 
 		<div>
-			<h3 class="font-semibold">Log out</h3>
+			<h3 class="font-semibold">{m.account_tab_logout_heading()}</h3>
 			<p class="text-sm opacity-70">
-				Switches this browser back to a fresh guest identity. Make sure you've downloaded a
-				backup first — there's no other way to get back into this account.
+				{m.account_tab_logout_body()}
 			</p>
 			<button class="btn btn-sm btn-error mt-2" type="button" onclick={handleLogout}>
-				Log out
+				{m.account_tab_logout_button()}
 			</button>
 		</div>
 	</div>

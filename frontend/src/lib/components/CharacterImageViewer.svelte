@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages.js';
+
 	interface Props {
 		images: string[];
 		name: string;
@@ -101,7 +103,7 @@
 		{#if failed}
 			<div class="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-base-300 text-center text-sm opacity-70">
 				<span>⚠</span>
-				<span>Image failed to load</span>
+				<span>{m.char_image_viewer_load_failed()}</span>
 			</div>
 		{:else if !loaded}
 			<div class="absolute inset-0 flex items-center justify-center bg-base-300">
@@ -119,7 +121,7 @@
 					type="button"
 					class="btn btn-circle btn-sm absolute left-2 top-1/2 -translate-y-1/2"
 					onclick={prev}
-					aria-label="Previous image"
+					aria-label={m.char_image_viewer_previous()}
 				>
 					‹
 				</button>
@@ -129,7 +131,7 @@
 					type="button"
 					class="btn btn-circle btn-sm absolute right-2 top-1/2 -translate-y-1/2"
 					onclick={next}
-					aria-label="Next image"
+					aria-label={m.char_image_viewer_next()}
 				>
 					›
 				</button>
