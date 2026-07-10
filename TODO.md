@@ -1,4 +1,5 @@
 - feat(characters): add some indication whether character is local / published (if owned) / or is from the network
+- feat(characters): make save button icon(star) more noticable, make it use color warning, when active
 - feat(character view): add republish button
 - add tooltip on characters/ 'Saved only' filter option, describing which characters are considered 'Saved'
 - feat: add option to reply to other comments

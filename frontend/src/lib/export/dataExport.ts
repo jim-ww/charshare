@@ -221,13 +221,25 @@ async function importAccountFile(json: string): Promise<void> {
 
 /** Restores a full "characters" backup, preserving each character's original
  *  id — re-restoring the same backup merges by id (see restoreCharacter)
- *  instead of piling up duplicates like the single-item share/import flow. */
+ *  instead of piling up duplicates like the single-item share/import flow.
+ *
+ *  A backup taken under a different identity (account switch/restore-elsewhere)
+ *  can contain characters authored by that old key — restoring those into the
+ *  local characters index would make them un-unsave-able and un-deletable,
+ *  since both actions require real authorship. Route those to the saved
+ *  characters store instead, exactly where they'd land if you'd bookmarked
+ *  them from the network. */
 async function importCharactersFile(json: string): Promise<ImportSummary> {
 	const parsed: unknown = JSON.parse(json);
 	if (!Array.isArray(parsed)) throw new Error(m.data_export_error_not_valid_characters());
+	const myPubkey = getKeyring()?.publicKey;
 	const results: ('added' | 'updated' | 'skipped')[] = [];
 	for (const item of parsed as Character[]) {
-		results.push(await restoreCharacter(item));
+		results.push(
+			item.author === myPubkey
+				? await restoreCharacter(item)
+				: await restoreSavedCharacter(item)
+		);
 	}
 	return summarizeRestoreResults('characters', results);
 }
