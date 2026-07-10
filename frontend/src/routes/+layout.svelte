@@ -8,13 +8,14 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import { initPreferences, getPreferences } from '$lib/state/preferences.svelte';
 	import { initAuth } from '$lib/state/auth.svelte';
-	import { initProfile } from '$lib/state/profile.svelte';
+	import { initProfile, checkUsernameConflict } from '$lib/state/profile.svelte';
 	import { initCharacters } from '$lib/state/characters.svelte';
 	import { initSavedCharacters } from '$lib/state/savedCharacters.svelte';
 	import { initChats } from '$lib/state/chats.svelte';
 	import NavBar from '$lib/components/NavBar.svelte';
 	import SettingsModal from '$lib/components/SettingsModal.svelte';
 	import ImageViewerOverlay from '$lib/components/ImageViewerOverlay.svelte';
+	import NotificationStack from '$lib/components/NotificationStack.svelte';
 	import { installWailsConsoleForward } from '$lib/wailsConsoleForward';
 
 	let { children } = $props();
@@ -23,7 +24,7 @@
 		installWailsConsoleForward();
 		initPreferences();
 		initAuth();
-		initProfile();
+		initProfile().then(() => checkUsernameConflict());
 		initCharacters();
 		initSavedCharacters();
 		initChats();
@@ -85,6 +86,7 @@
 {@render children()}
 <SettingsModal />
 <ImageViewerOverlay />
+<NotificationStack />
 
 <div style="display:none">
 	{#each locales as locale}

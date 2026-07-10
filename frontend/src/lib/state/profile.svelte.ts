@@ -2,7 +2,10 @@ import { browser } from '$app/environment';
 import type { User } from '$lib/types';
 import { getCurrentUser, initAuth, isAccountRegistered, markRegistered } from './auth.svelte';
 import { publishProfile, subscribeProfile } from '$lib/gun/users';
+import { getUsernameClaim } from '$lib/gun/usernames';
 import { clearCachedProfile, loadCachedProfile, saveCachedProfile } from '$lib/db/profile';
+import { notify } from './notifications.svelte';
+import { openSettings } from './settingsModal.svelte';
 
 let profile = $state<User | null>(null);
 let ready = $state(false);
@@ -94,6 +97,73 @@ export async function saveProfile(fields: {
 	const doc = await publishProfile(fields);
 	profile = doc;
 	await saveCachedProfile(doc);
+}
+
+let usernameCheckDone = false;
+const MAX_RENAME_CANDIDATES = 8;
+const MAX_PUBLISH_ATTEMPTS = 3;
+
+/** Picks a username derived from `base` that isn't currently claimed by
+ *  anyone — used to recover from a lost username race (see
+ *  checkUsernameConflict) without prompting the user mid-startup. Returns
+ *  null if it can't find one within a bounded number of attempts (left for
+ *  the user to resolve manually in Account settings). */
+async function pickAvailableUsername(base: string): Promise<string | null> {
+	for (let i = 0; i < MAX_RENAME_CANDIDATES; i++) {
+		const suffix = Math.floor(1000 + Math.random() * 9000);
+		const candidate = `${base}${suffix}`;
+		const existing = await getUsernameClaim(candidate);
+		if (!existing.ok || existing.doc.deleted) return candidate;
+	}
+	return null;
+}
+
+/** Detects a lost username race: GUN has no server-side arbiter, so two
+ *  clients can each briefly believe they've claimed the same username before
+ *  the network converges (see spec: username claims are first-come-wins,
+ *  enforced client-side only). If our own published profile's username turns
+ *  out to be claimed by a different pubkey by the time we check, silently
+ *  mint a fresh unique one and republish under it, then surface a sticky
+ *  notification so the user knows what happened and can pick a preferred
+ *  name themselves. Runs at most once per app session — call after
+ *  initProfile() has resolved. */
+export async function checkUsernameConflict(): Promise<void> {
+	if (!browser || usernameCheckDone) return;
+	usernameCheckDone = true;
+	if (!isAccountRegistered()) return;
+
+	const current = profile;
+	const pubkey = getCurrentUser();
+	if (!current || !pubkey || !current.username) return;
+
+	const claim = await getUsernameClaim(current.username);
+	if (!claim.ok || claim.doc.deleted) return; // unclaimed/tombstoned — no conflict
+	if (claim.doc.authorPub === pubkey) return; // we hold it — no conflict
+
+	const previousUsername = current.username;
+	for (let attempt = 0; attempt < MAX_PUBLISH_ATTEMPTS; attempt++) {
+		const candidate = await pickAvailableUsername(previousUsername);
+		if (!candidate) return; // give up quietly; user can rename manually later
+		try {
+			await saveProfile({
+				username: candidate,
+				description: current.description,
+				...(current.image_url ? { image_url: current.image_url } : {})
+			});
+			notify(
+				`Your username "@${previousUsername}" is now used by another account, so it was automatically changed to "@${candidate}". Review it in Account settings.`,
+				{
+					kind: 'warning',
+					duration: 0,
+					action: { label: 'Open Account settings', onClick: () => openSettings('account') }
+				}
+			);
+			return;
+		} catch {
+			// Someone claimed `candidate` between our availability check and
+			// publishing (rare TOCTOU race) — try another candidate.
+		}
+	}
 }
 
 /** Called after switching this browser to an imported account (backup
