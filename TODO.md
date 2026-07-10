@@ -1,9 +1,8 @@
-- fix missing dependency on github pages build: Please `npm install @peculiar/webcrypto` or add it to your package.json !
 - add button to cache some character locally? like 'save locally' or 'add to favourites', so it would always stay there, even ifs deleted from remote node or by author? but should be marked locally if author deleted it. also, should characters that have local chats, be 'saved' too, by default, if so same way, 'saved' or hidden save?
 - implement 'read aloud' feature. and different providers for it. either local, or remote
-- feat: improve usability on mobiles? improve modals, small buttons/controls
 - feat: add option to reply to other comments
 - feat: add option to see all owned comments, with edit, delete buttons and links to character?
+- feat: improve usability on mobiles? improve modals, small buttons/controls
 - feat(providers): implement more robust support of ollama provider, like downloading/starting ollama server?
 - feat: implement proper sorting(by updated_at,created_at), pagination in Characters browse page?
 - feat(core): rating system for characters? then add sorting by popularity
