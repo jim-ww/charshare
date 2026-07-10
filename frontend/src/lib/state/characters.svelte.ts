@@ -75,9 +75,22 @@ async function refresh(options?: { resyncMissing?: boolean }): Promise<void> {
 	const resolved = await Promise.all(
 		entries.map(async (entry) => {
 			if (!entry.published) {
-				return entry.character
-					? { character: normalizeLocalCharacter(entry.character), published: false }
-					: null;
+				if (!entry.character) return null;
+				const character = normalizeLocalCharacter(entry.character);
+				// A local-only entry can be wrong — e.g. a character imported from a
+				// backup that raced GUN's connection during the network check (see
+				// restoreCharacter) can get filed as local-only even though it's
+				// really already published. Only worth checking on startup resync;
+				// a normal local-only draft has no reason to suddenly appear on the
+				// network between one refresh() and the next.
+				if (resyncMissing && keyring && character.author === keyring.publicKey) {
+					const onNetwork = await getCharacter(entry.id);
+					if (onNetwork.ok) {
+						await addPublishedCharacterId(entry.id, onNetwork.doc);
+						return { character: onNetwork.doc, published: true };
+					}
+				}
+				return { character, published: false };
 			}
 			const result = await getCharacter(entry.id);
 			if (result.ok) {
@@ -227,6 +240,11 @@ export async function restoreCharacter(character: Character): Promise<'added' | 
 
 	const existing = existingEntry?.character;
 	if (!existing) {
+		// A fresh import runs before GUN has necessarily connected — without
+		// waiting here, this network check can race the connection and lose,
+		// wrongly filing an already-published character as local-only (see
+		// refresh()'s resyncMissing, which waits for the same reason).
+		await gunPeerReady();
 		const onNetwork = await getCharacter(character.id);
 		if (onNetwork.ok) {
 			await addPublishedCharacterId(character.id, onNetwork.doc);
