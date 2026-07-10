@@ -90,6 +90,30 @@
 		</div>
 
 		<div class="flex flex-col gap-2 pl-1">
+			{#if !exportEverything}
+				<div class="flex gap-3">
+					<button
+						class="btn btn-ghost btn-xs"
+						type="button"
+						onclick={() =>
+							(selected = Object.fromEntries(
+								DATA_CATEGORIES.map((c) => [c.id, true])
+							) as Record<DataCategory, boolean>)}
+					>
+						{m.data_tab_select_all()}
+					</button>
+					<button
+						class="btn btn-ghost btn-xs"
+						type="button"
+						onclick={() =>
+							(selected = Object.fromEntries(
+								DATA_CATEGORIES.map((c) => [c.id, false])
+							) as Record<DataCategory, boolean>)}
+					>
+						{m.data_tab_select_none()}
+					</button>
+				</div>
+			{/if}
 			{#each DATA_CATEGORIES as category (category.id)}
 				<label
 					class="flex items-start gap-2"

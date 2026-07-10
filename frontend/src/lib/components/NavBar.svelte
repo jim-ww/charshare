@@ -83,9 +83,11 @@
 		{#each navLinks as { href, label } (href)}
 			<a
 				{href}
-				class="hidden text-base font-medium leading-none md:inline {isActive(href)
+				class="btn btn-ghost hidden h-16 min-h-16 rounded-none text-base font-medium md:inline-flex {isActive(
+					href,
+				)
 					? 'text-primary'
-					: 'text-base-content/70 hover:text-base-content'}"
+					: 'text-base-content/70'}"
 			>
 				{label}
 			</a>

@@ -454,6 +454,8 @@
 	"data_tab_export_heading": "Export",
 	"data_tab_export_everything": "Export everything",
 	"data_tab_choose_export": "Choose what to export",
+	"data_tab_select_all": "Select all",
+	"data_tab_select_none": "Select none",
 	"data_tab_download": "Download",
 	"data_tab_download_hint": "One category downloads as a single JSON file; multiple categories are bundled into a zip.",
 	"data_tab_import_heading": "Import",

@@ -2,13 +2,13 @@
 - fix(i18n): not all strings are translated with paraglide. example: src/lib/export/dataExport.ts
 - preferences(DataTab): add select all/none buttons
 - feat(characters page): improve tag selector, also, make them all as checkboxes, and never append to query visibly? (but append correctly formatted list in the beginning, for example) or handle them separately
-- implement 'read aloud' feature. and different providers for it. either local, or remote
 - feat: add option to reply to other comments
-- feat: add option to see all owned comments, with edit, delete buttons and links to character?
+- feat: add option to see all owned comments, with edit, delete buttons and links to character (on which comment was posted)?
 - feat: improve usability on mobiles? improve modals, small buttons/controls
 - feat(providers): implement more robust support of ollama provider, like downloading/starting ollama server?
 - feat(browse): rework Browse/search to avoid fetching the entire published network unbounded on every load (currently `browseNetwork()` reads every id under the `__network__` pseudo-tag and fetches+verifies each one) — implement proper sorting (by updated_at, created_at) and pagination
-- NEXT: feat(browse): `browseByAuthor` currently filters the full network feed client-side by author instead of a targeted lookup; a native per-author index already exists implicitly (each author's characters live under their own GUN user-space graph, enumerable via `.map()`) but isn't wired up for this — use it
+- feat(browse): `browseByAuthor` currently filters the full network feed client-side by author instead of a targeted lookup; a native per-author index already exists implicitly (each author's characters live under their own GUN user-space graph, enumerable via `.map()`) but isn't wired up for this — use it
+- implement 'read aloud' feature. and different providers for it. either local, or remote
 - feat(core): rating system for characters? then add sorting by popularity
 - feat(core): after implementing rating system, add rating to comments? also allow to sort by rating, then created_at
 - feat(chats): add share chat url button, that would encode chat history json, as base64 string, and implement chat history viewer, that would take this base64 string from URL
