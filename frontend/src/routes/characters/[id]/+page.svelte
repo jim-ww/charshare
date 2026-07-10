@@ -4,7 +4,7 @@
 	import { goto } from "$app/navigation";
 	import { resolve } from "$app/paths";
 	import type { Character, Comment } from "$lib/types";
-	import { subscribeCharacter } from "$lib/gun/characters";
+	import { subscribeCharacterWithRetry } from "$lib/gun/characters";
 	import {
 		getCurrentUser,
 		isAccountRegistered,
@@ -82,17 +82,21 @@
 		}
 
 		const unsubscribe = untrack(() =>
-			subscribeCharacter(currentId, (result) => {
-				if (result.ok) {
-					character = result.doc;
-					notFound = false;
-				} else if (!character) {
-					// Only flag not-found while we have nothing to show yet — GUN's
-					// `.on()` can fire once with stale/missing local data before a
-					// relay answers, then fire again once the real doc syncs in.
-					notFound = true;
-				}
-			}),
+			subscribeCharacterWithRetry(
+				currentId,
+				(result) => {
+					if (result.ok) {
+						character = result.doc;
+						notFound = false;
+					} else if (!character) {
+						// Only flag not-found while we have nothing to show yet — GUN's
+						// `.on()` can fire once with stale/missing local data before a
+						// relay answers, then fire again once the real doc syncs in.
+						notFound = true;
+					}
+				},
+				() => character !== null,
+			),
 		);
 		untrack(() => {
 			void initChats();

@@ -108,3 +108,38 @@ export function subscribeDocument<T extends Signable>(
 	node.on(handler);
 	return () => node.off();
 }
+
+const RETRY_INTERVAL_MS = 2000;
+
+/** Wraps subscribeDocument with a periodic one-shot re-fetch (getDocument).
+ *  This app's public community relays (see NetworkTab/gunRelays) don't
+ *  reliably answer a `.get()`/`.on()` ask on the first try, and a `.on()`
+ *  subscription left running on its own isn't a fix — it can just sit idle
+ *  on a path the relay never answers (confirmed live: chat characters
+ *  resolved "every other" page load with subscribeDocument alone). Re-issuing
+ *  a one-shot getDocument() poke every RETRY_INTERVAL_MS gives a flaky relay
+ *  repeated chances. Retrying stops once `isResolved()` is true or the
+ *  returned function is called (e.g. from the caller's own give-up timeout —
+ *  see characterCache.svelte.ts:armTimeout). */
+export function subscribeDocumentWithRetry<T extends Signable>(
+	node: GunNode,
+	validate: Validator<T>,
+	pubkeyOf: (doc: T) => PubKey,
+	onUpdate: (result: Verified<T>) => void,
+	isResolved: () => boolean
+): () => void {
+	const unsubscribe = subscribeDocument(node, validate, pubkeyOf, onUpdate);
+	const timer = setInterval(() => {
+		if (isResolved()) {
+			clearInterval(timer);
+			return;
+		}
+		void getDocument(node, validate, pubkeyOf).then((result) => {
+			if (result.ok) onUpdate(result);
+		});
+	}, RETRY_INTERVAL_MS);
+	return () => {
+		unsubscribe();
+		clearInterval(timer);
+	};
+}

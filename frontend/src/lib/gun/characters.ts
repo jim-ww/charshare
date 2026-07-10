@@ -1,7 +1,7 @@
 import type { Character, CharacterDraft, CharacterId, Keyring, PubKey, Verified } from '$lib/types';
 import { signDocument } from '$lib/crypto/sign';
 import { getKeyring, requireAccount } from '$lib/state/auth.svelte';
-import { getDocument, putDocument, subscribeDocument, type Validator } from './document';
+import { getDocument, putDocument, subscribeDocument, subscribeDocumentWithRetry, type Validator } from './document';
 import { authorNode, ensureGunUserAuth, getGun, ownNode } from './client';
 import { addToTagIndex, NETWORK_INDEX_TAG } from './tags';
 import { addToNameIndex } from './names';
@@ -77,6 +77,19 @@ export function getCharacter(id: CharacterId): Promise<Verified<Character>> {
 export function subscribeCharacter(id: CharacterId, onUpdate: (result: Verified<Character>) => void): () => void {
 	const { author, uuid } = parseCharacterId(id);
 	return subscribeDocument(authorNode(getGun(), author, ['characters', uuid]), isCharacter, pubkeyOf, onUpdate);
+}
+
+/** Same as subscribeCharacter, but also re-polls with a one-shot getCharacter
+ *  every couple seconds until `isResolved()` — see
+ *  document.ts:subscribeDocumentWithRetry for why a bare subscription isn't
+ *  enough on this app's public relays. */
+export function subscribeCharacterWithRetry(
+	id: CharacterId,
+	onUpdate: (result: Verified<Character>) => void,
+	isResolved: () => boolean
+): () => void {
+	const { author, uuid } = parseCharacterId(id);
+	return subscribeDocumentWithRetry(authorNode(getGun(), author, ['characters', uuid]), isCharacter, pubkeyOf, onUpdate, isResolved);
 }
 
 /** Creates (no `draft.id`) or edits (with `draft.id`) a character. Editing is

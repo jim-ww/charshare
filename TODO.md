@@ -1,4 +1,3 @@
-- chat page doesnt load up characters, check its logic, make it use same thing as load with retry like on 'characters' page?
 - fix missing dependency on github pages build: Please `npm install @peculiar/webcrypto` or add it to your package.json !
 - add button to cache some character locally? like 'save locally' or 'add to favourites', so it would always stay there, even ifs deleted from remote node or by author? but should be marked locally if author deleted it. also, should characters that have local chats, be 'saved' too, by default, if so same way, 'saved' or hidden save?
 - implement 'read aloud' feature. and different providers for it. either local, or remote
