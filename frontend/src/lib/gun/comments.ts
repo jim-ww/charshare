@@ -3,13 +3,10 @@ import { signDocument } from '$lib/crypto/sign';
 import { getKeyring, requireAccount } from '$lib/state/auth.svelte';
 import { getDocument, putDocument, type Validator } from './document';
 import { getGun, gunPath } from './client';
+import { createSignedPointerIndex } from './signedIndex';
 
 function commentPath(id: CommentId): string {
 	return `comments/${id}`;
-}
-
-function commentIndexPath(characterId: CharacterId): string {
-	return `characters/${characterId}/comments`;
 }
 
 const isComment: Validator<Comment> = (data): data is Comment => {
@@ -30,77 +27,33 @@ const isComment: Validator<Comment> = (data): data is Comment => {
 
 const pubkeyOf = (doc: Comment): PubKey => doc.author;
 
-/** Same index-blob pattern as tags.ts — GUN has no query engine, so listing a
- *  character's comments needs a manually maintained id list. Same known
- *  limitation: concurrent commenters can race/clobber the index, last-write-wins. */
-const INDEX_TIMEOUT_MS = 3000;
-
-async function readCommentIndex(characterId: CharacterId): Promise<CommentId[]> {
-	const node = gunPath(getGun(), commentIndexPath(characterId));
-	return new Promise((resolve) => {
-		let settled = false;
-		const timer = setTimeout(() => {
-			if (!settled) {
-				settled = true;
-				resolve([]);
-			}
-		}, INDEX_TIMEOUT_MS);
-		node.once((data: unknown) => {
-			if (settled) return;
-			settled = true;
-			clearTimeout(timer);
-			const raw = (data as { json?: string } | null | undefined)?.json;
-			if (!raw) {
-				resolve([]);
-				return;
-			}
-			try {
-				const parsed = JSON.parse(raw);
-				resolve(Array.isArray(parsed) ? parsed : []);
-			} catch {
-				resolve([]);
-			}
-		});
-	});
-}
-
-function writeCommentIndex(characterId: CharacterId, ids: CommentId[]): Promise<void> {
-	const node = gunPath(getGun(), commentIndexPath(characterId));
-	return new Promise((resolve) => {
-		let settled = false;
-		const timer = setTimeout(() => {
-			if (!settled) {
-				settled = true;
-				resolve();
-			}
-		}, INDEX_TIMEOUT_MS);
-		node.put({ json: JSON.stringify(ids) }, () => {
-			if (settled) return;
-			settled = true;
-			clearTimeout(timer);
-			resolve();
-		});
-	});
-}
-
-async function addToCommentIndex(characterId: CharacterId, id: CommentId): Promise<void> {
-	const ids = await readCommentIndex(characterId);
-	if (!ids.includes(id)) await writeCommentIndex(characterId, [...ids, id]);
-}
+/** Signed pointer index of comment ids, keyed by the character they belong
+ *  to (see signedIndex.ts) — replaces an older unsigned-blob-array scheme
+ *  that was race-prone under concurrent commenters. Ownership is permissive
+ *  (`() => true`) because comment ids are plain UUIDs, unlike CharacterId,
+ *  so they don't encode their author for the default check to use — the
+ *  pointer index here is discovery-only. The real trust boundary is each
+ *  comment's independently-verified signature (see getComment) plus the
+ *  character_id cross-check in getCommentsForCharacter below, matching how
+ *  tag/name pointers are also always re-verified against the real character
+ *  afterward in browse.ts:resolveIndex. */
+const commentIndex = createSignedPointerIndex('comments', () => true);
 
 export function getComment(id: CommentId): Promise<Verified<Comment>> {
 	return getDocument(gunPath(getGun(), commentPath(id)), isComment, pubkeyOf);
 }
 
 /** Fetches every non-tombstoned comment on `characterId`, dropping any that
- *  fail schema/signature verification (see spec: never partially trust). */
+ *  fail schema/signature verification or don't actually belong to
+ *  `characterId` (see spec: never partially trust). */
 export async function getCommentsForCharacter(characterId: CharacterId): Promise<Comment[]> {
-	const ids = await readCommentIndex(characterId);
-	const results = await Promise.all(ids.map((id) => getComment(id)));
+	const ids = await commentIndex.getIndex(characterId);
+	const results = await Promise.all(ids.map((id) => getComment(id as CommentId)));
 	return results
 		.filter((r) => r.ok)
 		.map((r) => r.doc)
 		.filter((c) => !c.deleted)
+		.filter((c) => c.character_id === characterId)
 		.sort((a, b) => a.created_at - b.created_at);
 }
 
@@ -129,7 +82,7 @@ export async function postComment(characterId: CharacterId, content: string): Pr
 		},
 		keyring
 	);
-	await addToCommentIndex(characterId, doc.id);
+	await commentIndex.addToIndex(characterId, doc.id, keyring);
 	return doc;
 }
 

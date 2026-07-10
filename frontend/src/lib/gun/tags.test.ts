@@ -55,7 +55,7 @@ describe('addToTagIndex / getTagIndex', () => {
 
 		// Forge a pointer for owner's charId but signed by attacker, claiming
 		// attacker as the author.
-		const forged = { tag, charId, authorPub: attacker.publicKey, signature: '' };
+		const forged = { tag, docId: charId, authorPub: attacker.publicKey, signature: '' };
 		forged.signature = await signDocument(forged, attacker);
 		await putDocument(
 			gunPath(getGun(), `tags/${encodeURIComponent(tag)}/${new Date().getUTCFullYear()}-${String(new Date().getUTCMonth() + 1).padStart(2, '0')}`).get(

@@ -1,23 +1,20 @@
-import type { CharacterId, Keyring, PubKey } from '$lib/types';
+import type { Keyring, PubKey } from '$lib/types';
 import { signDocument, verifyDocument } from '$lib/crypto/sign';
 import { getGun, gunPath, gunPeerReady, type GunNode } from './client';
 import { putDocument, type Validator } from './document';
 import { parseCharacterId } from './characterId';
 
-/** A general-purpose "which characters are indexed under this key" structure,
- *  shared by tags.ts (key = tag) and names.ts (key = name token). An entry is
- *  its own small signed document rather than a shared JSON-blob array (the
- *  old scheme — see git history): each pointer lives at its own GUN key
- *  (`.../{charId}`), so two authors indexing under the same key write to
+/** A general-purpose "which documents are indexed under this key" structure,
+ *  shared by tags.ts/names.ts (indexing characters, key = tag/name token) and
+ *  comments.ts (indexing comments, key = character id). An entry is its own
+ *  small signed document rather than a shared JSON-blob array (the old
+ *  scheme — see git history): each pointer lives at its own GUN key
+ *  (`.../{docId}`), so two authors indexing under the same key write to
  *  different graph keys and can never clobber each other's pointer — no
- *  read-modify-write race, no lost writes. A pointer is locally verifiable
- *  without fetching the character itself: its signature must be valid for
- *  `authorPub`, and `authorPub` must match the author encoded in `charId`
- *  (see characterId.ts), so nobody can mint a pointer for a character id
- *  they don't own. */
+ *  read-modify-write race, no lost writes. */
 interface IndexPointer {
 	key: string;
-	charId: CharacterId;
+	docId: string;
 	authorPub: PubKey;
 	signature: string;
 }
@@ -27,14 +24,36 @@ const isIndexPointer: Validator<IndexPointer> = (data): data is IndexPointer => 
 	const d = data as Record<string, unknown>;
 	return (
 		typeof d.key === 'string' &&
-		typeof d.charId === 'string' &&
+		typeof d.docId === 'string' &&
 		typeof d.authorPub === 'string' &&
 		typeof d.signature === 'string'
 	);
 };
 
-function pointerKey(charId: CharacterId): string {
-	return encodeURIComponent(charId);
+/** Decides whether `authorPub` is allowed to index `docId` — the extra,
+ *  locally-verifiable-without-fetching-the-document check described above.
+ *  Pluggable per namespace: tags.ts/names.ts use `defaultOwnershipCheck`
+ *  below (docId is a CharacterId, which encodes its author, so a forged
+ *  pointer for a character someone doesn't own is rejected outright).
+ *  comments.ts (see its own file) instead passes a permissive `() => true`,
+ *  since comment ids are plain UUIDs that don't encode authorship — there,
+ *  the pointer index is discovery-only, and the real trust boundary is each
+ *  comment's independently-verified signature plus a character_id
+ *  cross-check done when resolving the index (matching how tag/name
+ *  pointers are also always re-verified against the real character
+ *  afterward in browse.ts:resolveIndex). */
+export type OwnershipCheck = (docId: string, authorPub: PubKey) => boolean;
+
+const defaultOwnershipCheck: OwnershipCheck = (docId, authorPub) => {
+	try {
+		return parseCharacterId(docId).author === authorPub;
+	} catch {
+		return false;
+	}
+};
+
+function pointerKey(docId: string): string {
+	return encodeURIComponent(docId);
 }
 
 function monthBucket(date: Date): string {
@@ -60,11 +79,15 @@ function recentBuckets(): string[] {
 
 /** Parses, schema-validates, and signature-verifies a raw pointer envelope
  *  read off a bucket node, additionally checking that its GUN key (the
- *  encoded charId it was stored under) matches the charId inside the
- *  document and that the claimed author actually matches the author encoded
- *  in that charId. Returns the verified charId, or null if anything fails —
- *  invalid or forged pointers are silently dropped, never partially trusted. */
-async function verifyPointer(raw: unknown, keyCharId: CharacterId): Promise<CharacterId | null> {
+ *  encoded docId it was stored under) matches the docId inside the document
+ *  and that `ownershipCheck` accepts the claimed author for that docId.
+ *  Returns the verified docId, or null if anything fails — invalid or
+ *  forged pointers are silently dropped, never partially trusted. */
+async function verifyPointer(
+	raw: unknown,
+	keyDocId: string,
+	ownershipCheck: OwnershipCheck
+): Promise<string | null> {
 	const envelope = raw as { json?: string } | null | undefined;
 	if (!envelope || typeof envelope.json !== 'string') return null;
 	let parsed: unknown;
@@ -73,16 +96,10 @@ async function verifyPointer(raw: unknown, keyCharId: CharacterId): Promise<Char
 	} catch {
 		return null;
 	}
-	if (!isIndexPointer(parsed) || parsed.charId !== keyCharId) return null;
-	let author: PubKey;
-	try {
-		author = parseCharacterId(parsed.charId).author;
-	} catch {
-		return null;
-	}
-	if (author !== parsed.authorPub) return null;
+	if (!isIndexPointer(parsed) || parsed.docId !== keyDocId) return null;
+	if (!ownershipCheck(parsed.docId, parsed.authorPub)) return null;
 	const verified = await verifyDocument(parsed, parsed.authorPub);
-	return verified ? parsed.charId : null;
+	return verified ? parsed.docId : null;
 }
 
 /** GUN gives no explicit "done enumerating" signal for `.map().once()` — same
@@ -91,32 +108,38 @@ async function verifyPointer(raw: unknown, keyCharId: CharacterId): Promise<Char
 const ENUMERATE_TIMEOUT_MS = 1000;
 
 export interface SignedPointerIndex {
-	/** Fetches the (deduped) set of character ids pointed at `key` across the
+	/** Fetches the (deduped) set of document ids pointed at `key` across the
 	 *  recent-months read window. */
-	getIndex(key: string): Promise<CharacterId[]>;
-	/** Adds a signed pointer for `charId` under `key`, in the current month's
+	getIndex(key: string): Promise<string[]>;
+	/** Adds a signed pointer for `docId` under `key`, in the current month's
 	 *  bucket. Idempotent in effect (re-adding writes the same key), and safe
 	 *  under concurrent publishers indexing under the same key since each
 	 *  pointer has its own graph key — no read-modify-write, no clobbering. */
-	addToIndex(key: string, charId: CharacterId, keyring: Keyring): Promise<void>;
+	addToIndex(key: string, docId: string, keyring: Keyring): Promise<void>;
 }
 
-/** Builds a signed pointer index namespaced under `tags/{namespace}/{key}/{bucket}`. */
-export function createSignedPointerIndex(namespace: string): SignedPointerIndex {
+/** Builds a signed pointer index namespaced under `{namespace}/{key}/{bucket}`.
+ *  `ownershipCheck` defaults to the CharacterId-aware check (see
+ *  defaultOwnershipCheck) — pass a different one for documents whose ids
+ *  don't encode their author (see comments.ts). */
+export function createSignedPointerIndex(
+	namespace: string,
+	ownershipCheck: OwnershipCheck = defaultOwnershipCheck
+): SignedPointerIndex {
 	function bucketNode(key: string, bucket: string): GunNode {
 		return gunPath(getGun(), `${namespace}/${encodeURIComponent(key)}/${bucket}`);
 	}
 
-	function readBucket(key: string, bucket: string): Promise<CharacterId[]> {
+	function readBucket(key: string, bucket: string): Promise<string[]> {
 		return new Promise((resolve) => {
-			const pending: Promise<CharacterId | null>[] = [];
+			const pending: Promise<string | null>[] = [];
 			let settled = false;
 
 			function finish() {
 				if (settled) return;
 				settled = true;
 				Promise.all(pending).then((results) => {
-					resolve(results.filter((id): id is CharacterId => id !== null));
+					resolve(results.filter((id): id is string => id !== null));
 				});
 			}
 
@@ -131,21 +154,21 @@ export function createSignedPointerIndex(namespace: string): SignedPointerIndex 
 					.map()
 					.once((data: unknown, childKey: string) => {
 						if (settled) return;
-						pending.push(verifyPointer(data, decodeURIComponent(childKey)));
+						pending.push(verifyPointer(data, decodeURIComponent(childKey), ownershipCheck));
 					});
 			});
 		});
 	}
 
-	async function getIndex(key: string): Promise<CharacterId[]> {
+	async function getIndex(key: string): Promise<string[]> {
 		const perBucket = await Promise.all(recentBuckets().map((bucket) => readBucket(key, bucket)));
 		return Array.from(new Set(perBucket.flat()));
 	}
 
-	async function addToIndex(key: string, charId: CharacterId, keyring: Keyring): Promise<void> {
-		const draft: IndexPointer = { key, charId, authorPub: keyring.publicKey, signature: '' };
+	async function addToIndex(key: string, docId: string, keyring: Keyring): Promise<void> {
+		const draft: IndexPointer = { key, docId, authorPub: keyring.publicKey, signature: '' };
 		draft.signature = await signDocument(draft, keyring);
-		const node = bucketNode(key, monthBucket(new Date())).get(pointerKey(charId));
+		const node = bucketNode(key, monthBucket(new Date())).get(pointerKey(docId));
 		await putDocument(node, draft);
 	}
 
