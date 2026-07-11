@@ -10,6 +10,7 @@
 	import AccountTab from "./settings/AccountTab.svelte";
 	import PersonasTab from "./settings/PersonasTab.svelte";
 	import GeneralTab from "./settings/GeneralTab.svelte";
+	import SoundTab from "./settings/SoundTab.svelte";
 	import NetworkTab from "./settings/NetworkTab.svelte";
 	import AiTab from "./settings/AiTab.svelte";
 	import ContentTab from "./settings/ContentTab.svelte";
@@ -21,6 +22,7 @@
 		{ id: "account", label: m.settings_tab_account() },
 		{ id: "personas", label: m.settings_tab_personas() },
 		{ id: "general", label: m.settings_tab_general() },
+		{ id: "sound", label: m.settings_tab_sound() },
 		{ id: "network", label: m.settings_tab_network() },
 		{ id: "ai", label: m.settings_tab_ai() },
 		{ id: "content", label: m.settings_tab_content() },
@@ -119,6 +121,8 @@
 					<PersonasTab />
 				{:else if activeTab === "general"}
 					<GeneralTab />
+				{:else if activeTab === "sound"}
+					<SoundTab />
 				{:else if activeTab === "network"}
 					<NetworkTab />
 				{:else if activeTab === "ai"}

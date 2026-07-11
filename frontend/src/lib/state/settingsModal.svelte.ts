@@ -1,4 +1,4 @@
-export type SettingsTab = 'account' | 'personas' | 'general' | 'network' | 'ai' | 'content' | 'data' | 'comments';
+export type SettingsTab = 'account' | 'personas' | 'general' | 'sound' | 'network' | 'ai' | 'content' | 'data' | 'comments';
 
 let isOpen = $state(false);
 let activeTab = $state<SettingsTab>('account');
