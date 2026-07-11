@@ -1,4 +1,4 @@
-import type { CharacterId, Comment, CommentId, Keyring, PubKey, Verified } from '$lib/types';
+import { type CharacterId, type Comment, type CommentId, type Keyring, MAX_COMMENT_LENGTH, type PubKey, type Verified } from '$lib/types';
 import { signDocument } from '$lib/crypto/sign';
 import { getKeyring, requireAccount } from '$lib/state/auth.svelte';
 import { getDocument, putDocument, type Validator } from './document';
@@ -154,6 +154,9 @@ export async function postComment(
 	const keyring = getKeyring();
 	if (!keyring) throw new Error('No identity available yet — call initAuth() first.');
 	requireAccount();
+	if (content.length > MAX_COMMENT_LENGTH) {
+		throw new Error(`Comment exceeds the ${MAX_COMMENT_LENGTH} character limit.`);
+	}
 
 	if (replyToId) {
 		const replyTo = await getComment(replyToId);
@@ -191,6 +194,10 @@ export async function editComment(id: CommentId, content: string): Promise<Comme
 	const keyring = getKeyring();
 	if (!keyring) throw new Error('No identity available yet — call initAuth() first.');
 	requireAccount();
+
+	if (content.length > MAX_COMMENT_LENGTH) {
+		throw new Error(`Comment exceeds the ${MAX_COMMENT_LENGTH} character limit.`);
+	}
 
 	const existing = await getComment(id);
 	if (!existing.ok) throw new Error('Comment not found.');

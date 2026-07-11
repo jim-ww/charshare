@@ -3,6 +3,8 @@ import type { Signed, Tombstonable } from './signed';
 
 export type CommentId = string; // uuid
 
+export const MAX_COMMENT_LENGTH = 2000;
+
 export interface CommentFields {
   id: CommentId;
   character_id: CharacterId;

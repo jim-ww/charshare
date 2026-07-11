@@ -3,7 +3,7 @@
 	import { page } from "$app/state";
 	import { goto } from "$app/navigation";
 	import { resolve } from "$app/paths";
-	import type { Character, Comment } from "$lib/types";
+	import { MAX_COMMENT_LENGTH, type Character, type Comment } from "$lib/types";
 	import { subscribeCharacterWithRetry } from "$lib/gun/characters";
 	import {
 		getCurrentUser,
@@ -748,8 +748,12 @@
 								bind:value={
 									newComment
 								}
+								maxlength={MAX_COMMENT_LENGTH}
 								rows="2"
 							></textarea>
+							<span class="self-end text-xs opacity-50"
+								>{newComment.length}/{MAX_COMMENT_LENGTH}</span
+							>
 							<button
 								class="btn btn-sm btn-primary self-end"
 								type="submit"
@@ -900,6 +904,7 @@
 												<textarea
 													class="textarea textarea-bordered mt-1 w-full text-sm"
 													bind:value={commentDraft}
+													maxlength={MAX_COMMENT_LENGTH}
 												></textarea>
 												<div class="mt-1 flex gap-1">
 													<button
@@ -1039,6 +1044,7 @@
 														class="textarea textarea-bordered w-full text-sm"
 														placeholder={m.char_detail_reply_placeholder()}
 														bind:value={replyDraft}
+														maxlength={MAX_COMMENT_LENGTH}
 														rows="2"
 													></textarea>
 													{#if replyError}

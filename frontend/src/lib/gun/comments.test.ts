@@ -5,6 +5,7 @@ import { __setGunForTests, getGun, gunPath } from './client';
 import { __setKeyringForTests } from '$lib/state/auth.svelte';
 import { generateKeyring } from '$lib/crypto/keys';
 import { postComment, editComment, deleteComment, getCommentsForCharacter, getCommentsAuthoredBy } from './comments';
+import { MAX_COMMENT_LENGTH } from '$lib/types';
 
 const RADATA_DIR = `test-radata-comments-${crypto.randomUUID()}`;
 let mainKeyring: Awaited<ReturnType<typeof generateKeyring>>;
@@ -103,6 +104,27 @@ describe('postComment / getCommentsForCharacter', () => {
 		const nestedReply = await postComment(characterId, 'Thanks for the reply', root.id, reply.id);
 
 		expect(nestedReply.parent_id).toBe(root.id);
+	});
+
+	it('rejects a comment over the max length', async () => {
+		const characterId = `char-${crypto.randomUUID()}`;
+		await expect(postComment(characterId, 'a'.repeat(MAX_COMMENT_LENGTH + 1))).rejects.toThrow(
+			`Comment exceeds the ${MAX_COMMENT_LENGTH} character limit.`
+		);
+	});
+
+	it('accepts a comment at exactly the max length', async () => {
+		const characterId = `char-${crypto.randomUUID()}`;
+		const comment = await postComment(characterId, 'a'.repeat(MAX_COMMENT_LENGTH));
+		expect(comment.content).toHaveLength(MAX_COMMENT_LENGTH);
+	});
+
+	it('rejects an edit over the max length', async () => {
+		const characterId = `char-${crypto.randomUUID()}`;
+		const comment = await postComment(characterId, 'short');
+		await expect(editComment(comment.id, 'a'.repeat(MAX_COMMENT_LENGTH + 1))).rejects.toThrow(
+			`Comment exceeds the ${MAX_COMMENT_LENGTH} character limit.`
+		);
 	});
 
 	it('rejects an edit from a non-author', async () => {
