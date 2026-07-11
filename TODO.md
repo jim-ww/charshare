@@ -1,5 +1,5 @@
-- feat(account): show a notice right after the initial "publish account" press telling the user to back up their account — there's no recovery if local storage is lost and no backup was ever taken
-- feat: rethink more appropriate predefined tags. remove redundant. add common
+- feat: rethink more appropriate predefined tags. remove redundant. add more common ones
+- feat(tags): implement autocomplete for tag textinput in browse, character new/edit pages
 - feat(chat view): improve editing flow. editing textarea is too small or too large (depends on message)
 - feat(chat view): add 'continue' button for AI messages, to instead of generating next message, would add text to selected one
 - implement 'read aloud' feature. and different providers for it. either local, or remote
