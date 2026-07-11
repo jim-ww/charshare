@@ -960,39 +960,71 @@
 																		</span>
 																	{/if}
 																</span>
-																<div class="flex gap-1">
-																	{#if reply.author === getCurrentUser()}
-																		<button
-																			class="btn btn-xs btn-ghost"
-																			type="button"
-																			onclick={() => handleDeleteComment(reply)}
-																		>
-																			{m.char_detail_comment_delete()}
-																		</button>
-																	{:else}
-																		<button
-																			class="btn btn-xs btn-ghost"
-																			type="button"
-																			title={replyHidden
-																				? m.char_detail_hide_tooltip_hidden()
-																				: m.char_detail_hide_tooltip_visible()}
-																			onclick={() => handleToggleHideComment(reply)}
-																		>
-																			{replyHidden ? m.char_detail_comment_unhide() : m.char_detail_comment_hide()}
-																		</button>
-																	{/if}
-																	{#if reply.author !== getCurrentUser()}
-																		<button
-																			class="btn btn-xs btn-ghost"
-																			type="button"
-																			onclick={() => startReply(reply)}
-																		>
-																			{m.char_detail_comment_reply()}
-																		</button>
-																	{/if}
-																</div>
+																{#if editingCommentId !== reply.id}
+																	<div class="flex gap-1">
+																		{#if reply.author === getCurrentUser()}
+																			<button
+																				class="btn btn-xs btn-ghost"
+																				type="button"
+																				onclick={() => startEditComment(reply)}
+																			>
+																				{m.char_detail_comment_edit()}
+																			</button>
+																			<button
+																				class="btn btn-xs btn-ghost"
+																				type="button"
+																				onclick={() => handleDeleteComment(reply)}
+																			>
+																				{m.char_detail_comment_delete()}
+																			</button>
+																		{:else}
+																			<button
+																				class="btn btn-xs btn-ghost"
+																				type="button"
+																				title={replyHidden
+																					? m.char_detail_hide_tooltip_hidden()
+																					: m.char_detail_hide_tooltip_visible()}
+																				onclick={() => handleToggleHideComment(reply)}
+																			>
+																				{replyHidden ? m.char_detail_comment_unhide() : m.char_detail_comment_hide()}
+																			</button>
+																		{/if}
+																		{#if reply.author !== getCurrentUser()}
+																			<button
+																				class="btn btn-xs btn-ghost"
+																				type="button"
+																				onclick={() => startReply(reply)}
+																			>
+																				{m.char_detail_comment_reply()}
+																			</button>
+																		{/if}
+																	</div>
+																{/if}
 															</div>
-															<p class="mt-1 whitespace-pre-wrap text-sm">{reply.content}</p>
+															{#if editingCommentId === reply.id}
+																<textarea
+																	class="textarea textarea-bordered mt-1 w-full text-sm"
+																	bind:value={commentDraft}
+																></textarea>
+																<div class="mt-1 flex gap-1">
+																	<button
+																		class="btn btn-xs btn-primary"
+																		type="button"
+																		onclick={() => handleSaveComment(reply)}
+																	>
+																		{m.char_detail_comment_save()}
+																	</button>
+																	<button
+																		class="btn btn-xs"
+																		type="button"
+																		onclick={() => (editingCommentId = null)}
+																	>
+																		{m.char_detail_comment_cancel()}
+																	</button>
+																</div>
+															{:else}
+																<p class="mt-1 whitespace-pre-wrap text-sm">{reply.content}</p>
+															{/if}
 														</li>
 													{/each}
 												</ul>
