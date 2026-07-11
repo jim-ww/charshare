@@ -2,6 +2,8 @@ import { browser } from '$app/environment';
 import type { Chat, ChatId, CharacterId, Message, MessageId, MessageRole, PersonaId } from '$lib/types';
 import { loadChats, saveChats } from '$lib/db/chats';
 import { getPreferences } from '$lib/state/preferences.svelte';
+import { confirmDialog } from '$lib/state/confirmDialog.svelte';
+import { m } from '$lib/paraglide/messages.js';
 
 let chats = $state<Record<ChatId, Chat>>({});
 let ready = $state(false);
@@ -229,9 +231,11 @@ export async function restoreChat(chat: Chat): Promise<'added' | 'updated' | 'sk
 	}
 	if (JSON.stringify(existing) === JSON.stringify(chat)) return 'skipped';
 
-	const preferImported = confirm(
-		`A chat named "${existing.name}" already exists with different content. Replace it with the imported version?`
-	);
+	const preferImported = await confirmDialog({
+		title: m.import_conflict_title(),
+		message: m.chats_restore_conflict_message({ name: existing.name }),
+		confirmLabel: m.import_conflict_replace()
+	});
 	if (!preferImported) return 'skipped';
 
 	chats = { ...chats, [chat.id]: chat };

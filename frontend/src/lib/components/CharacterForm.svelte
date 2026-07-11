@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, untrack } from "svelte";
-	import { beforeNavigate } from "$app/navigation";
+	import { beforeNavigate, goto } from "$app/navigation";
+	import ConfirmDialog from "./ConfirmDialog.svelte";
 	import type { Character, CharacterDraft } from "$lib/types";
 	import CharacterImageViewer from "./CharacterImageViewer.svelte";
 	import { isAccountRegistered } from "$lib/state/auth.svelte";
@@ -256,16 +257,27 @@
 	let savedSnapshot = untrack(() => snapshot());
 	const isDirty = $derived(snapshot() !== savedSnapshot);
 
+	// `beforeNavigate` must decide synchronously, so it can't await our modal.
+	// Cancel the navigation up front, show the modal, then replay the same
+	// navigation via `goto` if the user confirms (bypassing the guard since
+	// `savedSnapshot` is reset first).
+	let pendingNavigationUrl = $state<URL | null>(null);
+
 	beforeNavigate((navigation) => {
-		if (!isDirty) return;
-		if (
-			!confirm(
-				m.char_form_unsaved_changes_confirm(),
-			)
-		) {
+		if (!isDirty || pendingNavigationUrl) return;
+		if (navigation.to?.url) {
 			navigation.cancel();
+			pendingNavigationUrl = navigation.to.url;
 		}
 	});
+
+	function confirmNavigation() {
+		const url = pendingNavigationUrl;
+		pendingNavigationUrl = null;
+		if (!url) return;
+		savedSnapshot = snapshot();
+		goto(url);
+	}
 
 	onMount(() => {
 		function handleBeforeUnload(event: BeforeUnloadEvent) {
@@ -907,3 +919,13 @@
 		{/if}
 	</div>
 </form>
+
+<ConfirmDialog
+	open={pendingNavigationUrl !== null}
+	title={m.char_form_unsaved_changes_title()}
+	message={m.char_form_unsaved_changes_confirm()}
+	confirmLabel={m.char_form_unsaved_changes_leave()}
+	danger
+	onconfirm={confirmNavigation}
+	oncancel={() => (pendingNavigationUrl = null)}
+/>

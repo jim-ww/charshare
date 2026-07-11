@@ -16,6 +16,7 @@
 	import SettingsModal from '$lib/components/SettingsModal.svelte';
 	import ImageViewerOverlay from '$lib/components/ImageViewerOverlay.svelte';
 	import NotificationStack from '$lib/components/NotificationStack.svelte';
+	import GlobalConfirmDialog from '$lib/components/GlobalConfirmDialog.svelte';
 	import { installWailsConsoleForward } from '$lib/wailsConsoleForward';
 
 	let { children } = $props();
@@ -87,6 +88,7 @@
 <SettingsModal />
 <ImageViewerOverlay />
 <NotificationStack />
+<GlobalConfirmDialog />
 
 <div style="display:none">
 	{#each locales as locale}

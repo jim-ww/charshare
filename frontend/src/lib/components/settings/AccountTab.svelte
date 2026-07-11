@@ -12,6 +12,7 @@
 	import { clearProfileForLogout } from '$lib/state/profile.svelte';
 	import { m } from '$lib/paraglide/messages.js';
 	import { notify } from '$lib/state/notifications.svelte';
+	import ConfirmDialog from '../ConfirmDialog.svelte';
 
 	const profileReady = $derived(isProfileReady());
 	const registered = $derived(isAccountRegistered());
@@ -27,6 +28,7 @@
 
 	let importError = $state<string | null>(null);
 	let imported = $state(false);
+	let confirmingLogout = $state(false);
 
 	// Seed the form from the loaded profile exactly once, so typing doesn't
 	// get clobbered by re-derivation on every profile-state read.
@@ -94,9 +96,12 @@
 		URL.revokeObjectURL(url);
 	}
 
-	async function handleLogout() {
-		const confirmed = confirm(m.account_tab_logout_confirm());
-		if (!confirmed) return;
+	function handleLogout() {
+		confirmingLogout = true;
+	}
+
+	async function confirmLogout() {
+		confirmingLogout = false;
 		await logout();
 		clearProfileForLogout();
 		loadedFromProfile = false;
@@ -268,3 +273,12 @@
 		</div>
 	</div>
 {/if}
+
+<ConfirmDialog
+	open={confirmingLogout}
+	title={m.account_tab_logout_heading()}
+	message={m.account_tab_logout_confirm()}
+	danger
+	onconfirm={confirmLogout}
+	oncancel={() => (confirmingLogout = false)}
+/>

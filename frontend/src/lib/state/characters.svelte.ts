@@ -7,6 +7,8 @@ import {
 	saveLocalOnlyCharacter
 } from '$lib/db/characters';
 import { gunPeerReady } from '$lib/gun/client';
+import { confirmDialog } from '$lib/state/confirmDialog.svelte';
+import { m } from '$lib/paraglide/messages.js';
 import { getKeyring, initAuth } from '$lib/state/auth.svelte';
 import {
 	createLocalCharacter as gunCreateLocalCharacter,
@@ -261,9 +263,11 @@ export async function restoreCharacter(character: Character): Promise<'added' | 
 		return 'skipped';
 	}
 	if (character.version === existing.version) {
-		const preferImported = confirm(
-			`"${existing.name}" already exists locally at the same version with different content. Replace it with the imported version?`
-		);
+		const preferImported = await confirmDialog({
+			title: m.import_conflict_title(),
+			message: m.characters_restore_conflict_message({ name: existing.name }),
+			confirmLabel: m.import_conflict_replace()
+		});
 		if (!preferImported) return 'skipped';
 	}
 

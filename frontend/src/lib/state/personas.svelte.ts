@@ -1,6 +1,8 @@
 import { browser } from '$app/environment';
 import type { CharacterId, Persona, PersonaId } from '$lib/types';
 import { loadPersonas, savePersonas } from '$lib/db/personas';
+import { confirmDialog } from '$lib/state/confirmDialog.svelte';
+import { m } from '$lib/paraglide/messages.js';
 import { getMyProfile } from './profile.svelte';
 import { getPreferences, updatePreferences } from './preferences.svelte';
 
@@ -127,9 +129,11 @@ export async function restorePersona(persona: Persona): Promise<'added' | 'updat
 	}
 	if (JSON.stringify(existing) === JSON.stringify(persona)) return 'skipped';
 
-	const preferImported = confirm(
-		`A persona named "${personaDisplayName(existing)}" already exists with different content. Replace it with the imported version?`
-	);
+	const preferImported = await confirmDialog({
+		title: m.import_conflict_title(),
+		message: m.personas_restore_conflict_message({ name: personaDisplayName(existing) }),
+		confirmLabel: m.import_conflict_replace()
+	});
 	if (!preferImported) return 'skipped';
 
 	personas = { ...personas, [persona.id]: persona };
