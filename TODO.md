@@ -1,13 +1,12 @@
+- feat(account): show a notice right after the initial "publish account" press telling the user to back up their account — there's no recovery if local storage is lost and no backup was ever taken
+- feat: rethink more appropriate predefined tags. remove redundant. add common
 - feat(chat view): improve editing flow. editing textarea is too small or too large (depends on message)
 - feat(chat view): add 'continue' button for AI messages, to instead of generating next message, would add text to selected one
-- fix(system prompt): change to better outline that AI must NEVER say what {{user}} thinks/does/feels
-- fix(system prompt): change note about parenthesis, that only user messages containing them are considered system prompts (and also remove UI marking of them)
+- implement 'read aloud' feature. and different providers for it. either local, or remote
 - feat(browse): rework Browse/search to avoid fetching the entire published network unbounded on every load (currently `browseNetwork()` reads every id under the `__network__` pseudo-tag and fetches+verifies each one) — implement proper sorting (by updated_at, created_at) and pagination
 - feat(browse): `browseByAuthor` currently filters the full network feed client-side by author instead of a targeted lookup; a native per-author index already exists implicitly (each author's characters live under their own GUN user-space graph, enumerable via `.map()`) but isn't wired up for this — use it
-- implement 'read aloud' feature. and different providers for it. either local, or remote
 - feat(core): rating system for characters? then add sorting by popularity
 - feat(core): after implementing rating system, add rating to comments? also allow to sort by rating, then created_at
-- feat(account): show a notice right after the initial "publish account" press telling the user to back up their account — there's no recovery if local storage is lost and no backup was ever taken
 - feat(characters): fork discovery — index/UI for "remixes of this character" (forking itself already works, just no way to find forks of a given character)
 - feat(identity): support multiple local identities(accounts) active at once in one session (currently can only switch the single active one). or at least account switching?
 - feat(providers): generic OpenAI-compatible proxy support for providers beyond the three built-in ones (OpenRouter/Ollama/Hugging Face)

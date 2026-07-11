@@ -92,6 +92,30 @@
 		editing = true;
 	}
 
+	// Grows the textarea to exactly fit its content, so editing a message
+	// starts out the same height as the rendered bubble instead of one fixed
+	// size for every message. Driven by an $effect (not just an oninput
+	// handler) because the action-mount ordering raced bind:value — the
+	// element's initial scrollHeight was measured before its value was set,
+	// so it opened at min-height regardless of message length.
+	let editTextarea: HTMLTextAreaElement | undefined = $state();
+	$effect(() => {
+		if (!editing) return;
+		const node = editTextarea;
+		if (!node) return;
+		draft;
+		node.style.height = 'auto';
+		node.style.height = `${node.scrollHeight}px`;
+	});
+
+	// Sized to the longest line instead of a flat w-full — otherwise a short
+	// "hi" edit stretches across the whole bubble width, and a long message
+	// gets clamped too early. Bounds mirror a typical chat-bubble's natural
+	// shrink-to-fit range.
+	const editWidthCh = $derived(
+		Math.min(Math.max(...draft.split('\n').map((line) => line.length), 4) + 2, 60)
+	);
+
 	/** Corrects the message content in place — no branching, no completion
 	 *  request. Unlike saveAndResend, this must leave whatever came after this
 	 *  message (replies, later turns) exactly where it was; branching via
@@ -210,8 +234,9 @@
 	<div class="chat-bubble">
 		{#if editing}
 			<textarea
-				class="textarea textarea-bordered w-full text-base-content"
-				style="height: 12rem; max-height: 60vh; min-height: 5rem; resize: vertical;"
+				bind:this={editTextarea}
+				class="textarea textarea-bordered text-base-content"
+				style="width: {editWidthCh}ch; max-width: 100%; max-height: 60vh; min-height: 2.5rem; resize: vertical; overflow-y: hidden;"
 				bind:value={draft}
 			></textarea>
 			<div class="mt-1 flex items-center gap-1">
