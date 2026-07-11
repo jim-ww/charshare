@@ -1,5 +1,7 @@
-- feat(chat view): add 'continue' button for AI messages, to instead of generating next message, would add text to selected one
 - fix(chat view message edit): set minimum size for textarea to size of control buttons (send/save only/cancel)
+- fix(character page) takes forever to load
+- should exported state be saved on backup? in format of, each char would also have list of relays on which it is published. and then ui change: if current connected node/s is one of listed in chars relays, its marked as published? or instead doring initial, check local chars against relay?
+- feat(chat view): add 'continue' button for AI messages, to instead of generating next message, would add text to selected one
 - deleting one message deletes history AFTER it. should connnect to previous message
 - fix (character new/edit page): leave page confirmation doesnt proceed on 'confirm' press
 - implement 'read aloud' feature. and different providers for it. either local, or remote

@@ -109,11 +109,22 @@
 	// element's initial scrollHeight was measured before its value was set,
 	// so it opened at min-height regardless of message length.
 	let editTextarea: HTMLTextAreaElement | undefined = $state();
+
+	// Measured so the textarea is never narrower than its own Send/Save/Cancel
+	// row — otherwise a one-word edit ("hi") shrinks the textarea below the
+	// buttons underneath it, and they overflow/wrap past the bubble edge.
+	let controlsWidth = $state(0);
+
 	$effect(() => {
 		if (!editing) return;
 		const node = editTextarea;
 		if (!node) return;
 		draft;
+		// Also re-measure once controlsWidth resolves (it's set async, after
+		// mount, via bind:clientWidth) — otherwise this runs once against the
+		// narrower pre-measurement layout and never re-fits a long message
+		// once the box widens to match the buttons row underneath it.
+		controlsWidth;
 		node.style.height = 'auto';
 		node.style.height = `${node.scrollHeight}px`;
 	});
@@ -246,10 +257,10 @@
 			<textarea
 				bind:this={editTextarea}
 				class="textarea textarea-bordered text-base-content"
-				style="width: {editWidthCh}ch; max-width: 100%; max-height: 60vh; min-height: 2.5rem; resize: vertical; overflow-y: hidden;"
+				style="width: {editWidthCh}ch; min-width: {controlsWidth}px; max-width: 100%; max-height: 60vh; min-height: 2.5rem; resize: vertical; overflow-y: auto;"
 				bind:value={draft}
 			></textarea>
-			<div class="mt-1 flex items-center gap-1">
+			<div class="mt-1 flex items-center gap-1" bind:clientWidth={controlsWidth}>
 				{#if message.role === 'user'}
 					<button class="btn btn-xs btn-primary" type="button" onclick={saveAndResend}>
 						{m.chat_bubble_send()}
