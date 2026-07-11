@@ -66,13 +66,17 @@
 	let suggestionsOpen = $state(false);
 	let suggestionsHighlight = $state(-1);
 
-	const suggestions = $derived.by(() =>
-		PREDEFINED_TAGS.filter(
+	const suggestions = $derived.by(() => {
+		const query = customInput.trim().toLowerCase();
+		// Typing a category name (e.g. "kink") lists every tag in it, instead
+		// of only tags whose name happens to contain that string.
+		const categoryMatch = categories.find((c) => c === query);
+		return PREDEFINED_TAGS.filter(
 			(t) =>
-				t.name.includes(customInput.trim().toLowerCase()) &&
+				(categoryMatch ? t.type === categoryMatch : t.name.includes(query)) &&
 				!selected.has(t.name),
-		),
-	);
+		);
+	});
 
 	$effect(() => {
 		// Reset the highlight whenever the suggestion list itself changes,

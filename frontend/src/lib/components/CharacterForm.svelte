@@ -102,6 +102,8 @@
 	let tagSuggestionsHighlight = $state(-1);
 	let tagGuidelinesEl = $state<HTMLDialogElement>();
 
+	const tagCategories = [...new Set(PREDEFINED_TAGS.map((t) => t.type))];
+
 	const currentTagFragment = $derived(
 		tagsText
 			.slice(tagsText.lastIndexOf(",") + 1)
@@ -116,13 +118,16 @@
 				.map((t) => t.trim().toLowerCase())
 				.filter(Boolean),
 		);
+		// Typing a category name (e.g. "kink") lists every tag in it, instead
+		// of only tags whose name happens to contain that string.
+		const categoryMatch = tagCategories.find((c) => c === currentTagFragment);
 		return PREDEFINED_TAGS.filter(
 			(t) =>
-				t.name
-					.toLowerCase()
-					.includes(currentTagFragment) &&
+				(categoryMatch
+					? t.type === categoryMatch
+					: t.name.toLowerCase().includes(currentTagFragment)) &&
 				!existing.has(t.name.toLowerCase()),
-		).slice(0, 8);
+		);
 	});
 
 	$effect(() => {
