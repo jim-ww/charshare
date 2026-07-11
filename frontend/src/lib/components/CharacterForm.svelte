@@ -260,7 +260,14 @@
 		});
 	}
 
-	let savedSnapshot = untrack(() => snapshot());
+	// `savedSnapshot` must be `$state`, not a plain variable — `isDirty` is a
+	// memoized `$derived` that only recomputes when a *tracked reactive*
+	// dependency changes. A plain `let` reassignment doesn't invalidate that
+	// memo, so `isDirty` would keep returning its last cached value even
+	// after `savedSnapshot` was updated to match the current form (this was
+	// exactly why confirming "Leave page?" did nothing — isDirty stayed
+	// stuck true, so the replayed navigation kept re-triggering the guard).
+	let savedSnapshot = $state(untrack(() => snapshot()));
 	const isDirty = $derived(snapshot() !== savedSnapshot);
 
 	// `beforeNavigate` must decide synchronously, so it can't await our modal.
