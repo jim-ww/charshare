@@ -363,27 +363,33 @@ export async function editMessage(chatId: ChatId, messageId: MessageId, content:
 	return addMessage(chatId, message.role, content, message.parent_id);
 }
 
-/** Deletes a message and everything built on top of it (its whole subtree),
- *  since a message with descendants elsewhere in the tree can't be removed
- *  without orphaning them. Fixes up root_id/active_child so the tree stays
- *  consistent — falling back to another root, or leaving the parent as a
- *  leaf, if the removed branch was the active one. */
+/** Deletes a single message, splicing it out of the tree — its children are
+ *  reparented onto its own parent rather than deleted with it, so removing
+ *  one message doesn't wipe out everything built on top of it. Fixes up
+ *  root_id/active_child so the tree stays consistent: if the deleted message
+ *  was on the active path, its own active child (if any) takes its place;
+ *  otherwise the parent falls back to being a leaf, or another root is
+ *  picked if the root itself was deleted. */
 export async function deleteMessage(chatId: ChatId, messageId: MessageId): Promise<void> {
 	updateChat(chatId, (chat) => {
-		const toDelete = new Set<MessageId>();
-		const collect = (id: MessageId) => {
-			toDelete.add(id);
-			for (const m of chat.messages) if (m.parent_id === id) collect(m.id);
-		};
-		collect(messageId);
+		const target = chat.messages.find((m) => m.id === messageId);
+		if (!target) return chat;
 
-		const messages = chat.messages.filter((m) => !toDelete.has(m.id));
-		const active_child = Object.fromEntries(
-			Object.entries(chat.active_child).filter(([parent, child]) => !toDelete.has(parent) && !toDelete.has(child))
-		);
+		const messages = chat.messages
+			.filter((m) => m.id !== messageId)
+			.map((m) => (m.parent_id === messageId ? { ...m, parent_id: target.parent_id } : m));
+
+		const activeChildOfTarget = chat.active_child[messageId];
+		const active_child = { ...chat.active_child };
+		delete active_child[messageId];
+		if (target.parent_id !== null && active_child[target.parent_id] === messageId) {
+			if (activeChildOfTarget !== undefined) active_child[target.parent_id] = activeChildOfTarget;
+			else delete active_child[target.parent_id];
+		}
+
 		let root_id = chat.root_id;
-		if (root_id !== null && toDelete.has(root_id)) {
-			root_id = messages.find((m) => m.parent_id === null)?.id ?? null;
+		if (root_id === messageId) {
+			root_id = activeChildOfTarget ?? messages.find((m) => m.parent_id === null)?.id ?? null;
 		}
 		return { ...chat, messages, active_child, root_id };
 	});

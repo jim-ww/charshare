@@ -1,4 +1,3 @@
-- deleting one message deletes history AFTER it. should connnect to previous message
 - fix (character new/edit page): leave page confirmation doesnt proceed on 'confirm' press
 - implement 'read aloud' feature. and different providers for it. either local, or remote
 - feat(browse): rework Browse/search to avoid fetching the entire published network unbounded on every load (currently `browseNetwork()` reads every id under the `__network__` pseudo-tag and fetches+verifies each one) — implement proper sorting (by updated_at, created_at) and pagination

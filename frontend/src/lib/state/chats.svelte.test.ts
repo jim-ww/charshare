@@ -166,16 +166,41 @@ describe('message tree: branches, getActivePath, switchBranch', () => {
 		expect(path[1].id).toBe(replyA.id);
 	});
 
-	it('deleting a message cascades to everything built on top of it', async () => {
+	it('deleting a message splices it out, keeping everything built on top of it', async () => {
 		const chat = await createChat('char-1', 'Test chat');
 		const first = await addMessage(chat.id, 'user', 'hello');
 		const reply = await addMessage(chat.id, 'character', 'reply');
-		await addMessage(chat.id, 'user', 'follow-up');
+		const followUp = await addMessage(chat.id, 'user', 'follow-up');
+
+		await deleteMessage(chat.id, reply.id);
+
+		const stored = getChat(chat.id)!;
+		expect(getActivePath(stored).map((m) => m.id)).toEqual([first.id, followUp.id]);
+		expect(stored.messages).toHaveLength(2);
+		expect(stored.messages.find((m) => m.id === followUp.id)?.parent_id).toBe(first.id);
+	});
+
+	it('deleting a leaf message just removes it, leaving its parent as the new leaf', async () => {
+		const chat = await createChat('char-1', 'Test chat');
+		const first = await addMessage(chat.id, 'user', 'hello');
+		const reply = await addMessage(chat.id, 'character', 'reply');
 
 		await deleteMessage(chat.id, reply.id);
 
 		const stored = getChat(chat.id)!;
 		expect(getActivePath(stored).map((m) => m.id)).toEqual([first.id]);
 		expect(stored.messages).toHaveLength(1);
+	});
+
+	it('deleting the root promotes its active child to root', async () => {
+		const chat = await createChat('char-1', 'Test chat');
+		const first = await addMessage(chat.id, 'user', 'hello');
+		const reply = await addMessage(chat.id, 'character', 'reply');
+
+		await deleteMessage(chat.id, first.id);
+
+		const stored = getChat(chat.id)!;
+		expect(stored.root_id).toBe(reply.id);
+		expect(getActivePath(stored).map((m) => m.id)).toEqual([reply.id]);
 	});
 });
