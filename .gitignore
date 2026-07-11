@@ -10,3 +10,6 @@ dist/
 .env*
 .pnpm-store/
 frontend/test-radata-*
+
+.claude
+CLAUDE.md
