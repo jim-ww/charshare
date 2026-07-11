@@ -11,6 +11,7 @@
 	import { categoryFilename } from '$lib/export/dataExport';
 	import { clearProfileForLogout } from '$lib/state/profile.svelte';
 	import { m } from '$lib/paraglide/messages.js';
+	import { notify } from '$lib/state/notifications.svelte';
 
 	const profileReady = $derived(isProfileReady());
 	const registered = $derived(isAccountRegistered());
@@ -46,6 +47,11 @@
 		try {
 			await registerAccount({ username, description, image_url: imageUrl.trim() || undefined });
 			loadedFromProfile = true;
+			notify(m.account_tab_publish_backup_notice(), {
+				kind: 'warning',
+				duration: 0,
+				action: { label: m.account_tab_publish_backup_notice_action(), onClick: handleExport }
+			});
 		} catch (err) {
 			saveError = m.error_generic({
 				message: err instanceof Error ? err.message : String(err)

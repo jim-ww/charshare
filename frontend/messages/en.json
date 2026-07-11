@@ -413,6 +413,8 @@
 	"account_tab_image_url_placeholder": "https://…",
 	"account_tab_creating": "Creating…",
 	"account_tab_create_account": "Create account",
+	"account_tab_publish_backup_notice": "Account created! Back up your account now — if you lose local storage without a backup, this account can't be recovered.",
+	"account_tab_publish_backup_notice_action": "Download backup",
 	"account_tab_have_account_heading": "Already have an account?",
 	"account_tab_have_account_body": "Select a backup file to sign in with an existing account on this browser.",
 	"account_tab_signed_in": "Signed in.",
