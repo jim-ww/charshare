@@ -33,7 +33,7 @@ const publishProfileMock = vi.fn(async (fields: { username: string; description:
 vi.mock('$lib/gun/users', () => ({
 	publishProfile: (fields: { username: string; description: string; image_url?: string }) =>
 		publishProfileMock(fields),
-	subscribeProfile: () => () => {}
+	subscribeProfileWithRetry: () => () => {}
 }));
 
 vi.mock('$lib/db/profile', () => ({

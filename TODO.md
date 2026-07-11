@@ -1,5 +1,8 @@
-- fix(preferences): sometimes account never loads, when initially loading from /characters page
 - feat(chats): add share chat url button, that would encode chat history json, as base64 string, and implement chat history viewer, that would take this base64 string from URL
+- feat(chat view): improve editing flow. editing textarea is too small or too large (depends on message)
+- feat(chat view): add 'continue' button for AI messages, to instead of generating next message, would add text to selected one
+- fix(system prompt): change to better outline that AI must NEVER say what {{user}} thinks/does/feels
+- fix(system prompt): change note about parenthesis, that only user messages containing them are considered system prompts (and also remove UI marking of them)
 - feat(browse): rework Browse/search to avoid fetching the entire published network unbounded on every load (currently `browseNetwork()` reads every id under the `__network__` pseudo-tag and fetches+verifies each one) — implement proper sorting (by updated_at, created_at) and pagination
 - feat(browse): `browseByAuthor` currently filters the full network feed client-side by author instead of a targeted lookup; a native per-author index already exists implicitly (each author's characters live under their own GUN user-space graph, enumerable via `.map()`) but isn't wired up for this — use it
 - implement 'read aloud' feature. and different providers for it. either local, or remote
@@ -7,11 +10,12 @@
 - feat(core): after implementing rating system, add rating to comments? also allow to sort by rating, then created_at
 - feat(account): show a notice right after the initial "publish account" press telling the user to back up their account — there's no recovery if local storage is lost and no backup was ever taken
 - feat(characters): fork discovery — index/UI for "remixes of this character" (forking itself already works, just no way to find forks of a given character)
-- feat(import/export): TavernAI-PNG (and other third-party format) import/export adapters — only our own versioned JSON format is supported today
-- feat(identity): support multiple local identities active at once in one session (currently can only switch the single active one)
+- feat(identity): support multiple local identities(accounts) active at once in one session (currently can only switch the single active one). or at least account switching?
 - feat(providers): generic OpenAI-compatible proxy support for providers beyond the three built-in ones (OpenRouter/Ollama/Hugging Face)
-- consider: spam/abuse mitigation for an unmoderated, backend-less network (mass-published garbage characters/comments) — no plan yet
 - feat: scrape characters from other platforms?
+- consider: multipersona chats? option to change persona mid-chat, preserving Name, Description of previous persona/s
+- feat(import/export): TavernAI-PNG (and other third-party format) import/export adapters — only our own versioned JSON format is supported today
 - consider: android build target
 - consider(providers): implement more robust support of ollama provider, like downloading/starting ollama server?
 - consider(gun store): move all top-level postings (comments, tags, usernames) under user-space?
+- consider: spam/abuse mitigation for an unmoderated, backend-less network (mass-published garbage characters/comments) — no plan yet

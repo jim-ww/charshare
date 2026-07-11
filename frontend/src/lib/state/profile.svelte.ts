@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 import type { User } from '$lib/types';
 import { getCurrentUser, initAuth, isAccountRegistered, markRegistered } from './auth.svelte';
-import { publishProfile, subscribeProfile } from '$lib/gun/users';
+import { publishProfile, subscribeProfileWithRetry } from '$lib/gun/users';
 import { getUsernameClaim } from '$lib/gun/usernames';
 import { clearCachedProfile, loadCachedProfile, saveCachedProfile } from '$lib/db/profile';
 import { notify } from './notifications.svelte';
@@ -25,12 +25,16 @@ function subscribeToOwnProfile(): void {
 	unsubscribe = null;
 	const pubkey = getCurrentUser();
 	if (!pubkey) return;
-	unsubscribe = subscribeProfile(pubkey, (result) => {
-		if (result.ok) {
-			profile = result.doc;
-			void saveCachedProfile(result.doc);
-		}
-	});
+	unsubscribe = subscribeProfileWithRetry(
+		pubkey,
+		(result) => {
+			if (result.ok) {
+				profile = result.doc;
+				void saveCachedProfile(result.doc);
+			}
+		},
+		() => profile !== null
+	);
 }
 
 /** Loads the current user's own account state at startup. Guests — browsers
@@ -55,16 +59,20 @@ export function initProfile(): Promise<void> {
 					if (cached && cached.id === pubkey) profile = cached;
 					await new Promise<void>((resolve) => {
 						let settled = false;
-						unsubscribe = subscribeProfile(pubkey, (result) => {
-							if (result.ok) {
-								profile = result.doc;
-								void saveCachedProfile(result.doc);
-							}
-							if (!settled) {
-								settled = true;
-								resolve();
-							}
-						});
+						unsubscribe = subscribeProfileWithRetry(
+							pubkey,
+							(result) => {
+								if (result.ok) {
+									profile = result.doc;
+									void saveCachedProfile(result.doc);
+								}
+								if (!settled) {
+									settled = true;
+									resolve();
+								}
+							},
+							() => profile !== null
+						);
 					});
 				}
 			}

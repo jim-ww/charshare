@@ -1,7 +1,7 @@
 import type { Keyring, PubKey, User, Verified } from '$lib/types';
 import { signDocument } from '$lib/crypto/sign';
 import { getKeyring } from '$lib/state/auth.svelte';
-import { getDocument, putDocument, subscribeDocument, type Validator } from './document';
+import { getDocument, putDocument, subscribeDocument, subscribeDocumentWithRetry, type Validator } from './document';
 import { authorNode, ensureGunUserAuth, getGun, ownNode } from './client';
 import { claimUsername, normalizeUsername, releaseUsername } from './usernames';
 
@@ -41,9 +41,25 @@ export function getProfile(pubkey: PubKey): Promise<Verified<User>> {
 	return getDocument(authorNode(getGun(), pubkey, ['profile']), isUser, pubkeyOf);
 }
 
-/** Subscribes to the profile at `pubkey`. Returns an unsubscribe function. */
+/** Subscribes to the profile at `pubkey`. Returns an unsubscribe function.
+ *  Prefer subscribeProfileWithRetry for anything that needs to reliably
+ *  resolve (e.g. loading the current user's own profile at startup) — see
+ *  its doc comment for why. */
 export function subscribeProfile(pubkey: PubKey, onUpdate: (result: Verified<User>) => void): () => void {
 	return subscribeDocument(authorNode(getGun(), pubkey, ['profile']), isUser, pubkeyOf, onUpdate);
+}
+
+/** Same as subscribeProfile, but also re-issues a one-shot fetch periodically
+ *  until `isResolved` is true (see gun/document.ts:subscribeDocumentWithRetry)
+ *  — this app's public relays don't reliably answer a plain `.on()` on the
+ *  first try, which otherwise leaves a returning user's own profile stuck
+ *  unresolved forever. */
+export function subscribeProfileWithRetry(
+	pubkey: PubKey,
+	onUpdate: (result: Verified<User>) => void,
+	isResolved: () => boolean
+): () => void {
+	return subscribeDocumentWithRetry(authorNode(getGun(), pubkey, ['profile']), isUser, pubkeyOf, onUpdate, isResolved);
 }
 
 /** Signs and publishes the current user's profile. Preserves `created_at`
