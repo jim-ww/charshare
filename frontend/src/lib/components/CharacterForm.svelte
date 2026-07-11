@@ -4,6 +4,7 @@
 	import ConfirmDialog from "./ConfirmDialog.svelte";
 	import type { Character, CharacterDraft } from "$lib/types";
 	import CharacterImageViewer from "./CharacterImageViewer.svelte";
+	import TagSuggestionsList from "./TagSuggestionsList.svelte";
 	import { isAccountRegistered } from "$lib/state/auth.svelte";
 	import { openSettings } from "$lib/state/settingsModal.svelte";
 	import { LANGUAGES } from "$lib/languages";
@@ -444,40 +445,13 @@
 						onkeydown={handleTagsKeydown}
 					/>
 					{#if tagSuggestionsOpen && tagSuggestions.length}
-						<ul
-							class="dropdown-content menu bg-base-200 rounded-box z-10 mt-1 w-full flex-nowrap gap-0.5 overflow-y-auto p-2 shadow-xl"
-						>
-							{#each tagSuggestions as tag, index (tag.name)}
-								<li>
-									<button
-										type="button"
-										class:menu-active={index ===
-											tagSuggestionsHighlight}
-										title={tag.description ??
-											tag.name}
-										onmousedown={(
-											e,
-										) =>
-											e.preventDefault()}
-										onmouseenter={() =>
-											(tagSuggestionsHighlight =
-												index)}
-										onclick={() =>
-											pickTagSuggestion(
-												tag.name,
-											)}
-									>
-										{tag.name}
-										{#if tag.description}
-											<span
-												class="text-xs opacity-60"
-												>{tag.description}</span
-											>
-										{/if}
-									</button>
-								</li>
-							{/each}
-						</ul>
+						<TagSuggestionsList
+							suggestions={tagSuggestions}
+							highlight={tagSuggestionsHighlight}
+							onhighlight={(i) => (tagSuggestionsHighlight = i)}
+							onpick={pickTagSuggestion}
+							class="w-full"
+						/>
 					{/if}
 				</div>
 			</label>

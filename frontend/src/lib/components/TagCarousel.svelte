@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { PREDEFINED_TAGS, type PredefinedTagType } from "$lib/data/tags";
 	import { m } from '$lib/paraglide/messages.js';
+	import TagSuggestionsList from "./TagSuggestionsList.svelte";
 
 	interface Props {
 		selected: Set<string>;
@@ -62,7 +63,6 @@
 
 	let customInput = $state("");
 	let customInputEl = $state<HTMLInputElement>();
-	let suggestionsListEl = $state<HTMLUListElement>();
 	let suggestionsOpen = $state(false);
 	let suggestionsHighlight = $state(-1);
 
@@ -79,15 +79,6 @@
 		// so an old index doesn't point at an unrelated tag.
 		suggestions;
 		suggestionsHighlight = -1;
-	});
-
-	$effect(() => {
-		// Keep the highlighted suggestion in view when navigating by keyboard —
-		// arrowing past the edge of the scroll area shouldn't hide the cursor.
-		if (suggestionsHighlight < 0) return;
-		suggestionsListEl
-			?.children[suggestionsHighlight]
-			?.scrollIntoView({ block: "nearest", behavior: "smooth" });
 	});
 
 	function addCustomTag() {
@@ -207,29 +198,13 @@
 					onkeydown={handleCustomInputKeydown}
 				/>
 				{#if suggestionsOpen && suggestions.length}
-					<ul
-						bind:this={suggestionsListEl}
-						class="dropdown-content menu bg-base-200 rounded-box z-10 mt-1 w-48 max-h-64 flex-nowrap gap-0.5 overflow-x-hidden overflow-y-auto p-2 shadow-xl"
-					>
-					{#each suggestions as tag, index (tag.name)}
-						<li class="w-full">
-							<button
-								type="button"
-								class="flex w-full items-center justify-between gap-2"
-								class:menu-active={index === suggestionsHighlight}
-								title={tag.description ?? tag.name}
-								onmousedown={(e) => e.preventDefault()}
-								onmouseenter={() => (suggestionsHighlight = index)}
-								onclick={() => pickSuggestion(tag.name)}
-							>
-								<span class="shrink-0">{tag.name}</span>
-								{#if tag.description}
-									<span class="text-right text-xs opacity-60">{tag.description}</span>
-								{/if}
-							</button>
-						</li>
-					{/each}
-					</ul>
+					<TagSuggestionsList
+						{suggestions}
+						highlight={suggestionsHighlight}
+						onhighlight={(i) => (suggestionsHighlight = i)}
+						onpick={pickSuggestion}
+						class="w-48"
+					/>
 				{/if}
 			</div>
 			<button type="submit" class="btn btn-ghost btn-xs" disabled={!customInput.trim()}>
