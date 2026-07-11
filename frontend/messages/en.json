@@ -211,6 +211,10 @@
 	"chat_bubble_cancel": "Cancel",
 	"chat_bubble_replying": "Replying…",
 	"chat_bubble_regenerate_response": "Regenerate response",
+	"chat_edit_switch_title": "Unsaved edit",
+	"chat_edit_switch_message": "You have unsaved changes to another message.",
+	"chat_edit_switch_save": "Save",
+	"chat_edit_switch_discard": "Discard change",
 
 	"chat_recovery_error_heading": "This chat's character couldn't be loaded",
 	"chat_recovery_wait_longer": "Wait longer",

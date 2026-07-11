@@ -1,5 +1,6 @@
-- feat(chat view): improve editing flow. editing textarea is too small or too large (depends on message)
 - feat(chat view): add 'continue' button for AI messages, to instead of generating next message, would add text to selected one
+- fix(chat view message edit): set minimum size for textarea to size of control buttons (send/save only/cancel)
+- deleting one message deletes history AFTER it. should connnect to previous message
 - fix (character new/edit page): leave page confirmation doesnt proceed on 'confirm' press
 - implement 'read aloud' feature. and different providers for it. either local, or remote
 - feat(browse): rework Browse/search to avoid fetching the entire published network unbounded on every load (currently `browseNetwork()` reads every id under the `__network__` pseudo-tag and fetches+verifies each one) — implement proper sorting (by updated_at, created_at) and pagination

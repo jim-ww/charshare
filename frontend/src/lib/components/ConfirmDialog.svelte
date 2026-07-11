@@ -11,9 +11,24 @@
 		onconfirm: () => void;
 		oncancel: () => void;
 		children?: Snippet;
+		// Optional third action alongside confirm/cancel — e.g. "Discard" next
+		// to "Save"/"Cancel" — for choices that aren't a plain yes/no.
+		extraLabel?: string;
+		onextra?: () => void;
 	}
 
-	let { open, title, message, confirmLabel = m.confirm_dialog_default_confirm(), danger = false, onconfirm, oncancel, children }: Props = $props();
+	let {
+		open,
+		title,
+		message,
+		confirmLabel = m.confirm_dialog_default_confirm(),
+		danger = false,
+		onconfirm,
+		oncancel,
+		children,
+		extraLabel,
+		onextra,
+	}: Props = $props();
 
 	let dialogEl: HTMLDialogElement | undefined;
 
@@ -32,6 +47,9 @@
 		{/if}
 		<div class="modal-action">
 			<button class="btn btn-sm" type="button" onclick={oncancel}>{m.confirm_dialog_cancel()}</button>
+			{#if extraLabel && onextra}
+				<button class="btn btn-sm btn-outline btn-error" type="button" onclick={onextra}>{extraLabel}</button>
+			{/if}
 			<button
 				class="btn btn-sm {danger ? 'btn-error' : 'btn-primary'}"
 				type="button"

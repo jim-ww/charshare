@@ -3,6 +3,7 @@
 	import type { Chat, Character, Message } from '$lib/types';
 	import { deleteMessage, getSiblings, switchBranch, updateMessageContent } from '$lib/state/chats.svelte';
 	import { editUserMessage, regenerateMessage } from '$lib/ai/chat';
+	import { getEditingMessageId, requestStartEdit, stopEditing } from '$lib/state/chatEditing.svelte';
 	import { getMyProfile } from '$lib/state/profile.svelte';
 	import { getPersona, personaDisplayName } from '$lib/state/personas.svelte';
 	import Avatar from './Avatar.svelte';
@@ -83,13 +84,22 @@
 		if (target) switchBranch(chatId, target.id);
 	}
 
-	let editing = $state(false);
+	const editing = $derived(getEditingMessageId() === message.id);
 	let draft = $state('');
 	let regenerating = $state(false);
 
-	function startEdit() {
-		draft = message.content;
-		editing = true;
+	// The edit lock lives in a module-level singleton, not component state —
+	// release it on unmount so navigating away mid-edit (e.g. switching
+	// chats) doesn't leave a stale lock nothing can ever clear again.
+	$effect(() => () => stopEditing(message.id));
+
+	async function startEdit() {
+		const switched = await requestStartEdit({
+			messageId: message.id,
+			hasChanges: () => draft !== message.content,
+			save: () => updateMessageContent(chatId, message.id, draft, { persist: true }),
+		});
+		if (switched) draft = message.content;
 	}
 
 	// Grows the textarea to exactly fit its content, so editing a message
@@ -123,13 +133,13 @@
 	 *  and hide that history, which is wrong for a plain correction. */
 	async function saveEditOnly() {
 		await updateMessageContent(chatId, message.id, draft, { persist: true });
-		editing = false;
+		stopEditing(message.id);
 	}
 
 	/** Edits the message and resends the conversation so the character
 	 *  reacts to the new wording — the common case for a user message edit. */
 	async function saveAndResend() {
-		editing = false;
+		stopEditing(message.id);
 		regenerating = true;
 		try {
 			await editUserMessage(chat, character, message.id, draft);
@@ -250,7 +260,7 @@
 				{:else}
 					<button class="btn btn-xs" type="button" onclick={saveEditOnly}>{m.chat_bubble_save()}</button>
 				{/if}
-				<button class="btn btn-xs" type="button" onclick={() => (editing = false)}>{m.chat_bubble_cancel()}</button>
+				<button class="btn btn-xs" type="button" onclick={() => stopEditing(message.id)}>{m.chat_bubble_cancel()}</button>
 			</div>
 		{:else if message.role === 'character' && message.content === ''}
 			<p class="italic opacity-60">{m.chat_bubble_replying()}</p>

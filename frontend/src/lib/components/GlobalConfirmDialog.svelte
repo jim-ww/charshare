@@ -12,7 +12,9 @@
 		message={pending.message}
 		confirmLabel={pending.confirmLabel}
 		danger={pending.danger}
-		onconfirm={() => resolvePendingConfirm(true)}
-		oncancel={() => resolvePendingConfirm(false)}
+		extraLabel={pending.extraLabel}
+		onconfirm={() => resolvePendingConfirm('confirm')}
+		oncancel={() => resolvePendingConfirm('cancel')}
+		onextra={pending.extraLabel ? () => resolvePendingConfirm('extra') : undefined}
 	/>
 {/if}
