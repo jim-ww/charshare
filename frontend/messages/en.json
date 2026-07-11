@@ -224,6 +224,9 @@
 
 	"chat_sidebar_more_options": "More options",
 	"chat_sidebar_export": "Export",
+	"chat_sidebar_share_link": "Share chat",
+	"chat_sidebar_share_link_copied": "Share link copied to clipboard.",
+	"chat_sidebar_share_link_failed": "Couldn't copy the link — here it is to copy manually:",
 	"chat_sidebar_rename": "Rename",
 	"chat_sidebar_choose_character": "Choose character",
 	"chat_sidebar_view_character": "View character",
@@ -245,6 +248,10 @@
 	"chat_settings_background_delete": "Delete background",
 	"chat_settings_background_placeholder": "https://…",
 	"chat_settings_background_add": "Add",
+
+	"shared_chat_not_found": "This link doesn't contain a valid shared conversation.",
+	"shared_chat_you": "You",
+	"shared_chat_open_app": "Open Charshare",
 
 	"chat_thread_switcher_back": "Back",
 	"chat_thread_switcher_position": "Conversation {current} of {total}",

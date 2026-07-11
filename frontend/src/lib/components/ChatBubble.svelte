@@ -12,15 +12,27 @@
 		chat: Chat;
 		message: Message;
 		character: Character;
+		// Set for the read-only shared-chat viewer, where there's no live chat
+		// state to edit/regenerate/branch-switch against — hides those controls.
+		// The character avatar/name link is unaffected: it still points at
+		// character.id like the regular chat view, and behaves the same way
+		// whether or not the viewer happens to have that character.
+		readonly?: boolean;
+		// Bypasses the persona/profile lookup below — the shared-chat viewer
+		// has no persona state of its own, just the name baked into the share
+		// link at share time.
+		userNameOverride?: string;
 	}
 
-	let { chat, message, character }: Props = $props();
+	let { chat, message, character, readonly = false, userNameOverride }: Props = $props();
 	const chatId = $derived(chat.id);
 
 	// The persona the user was playing as when this chat was created — falls
 	// back to the real profile username for chats from before personas existed.
 	const persona = $derived(chat.persona_id ? getPersona(chat.persona_id) : undefined);
-	const userName = $derived(persona ? personaDisplayName(persona) : (getMyProfile()?.username ?? m.chat_bubble_default_user_name()));
+	const userName = $derived(
+		userNameOverride ?? (persona ? personaDisplayName(persona) : (getMyProfile()?.username ?? m.chat_bubble_default_user_name()))
+	);
 
 	const displayName = $derived(message.role === 'character' ? character.name : userName);
 
@@ -54,7 +66,9 @@
 
 	// Other branches regenerated at this same point in the tree — the "other
 	// routes" of the conversation (see regenerateMessage in $lib/ai/chat.ts).
-	const branches = $derived(getSiblings(chat, message.id));
+	// Not meaningful in read-only mode, which only ever gets a single linear
+	// path (see buildSharedChatData).
+	const branches = $derived(readonly ? [] : getSiblings(chat, message.id));
 	const branchPos = $derived(branches.findIndex((m) => m.id === message.id));
 
 	function goBranch(delta: number) {
@@ -130,7 +144,7 @@
 			{/if}
 			<span class="text-xs font-normal italic opacity-60">{formattedTime}</span>
 		</span>
-		{#if !editing}
+		{#if !editing && !readonly}
 			<div
 				class="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100"
 			>
@@ -227,7 +241,7 @@
 				›
 			</button>
 		{/if}
-		{#if !editing && message.role === 'character'}
+		{#if !editing && !readonly && message.role === 'character'}
 			<button
 				class="btn btn-xs btn-ghost"
 				type="button"

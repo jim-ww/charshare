@@ -6,6 +6,10 @@
 	import { getChats, deleteChat, renameChat, exportChat } from '$lib/state/chats.svelte';
 	import { resolveCharacter, ensureCharacterLoaded } from '$lib/state/characterCache.svelte';
 	import { isCharactersReady } from '$lib/state/characters.svelte';
+	import { getPersona, personaDisplayName } from '$lib/state/personas.svelte';
+	import { getMyProfile } from '$lib/state/profile.svelte';
+	import { buildShareUrl, buildSharedChatData } from '$lib/share/chatShare';
+	import { notify } from '$lib/state/notifications.svelte';
 	import Avatar from './Avatar.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import PromptDialog from './PromptDialog.svelte';
@@ -86,6 +90,21 @@
 		a.click();
 		URL.revokeObjectURL(url);
 	}
+
+	async function handleShare(chat: Chat) {
+		const character = resolveCharacter(chat.character_id);
+		if (!character) return;
+		const persona = chat.persona_id ? getPersona(chat.persona_id) : undefined;
+		const userName = persona ? personaDisplayName(persona) : (getMyProfile()?.username ?? null);
+		const data = buildSharedChatData(chat, character, userName);
+		const shareUrl = buildShareUrl(data, resolve('/shared'));
+		try {
+			await navigator.clipboard.writeText(shareUrl);
+			notify(m.chat_sidebar_share_link_copied(), { kind: 'success' });
+		} catch {
+			notify(`${m.chat_sidebar_share_link_failed()} ${shareUrl}`, { kind: 'warning', duration: 0 });
+		}
+	}
 </script>
 
 {#snippet chatActions(chat: Chat)}
@@ -99,8 +118,9 @@
 			⋮
 		</button>
 		<ul class="menu dropdown-content menu-sm z-10 w-40 rounded-box bg-base-200 p-1 shadow">
-			<li><button type="button" onclick={() => handleExport(chat)}>{m.chat_sidebar_export()}</button></li>
 			<li><button type="button" onclick={() => handleRename(chat)}>{m.chat_sidebar_rename()}</button></li>
+			<li><button type="button" onclick={() => handleShare(chat)}>{m.chat_sidebar_share_link()}</button></li>
+			<li><button type="button" onclick={() => handleExport(chat)}>{m.chat_sidebar_export()}</button></li>
 			<li>
 				<a href={resolve('/characters/[id]', { id: chat.character_id })}>{m.chat_sidebar_view_character()}</a>
 			</li>

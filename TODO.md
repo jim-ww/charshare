@@ -1,4 +1,4 @@
-- feat(chats): add share chat url button, that would encode chat history json, as base64 string, and implement chat history viewer, that would take this base64 string from URL
+- feat(comments): add message length limit
 - feat(chat view): improve editing flow. editing textarea is too small or too large (depends on message)
 - feat(chat view): add 'continue' button for AI messages, to instead of generating next message, would add text to selected one
 - fix(system prompt): change to better outline that AI must NEVER say what {{user}} thinks/does/feels
