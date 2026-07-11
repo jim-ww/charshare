@@ -83,9 +83,10 @@ function historyToMessages(messages: Message[]): CompletionMessage[] {
 }
 
 const PARENTHETICAL_INSTRUCTION =
-	"Any text inside parentheses ( ) in a message, from either party, is an out-of-character " +
+	"Any text inside parentheses ( ) in a message from {{user}} is an out-of-character " +
 	"instruction to you, not dialogue or narration. Follow it exactly, then continue the scene " +
-	"without the parenthesized text itself appearing in your reply, unless the instruction says otherwise.";
+	"without the parenthesized text itself appearing in your reply, unless the instruction says otherwise. " +
+	"Parentheses in your own ({{char}}'s) replies carry no special meaning and are just prose.";
 
 /** The persona's name is never sent here — messages already use the
  *  `{{user}}` macro for that (see historyToMessages/systemPrompt callers),

@@ -47,12 +47,19 @@
 			.replaceAll('>', '&gt;');
 	}
 
-	// Renders *actions* dimmed and (asides) in a distinct color. Escapes first
-	// so message content can never inject markup.
+	// Renders *actions* dimmed. Only the user's own (asides) are marked in a
+	// distinct color — those are OOC instructions to the model (see
+	// PARENTHETICAL_INSTRUCTION in ai/chat.ts); the character's parentheses
+	// are just prose and aren't treated specially. Escapes first so message
+	// content can never inject markup.
 	const formattedContent = $derived.by(() => {
-		return escapeHtml(displayContent)
-			.replace(/\*([^*]+)\*/g, '<span class="opacity-60 italic">$1</span>')
-			.replace(/\(([^)]+)\)/g, '<span class="text-secondary">($1)</span>');
+		const withActions = escapeHtml(displayContent).replace(
+			/\*([^*]+)\*/g,
+			'<span class="opacity-60 italic">$1</span>',
+		);
+		return message.role === 'user'
+			? withActions.replace(/\(([^)]+)\)/g, '<span class="text-secondary">($1)</span>')
+			: withActions;
 	});
 
 	// Messenger-style timestamp: just the time for today, otherwise date + time.
