@@ -51,8 +51,7 @@ async function parseAndVerify<T extends Signable>(
  *  isolated testing that it can go unfired even for the simplest in-memory,
  *  single-level write, while the local graph write itself is synchronous and
  *  immediately readable. Timing out and resolving optimistically means a
- *  missing ack (no reachable storage/peer) doesn't hang the caller forever;
- *  an ack that does arrive with an error still rejects immediately. */
+ *  missing ack (no reachable storage/peer) doesn't hang the caller forever. */
 const PUT_ACK_TIMEOUT_MS = 3000;
 
 /** Writes an already-signed document to `node`. Callers are responsible for
@@ -61,7 +60,7 @@ const PUT_ACK_TIMEOUT_MS = 3000;
  *  a document lives — shared index, the author's own protected space, or
  *  another author's public space — depends on what's being written. */
 export function putDocument<T extends Signable>(node: GunNode, doc: T): Promise<void> {
-	return new Promise((resolve, reject) => {
+	return new Promise((resolve) => {
 		let settled = false;
 		const timer = setTimeout(() => {
 			if (!settled) {
@@ -73,8 +72,18 @@ export function putDocument<T extends Signable>(node: GunNode, doc: T): Promise<
 			if (settled) return;
 			settled = true;
 			clearTimeout(timer);
-			if (ack.err) reject(new Error(ack.err));
-			else resolve();
+			// GUN aggregates acks across all configured peers into one callback and
+			// treats the whole put as failed if *any single peer* errors (see
+			// node_modules/gun/gun.js's `ack()`, which sets ctx.err from the first
+			// erroring peer and fires immediately — a known upstream quirk, not
+			// specific to any peer). With several public, unreliable relays
+			// configured (see relays.ts), one flaky/rejecting relay would otherwise
+			// block every write, even though the local write always lands and the
+			// other peers usually accept it too. So an error ack is logged, not
+			// treated as failure — matches the timeout-above's already-optimistic
+			// stance on this app's unreliable public relays.
+			if (ack.err) console.warn('[gun] put ack error (ignored, wrote locally)', ack.err);
+			resolve();
 		});
 	});
 }
