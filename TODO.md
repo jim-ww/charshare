@@ -1,7 +1,8 @@
-- feat: rethink more appropriate predefined tags. remove redundant. add more common ones
 - feat(tags): implement autocomplete for tag textinput in browse, character new/edit pages
+- feat(tags): add blocked tags filter in preferences, same selector as on browse page
 - feat(chat view): improve editing flow. editing textarea is too small or too large (depends on message)
 - feat(chat view): add 'continue' button for AI messages, to instead of generating next message, would add text to selected one
+- fix (character new/edit page): leave page confirmation doesnt proceed on 'confirm' press
 - implement 'read aloud' feature. and different providers for it. either local, or remote
 - feat(browse): rework Browse/search to avoid fetching the entire published network unbounded on every load (currently `browseNetwork()` reads every id under the `__network__` pseudo-tag and fetches+verifies each one) — implement proper sorting (by updated_at, created_at) and pagination
 - feat(browse): `browseByAuthor` currently filters the full network feed client-side by author instead of a targeted lookup; a native per-author index already exists implicitly (each author's characters live under their own GUN user-space graph, enumerable via `.map()`) but isn't wired up for this — use it

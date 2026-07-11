@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { PREDEFINED_TAGS } from "$lib/data/tags";
+	import { PREDEFINED_TAGS, type PredefinedTagType } from "$lib/data/tags";
 	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
@@ -9,13 +9,43 @@
 
 	let { selected, ontoggle }: Props = $props();
 
+	const categoryLabels: Record<PredefinedTagType, () => string> = {
+		tone: m.tag_carousel_category_tone,
+		dere: m.tag_carousel_category_dere,
+		species: m.tag_carousel_category_species,
+		setting: m.tag_carousel_category_setting,
+		relationship: m.tag_carousel_category_relationship,
+		role: m.tag_carousel_category_role,
+		dynamic: m.tag_carousel_category_dynamic,
+		identity: m.tag_carousel_category_identity,
+		origin: m.tag_carousel_category_origin,
+		pov: m.tag_carousel_category_pov,
+		kink: m.tag_carousel_category_kink,
+		misc: m.tag_carousel_category_misc,
+	};
+
+	// Categories in first-seen order, so the filter row roughly follows the
+	// same "most common first" ordering as the tag list itself.
+	const categories = [...new Set(PREDEFINED_TAGS.map((t) => t.type))];
+
+	let activeCategory = $state<PredefinedTagType | null>(null);
+
+	const categoryFilteredTags = $derived(
+		activeCategory === null
+			? PREDEFINED_TAGS
+			: PREDEFINED_TAGS.filter((t) => t.type === activeCategory),
+	);
+
 	// A flat wrapping cloud reads better than a scroll strip for a list this
 	// short — collapsed to a first slice so the common case stays compact,
-	// with an explicit expander rather than a clipped/faded overflow.
+	// with an explicit expander rather than a clipped/faded overflow. Once a
+	// category is picked the list is already short, so skip collapsing.
 	const COLLAPSED_COUNT = 16;
 	let showAll = $state(false);
 	const visibleTags = $derived(
-		showAll ? PREDEFINED_TAGS : PREDEFINED_TAGS.slice(0, COLLAPSED_COUNT),
+		activeCategory !== null || showAll
+			? categoryFilteredTags
+			: categoryFilteredTags.slice(0, COLLAPSED_COUNT),
 	);
 
 	// Selected tags that aren't in the predefined list — typed in via the
@@ -62,6 +92,29 @@
 		</div>
 	{/if}
 
+	<div class="flex flex-wrap justify-center gap-1.5">
+		<button
+			type="button"
+			class="badge badge-sm cursor-pointer"
+			class:badge-neutral={activeCategory === null}
+			class:badge-outline={activeCategory !== null}
+			onclick={() => (activeCategory = null)}
+		>
+			{m.tag_carousel_category_all()}
+		</button>
+		{#each categories as category (category)}
+			<button
+				type="button"
+				class="badge badge-sm cursor-pointer"
+				class:badge-neutral={activeCategory === category}
+				class:badge-outline={activeCategory !== category}
+				onclick={() => (activeCategory = activeCategory === category ? null : category)}
+			>
+				{categoryLabels[category]()}
+			</button>
+		{/each}
+	</div>
+
 	<div class="flex flex-wrap justify-center gap-2">
 		{#each visibleTags as tag (tag.name)}
 			{@render tagChip(tag.name, tag.description)}
@@ -69,7 +122,7 @@
 	</div>
 
 	<div class="flex flex-wrap items-center justify-center gap-3">
-		{#if PREDEFINED_TAGS.length > COLLAPSED_COUNT}
+		{#if activeCategory === null && PREDEFINED_TAGS.length > COLLAPSED_COUNT}
 			<button
 				type="button"
 				class="link link-hover text-xs"
