@@ -50,7 +50,11 @@
 			draft: '',
 			image_index: 0,
 			backgrounds: [],
-			active_background: null
+			active_background: null,
+			tts_provider: null,
+			tts_voice_id: 'f1',
+			tts_pitch: 1,
+			tts_speed: 1
 		};
 	});
 

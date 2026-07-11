@@ -34,6 +34,10 @@ export function initChats(): Promise<void> {
 				if (chat.persona_id === undefined) chat.persona_id = null;
 				if (chat.backgrounds === undefined) chat.backgrounds = [];
 				if (chat.active_background === undefined) chat.active_background = null;
+				if (chat.tts_provider === undefined) chat.tts_provider = { provider: 'local' };
+				if (chat.tts_voice_id === undefined) chat.tts_voice_id = 'f1';
+				if (chat.tts_pitch === undefined) chat.tts_pitch = 1;
+				if (chat.tts_speed === undefined) chat.tts_speed = 1;
 			}
 			chats = loaded;
 			ready = true;
@@ -67,7 +71,11 @@ export async function createChat(
 		draft: '',
 		image_index: 0,
 		backgrounds: defaultBackground ? [defaultBackground] : [],
-		active_background: defaultBackground || null
+		active_background: defaultBackground || null,
+		tts_provider: { provider: 'local' },
+		tts_voice_id: 'f1',
+		tts_pitch: 1,
+		tts_speed: 1
 	};
 	chats = { ...chats, [chat.id]: chat };
 	await persist();
@@ -158,6 +166,34 @@ export async function setChatActiveBackground(id: ChatId, url: string | null): P
 	await persist();
 }
 
+export async function setChatTtsProvider(id: ChatId, provider: Chat['tts_provider']): Promise<void> {
+	const chat = chats[id];
+	if (!chat) return;
+	chats = { ...chats, [id]: { ...chat, tts_provider: provider } };
+	await persist();
+}
+
+export async function setChatTtsVoice(id: ChatId, voiceId: Chat['tts_voice_id']): Promise<void> {
+	const chat = chats[id];
+	if (!chat) return;
+	chats = { ...chats, [id]: { ...chat, tts_voice_id: voiceId } };
+	await persist();
+}
+
+export async function setChatTtsPitch(id: ChatId, pitch: number): Promise<void> {
+	const chat = chats[id];
+	if (!chat) return;
+	chats = { ...chats, [id]: { ...chat, tts_pitch: pitch } };
+	await persist();
+}
+
+export async function setChatTtsSpeed(id: ChatId, speed: number): Promise<void> {
+	const chat = chats[id];
+	if (!chat) return;
+	chats = { ...chats, [id]: { ...chat, tts_speed: speed } };
+	await persist();
+}
+
 export async function deleteChat(id: ChatId): Promise<void> {
 	const { [id]: _removed, ...rest } = chats;
 	chats = rest;
@@ -207,7 +243,11 @@ export async function importChat(
 		draft: '',
 		image_index: 0,
 		backgrounds: [],
-		active_background: null
+		active_background: null,
+		tts_provider: source.tts_provider ?? { provider: 'local' },
+		tts_voice_id: source.tts_voice_id ?? 'f1',
+		tts_pitch: source.tts_pitch ?? 1,
+		tts_speed: source.tts_speed ?? 1
 	};
 	chats = { ...chats, [chat.id]: chat };
 	await persist();

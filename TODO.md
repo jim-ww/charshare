@@ -1,4 +1,5 @@
-- implement 'read aloud' feature. and different providers for it. either local, or remote
+- add when deleting character, ask if user wants to save local copy of it? but with separate ID, so he can publish again? or just set deleted = false on republish?
+- chat view: beside saving unsent message state, also save currently edited message state (which one is being edited and edit-in-progress text state)
 - feat(browse): rework Browse/search to avoid fetching the entire published network unbounded on every load (currently `browseNetwork()` reads every id under the `__network__` pseudo-tag and fetches+verifies each one) — implement proper sorting (by updated_at, created_at) and pagination
 - feat(browse): `browseByAuthor` currently filters the full network feed client-side by author instead of a targeted lookup; a native per-author index already exists implicitly (each author's characters live under their own GUN user-space graph, enumerable via `.map()`) but isn't wired up for this — use it
 - feat(core): rating system for characters? then add sorting by popularity

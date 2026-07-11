@@ -79,6 +79,12 @@ export type ProviderConfigMap = {
   [P in ProviderConfig['provider']]: Extract<ProviderConfig, { provider: P }>;
 };
 
+export interface LocalTtsProviderConfig {
+  provider: 'local'; // runs fully on-device via transformers.js, see lib/tts
+}
+
+export type TtsProviderConfig = LocalTtsProviderConfig; // union grows as more TTS providers are added
+
 export interface Preferences {
   gunRelays: string[]; // includes the default, user can add/remove
   theme: ThemeMode;
@@ -95,4 +101,7 @@ export interface Preferences {
   whisperConsentGiven: boolean; // user agreed to download the local speech-to-text model
   whisperModelSize: 'tiny' | 'base'; // which Whisper model size to use for mic transcription
   micSilenceTimeoutMs: number | null; // auto-stop recording after this much silence; null disables auto-stop entirely
+  // Provider/voice/pitch selection is per-chat, not global — see Chat.tts_*
+  // in chat.ts. Only device-level model consent stays here.
+  ttsConsentGiven: boolean; // user agreed to download the local text-to-speech model
 }

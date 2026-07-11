@@ -22,6 +22,10 @@ function makeChat(overrides: Partial<Chat> = {}): Chat {
 		image_index: 0,
 		backgrounds: [],
 		active_background: null,
+		tts_provider: { provider: 'local' },
+		tts_voice_id: 'f1',
+		tts_pitch: 1,
+		tts_speed: 1,
 		...overrides
 	};
 }

@@ -72,6 +72,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
 	whisperConsentGiven: false,
 	whisperModelSize: "tiny",
 	micSilenceTimeoutMs: 1500,
+	ttsConsentGiven: false,
 	provider: DEFAULT_HUGGINGFACE_CONFIG,
 	providerConfigs: {
 		openrouter: DEFAULT_OPENROUTER_CONFIG,
@@ -128,6 +129,7 @@ export function initPreferences(): Promise<void> {
 					whisperConsentGiven: preferences.whisperConsentGiven ?? false,
 					whisperModelSize: preferences.whisperModelSize ?? "tiny",
 					micSilenceTimeoutMs: preferences.micSilenceTimeoutMs ?? 1500,
+					ttsConsentGiven: preferences.ttsConsentGiven ?? false,
 					providerConfigs: {
 						...DEFAULT_PREFERENCES.providerConfigs,
 						...preferences.providerConfigs,

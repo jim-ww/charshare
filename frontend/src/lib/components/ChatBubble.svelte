@@ -6,7 +6,11 @@
 	import { getEditingMessageId, requestStartEdit, stopEditing } from '$lib/state/chatEditing.svelte';
 	import { getMyProfile } from '$lib/state/profile.svelte';
 	import { getPersona, personaDisplayName } from '$lib/state/personas.svelte';
+	import { getPreferences, updatePreferences } from '$lib/state/preferences.svelte';
+	import { TTS_MODELS, preloadModel as preloadTtsModel, synthesize } from '$lib/tts/ttsClient';
+	import { playWithPitch, type PitchedPlayback } from '$lib/tts/playback';
 	import Avatar from './Avatar.svelte';
+	import ConfirmDialog from './ConfirmDialog.svelte';
 	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
@@ -180,6 +184,59 @@
 			regenerating = false;
 		}
 	}
+
+	// --- Read aloud (local text-to-speech) --------------------------------
+
+	const ttsAvailable = $derived(!readonly && chat.tts_provider !== null);
+
+	let ttsState = $state<'idle' | 'loading' | 'playing'>('idle');
+	let ttsPlayback: PitchedPlayback | undefined;
+	let showTtsConsent = $state(false);
+
+	// Whatever's playing belongs to this bubble instance — stop it on
+	// unmount so a message scrolled out of view or a chat switch doesn't
+	// keep talking in the background.
+	$effect(() => () => ttsPlayback?.stop());
+
+	async function downloadAndPlayTts() {
+		ttsState = 'loading';
+		try {
+			await preloadTtsModel('default', () => {});
+			const blob = await synthesize(displayContent, 'default', chat.tts_voice_id);
+			ttsPlayback?.stop();
+			ttsState = 'playing';
+			ttsPlayback = await playWithPitch(blob, chat.tts_pitch, chat.tts_speed, () => {
+				ttsState = 'idle';
+			});
+		} catch (err) {
+			ttsState = 'idle';
+			console.error('Read aloud failed:', err);
+		}
+	}
+
+	async function handleReadAloud() {
+		if (ttsState === 'playing') {
+			ttsPlayback?.stop();
+			ttsState = 'idle';
+			return;
+		}
+		if (ttsState === 'loading') return;
+		if (!getPreferences().ttsConsentGiven) {
+			showTtsConsent = true;
+			return;
+		}
+		await downloadAndPlayTts();
+	}
+
+	async function handleTtsConsentConfirm() {
+		showTtsConsent = false;
+		await updatePreferences({ ttsConsentGiven: true });
+		await downloadAndPlayTts();
+	}
+
+	function handleTtsConsentCancel() {
+		showTtsConsent = false;
+	}
 </script>
 
 <div
@@ -340,6 +397,59 @@
 			>
 				»
 			</button>
+			{#if ttsAvailable}
+				<button
+					class="btn btn-xs btn-ghost"
+					type="button"
+					disabled={message.content === '' || ttsState === 'loading'}
+					aria-label={ttsState === 'playing'
+						? m.chat_bubble_read_aloud_stop()
+						: m.chat_bubble_read_aloud()}
+					title={ttsState === 'playing'
+						? m.chat_bubble_read_aloud_stop()
+						: m.chat_bubble_read_aloud()}
+					onclick={handleReadAloud}
+				>
+					{#if ttsState === 'loading'}
+						<span class="loading loading-spinner loading-xs"></span>
+					{:else if ttsState === 'playing'}
+						<svg
+							viewBox="0 0 24 24"
+							width="14"
+							height="14"
+							fill="currentColor"
+							aria-hidden="true"
+						>
+							<rect x="6" y="6" width="12" height="12" rx="1" />
+						</svg>
+					{:else}
+						<svg
+							viewBox="0 0 24 24"
+							width="14"
+							height="14"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<path d="M11 5 6 9H3v6h3l5 4V5Z" />
+							<path d="M15.5 8.5a5 5 0 0 1 0 7" />
+							<path d="M18.5 6a9 9 0 0 1 0 12" />
+						</svg>
+					{/if}
+				</button>
+			{/if}
 		{/if}
 	</div>
 </div>
+
+<ConfirmDialog
+	open={showTtsConsent}
+	title={m.chat_bubble_tts_consent_title()}
+	message={m.chat_bubble_tts_consent_message({ sizeMB: TTS_MODELS.default.approxSizeMB })}
+	confirmLabel={m.chat_bubble_tts_consent_confirm()}
+	onconfirm={handleTtsConsentConfirm}
+	oncancel={handleTtsConsentCancel}
+/>

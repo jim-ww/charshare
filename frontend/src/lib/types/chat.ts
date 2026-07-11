@@ -1,5 +1,6 @@
 import type { CharacterId } from './character';
 import type { PersonaId } from './persona';
+import type { TtsProviderConfig } from './preferences';
 
 export type ChatId = string; // uuid
 export type MessageId = string; // uuid
@@ -55,4 +56,13 @@ export interface Chat {
   // member of `backgrounds` at read time if it was since deleted — callers
   // should fall back to null in that case.
   active_background: string | null;
+  // Read-aloud settings are per-chat, not global — a chat with a young
+  // character shouldn't have to share a voice/pitch with one where the
+  // character is an old man. Model downloads/caching are still managed
+  // globally in Settings → Sound; only the *selection* lives here, and
+  // travels with the chat on export/import like backgrounds do.
+  tts_provider: TtsProviderConfig | null; // null means read-aloud is off for this chat
+  tts_voice_id: 'f1' | 'f2' | 'f3' | 'f4' | 'f5' | 'm1' | 'm2' | 'm3' | 'm4' | 'm5';
+  tts_pitch: number; // pitch-only ratio applied on top of the voice, e.g. 1.4 for a higher/younger-sounding read, 0.8 for a deeper one — independent of tts_speed
+  tts_speed: number; // speaking-speed-only ratio, independent of tts_pitch — e.g. 1.2 for a faster, energetic delivery
 }
