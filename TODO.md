@@ -1,4 +1,3 @@
-- feat(chat view): add 'continue' button for AI messages, to instead of generating next message, would add text to selected one
 - deleting one message deletes history AFTER it. should connnect to previous message
 - fix (character new/edit page): leave page confirmation doesnt proceed on 'confirm' press
 - implement 'read aloud' feature. and different providers for it. either local, or remote

@@ -211,6 +211,7 @@
 	"chat_bubble_cancel": "Cancel",
 	"chat_bubble_replying": "Replying…",
 	"chat_bubble_regenerate_response": "Regenerate response",
+	"chat_bubble_continue_message": "Continue this message",
 	"chat_edit_switch_title": "Unsaved edit",
 	"chat_edit_switch_message": "You have unsaved changes to another message.",
 	"chat_edit_switch_save": "Save",

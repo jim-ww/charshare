@@ -2,7 +2,7 @@
 	import { resolve } from '$app/paths';
 	import type { Chat, Character, Message } from '$lib/types';
 	import { deleteMessage, getSiblings, switchBranch, updateMessageContent } from '$lib/state/chats.svelte';
-	import { editUserMessage, regenerateMessage } from '$lib/ai/chat';
+	import { continueMessage, editUserMessage, regenerateMessage } from '$lib/ai/chat';
 	import { getEditingMessageId, requestStartEdit, stopEditing } from '$lib/state/chatEditing.svelte';
 	import { getMyProfile } from '$lib/state/profile.svelte';
 	import { getPersona, personaDisplayName } from '$lib/state/personas.svelte';
@@ -168,6 +168,18 @@
 			regenerating = false;
 		}
 	}
+
+	/** Appends to this message instead of branching a new one — for when a
+	 *  reply was good but cut off short, rather than rerolling it entirely. */
+	async function handleContinue() {
+		if (regenerating) return;
+		regenerating = true;
+		try {
+			await continueMessage(chat, character, message.id);
+		} finally {
+			regenerating = false;
+		}
+	}
 </script>
 
 <div
@@ -317,6 +329,16 @@
 					<path d="M21 12a9 9 0 11-3-6.7" />
 					<path d="M21 3v6h-6" />
 				</svg>
+			</button>
+			<button
+				class="btn btn-xs btn-ghost"
+				type="button"
+				disabled={regenerating || message.content === ''}
+				aria-label={m.chat_bubble_continue_message()}
+				title={m.chat_bubble_continue_message()}
+				onclick={handleContinue}
+			>
+				»
 			</button>
 		{/if}
 	</div>

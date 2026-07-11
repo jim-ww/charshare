@@ -240,6 +240,54 @@ export async function regenerateMessage(
 	);
 }
 
+/** Continues an existing character message instead of generating a new one —
+ *  asks the model to keep writing from exactly where the message left off
+ *  (same trick completeWithContinuation uses for a cut-off reply) and
+ *  appends the result onto the existing content. For when a reply was good
+ *  but stopped short, rather than fully regenerating it as a new branch. */
+export async function continueMessage(
+	chat: Chat,
+	character: Character,
+	messageId: MessageId,
+	options: { signal?: AbortSignal } = {},
+): Promise<void> {
+	await ensurePreferencesReady();
+	const activePath = getActivePath(chat);
+	const index = activePath.findIndex((m) => m.id === messageId);
+	if (index === -1) throw new Error("Message not found.");
+
+	const original = activePath[index].content;
+	const priorMessages = activePath.slice(0, index);
+
+	const messages: CompletionMessage[] = [
+		{ role: "system", content: systemPrompt(character, chat) },
+		...historyToMessages(priorMessages),
+		{ role: "assistant", content: original },
+		{
+			role: "user",
+			content:
+				"Continue exactly where you left off. Do not repeat anything already written.",
+		},
+	];
+
+	let latest = original;
+	try {
+		const appended = await completeWithContinuation(getPreferences().provider, messages, {
+			signal: options.signal,
+			onChunk: (soFar) => {
+				latest = original + soFar;
+				void updateMessageContent(chat.id, messageId, latest);
+			},
+		});
+		latest = original + appended;
+	} catch (err) {
+		if (latest === original) throw err;
+		// stopped mid-stream — keep whatever was appended so far
+	} finally {
+		await updateMessageContent(chat.id, messageId, latest, { persist: true });
+	}
+}
+
 /** Edits a user message and resends the conversation up to (and including)
  *  the edited content, so the character actually reacts to the new wording
  *  instead of the edit silently sitting there until the user separately
