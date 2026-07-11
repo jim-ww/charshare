@@ -556,7 +556,7 @@
 	"network_tab_save": "Save",
 	"network_tab_saved": "Saved!",
 
-	"content_tab_blocked_tags_label": "Blocked tags (comma-separated)",
+	"content_tab_blocked_tags_label": "Blocked tags",
 	"content_tab_blocked_tags_hint": "Characters carrying any of these tags are excluded from Browse.",
 	"content_tab_blocked_authors_label": "Blocked authors (comma-separated pubkeys)",
 	"content_tab_blocked_authors_hint": "Characters published by these authors are excluded from Browse. Local to this browser only — you can also block an author directly from their character's card.",
