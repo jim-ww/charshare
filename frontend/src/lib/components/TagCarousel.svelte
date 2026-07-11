@@ -48,21 +48,76 @@
 			: categoryFilteredTags.slice(0, COLLAPSED_COUNT),
 	);
 
-	// Selected tags that aren't in the predefined list — typed in via the
-	// custom-tag field below. Shown in their own row so it's clear the app
-	// isn't limited to the predefined set, and so a custom pick has somewhere
-	// to keep rendering (it wouldn't otherwise show up in visibleTags at all).
-	const customTags = $derived(
-		[...selected].filter((t) => !PREDEFINED_TAGS.some((p) => p.name === t)),
+	// Selected tags that aren't currently rendered in the cloud below — either
+	// truly custom (typed in, not in the predefined list at all) or a
+	// predefined tag picked via search while collapsed/category-filtered out
+	// of view. Shown in their own row so a selection never just disappears.
+	const hiddenSelectedTags = $derived(
+		[...selected]
+			.filter((t) => !visibleTags.some((v) => v.name === t))
+			.map((t): { name: string; description?: string } =>
+				PREDEFINED_TAGS.find((p) => p.name === t) ?? { name: t },
+			),
 	);
 
 	let customInput = $state("");
+	let customInputEl = $state<HTMLInputElement>();
+	let suggestionsListEl = $state<HTMLUListElement>();
+	let suggestionsOpen = $state(false);
+	let suggestionsHighlight = $state(-1);
+
+	const suggestions = $derived.by(() =>
+		PREDEFINED_TAGS.filter(
+			(t) =>
+				t.name.includes(customInput.trim().toLowerCase()) &&
+				!selected.has(t.name),
+		),
+	);
+
+	$effect(() => {
+		// Reset the highlight whenever the suggestion list itself changes,
+		// so an old index doesn't point at an unrelated tag.
+		suggestions;
+		suggestionsHighlight = -1;
+	});
+
+	$effect(() => {
+		// Keep the highlighted suggestion in view when navigating by keyboard —
+		// arrowing past the edge of the scroll area shouldn't hide the cursor.
+		if (suggestionsHighlight < 0) return;
+		suggestionsListEl
+			?.children[suggestionsHighlight]
+			?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+	});
 
 	function addCustomTag() {
 		const tag = customInput.trim().toLowerCase().replace(/\s+/g, "-");
 		if (!tag) return;
 		if (!selected.has(tag)) ontoggle(tag);
 		customInput = "";
+	}
+
+	function pickSuggestion(name: string) {
+		if (!selected.has(name)) ontoggle(name);
+		customInput = "";
+		customInputEl?.focus();
+	}
+
+	function handleCustomInputKeydown(event: KeyboardEvent) {
+		if (!suggestionsOpen || !suggestions.length) return;
+		if (event.key === "ArrowDown") {
+			event.preventDefault();
+			suggestionsHighlight = (suggestionsHighlight + 1) % suggestions.length;
+		} else if (event.key === "ArrowUp") {
+			event.preventDefault();
+			suggestionsHighlight =
+				(suggestionsHighlight - 1 + suggestions.length) % suggestions.length;
+		} else if (event.key === "Enter" && suggestionsHighlight >= 0) {
+			event.preventDefault();
+			pickSuggestion(suggestions[suggestionsHighlight].name);
+		} else if (event.key === "Escape") {
+			suggestionsOpen = false;
+		}
 	}
 </script>
 
@@ -83,11 +138,11 @@
 {/snippet}
 
 <div class="flex w-full max-w-3xl flex-col gap-2">
-	{#if customTags.length > 0}
+	{#if hiddenSelectedTags.length > 0}
 		<div class="flex flex-wrap items-center gap-2">
 			<span class="text-xs opacity-60">{m.tag_carousel_your_tags()}</span>
-			{#each customTags as tag (tag)}
-				{@render tagChip(tag, undefined)}
+			{#each hiddenSelectedTags as tag (tag.name)}
+				{@render tagChip(tag.name, tag.description)}
 			{/each}
 		</div>
 	{/if}
@@ -140,11 +195,43 @@
 				addCustomTag();
 			}}
 		>
-			<input
-				class="input input-bordered input-xs w-32"
-				placeholder={m.tag_carousel_custom_placeholder()}
-				bind:value={customInput}
-			/>
+			<div class="dropdown w-32">
+				<input
+					bind:this={customInputEl}
+					class="input input-bordered input-xs w-32"
+					placeholder={m.tag_carousel_custom_placeholder()}
+					autocomplete="off"
+					bind:value={customInput}
+					onfocus={() => (suggestionsOpen = true)}
+					onblur={() => setTimeout(() => (suggestionsOpen = false), 150)}
+					onkeydown={handleCustomInputKeydown}
+				/>
+				{#if suggestionsOpen && suggestions.length}
+					<ul
+						bind:this={suggestionsListEl}
+						class="dropdown-content menu bg-base-200 rounded-box z-10 mt-1 w-48 max-h-64 flex-nowrap gap-0.5 overflow-x-hidden overflow-y-auto p-2 shadow-xl"
+					>
+					{#each suggestions as tag, index (tag.name)}
+						<li class="w-full">
+							<button
+								type="button"
+								class="flex w-full items-center justify-between gap-2"
+								class:menu-active={index === suggestionsHighlight}
+								title={tag.description ?? tag.name}
+								onmousedown={(e) => e.preventDefault()}
+								onmouseenter={() => (suggestionsHighlight = index)}
+								onclick={() => pickSuggestion(tag.name)}
+							>
+								<span class="shrink-0">{tag.name}</span>
+								{#if tag.description}
+									<span class="text-right text-xs opacity-60">{tag.description}</span>
+								{/if}
+							</button>
+						</li>
+					{/each}
+					</ul>
+				{/if}
+			</div>
 			<button type="submit" class="btn btn-ghost btn-xs" disabled={!customInput.trim()}>
 				{m.tag_carousel_custom_add()}
 			</button>
