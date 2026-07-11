@@ -21,6 +21,7 @@
 		publishMyCharacter,
 	} from "$lib/state/characters.svelte";
 	import {
+		getSavedCharacter,
 		isCharacterSaved,
 		saveCharacterLocally,
 		unsaveCharacter,
@@ -76,10 +77,24 @@
 
 	const localOnly = $derived(isCharacterLocalOnly(id));
 
+	// Whether the live subscription below has actually confirmed this
+	// character from the network — separate from `character !== null`, which
+	// a saved copy already satisfies. Used only to keep the retry-poke (see
+	// gun/document.ts:subscribeDocumentWithRetry) running until a relay
+	// really answers, instead of stopping immediately because we already had
+	// something to show from the local saved-characters cache.
+	let synced = false;
+
 	$effect(() => {
-		character = null;
-		notFound = false;
 		const currentId = id;
+		synced = false;
+		// Show a previously-saved copy instantly instead of always starting
+		// from a blank "Loading…" state — the live subscription below still
+		// runs and refreshes it, but a character we've already seen (viewed,
+		// saved, or fetched for a chat) shouldn't have to wait on a relay
+		// round-trip just to redisplay what we already have.
+		character = getSavedCharacter(currentId) ?? null;
+		notFound = false;
 
 		// Local-only characters were never written to GUN — subscribing there
 		// would never resolve. Their doc lives only in the local store.
@@ -99,6 +114,7 @@
 				(result) => {
 					if (result.ok) {
 						character = result.doc;
+						synced = true;
 						notFound = false;
 					} else if (!character) {
 						// Only flag not-found while we have nothing to show yet — GUN's
@@ -107,7 +123,10 @@
 						notFound = true;
 					}
 				},
-				() => character !== null,
+				// Not `character !== null` — a saved copy already makes that true,
+				// which would stop the retry-poke before a relay ever actually
+				// answers, leaving a stale saved copy on screen forever.
+				() => synced,
 			),
 		);
 		untrack(() => {

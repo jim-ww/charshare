@@ -423,6 +423,8 @@
 	"confirm_dialog_close_label": "close",
 
 	"account_tab_loading": "Loading account…",
+	"account_tab_synced": "Synced",
+	"account_tab_syncing": "Syncing…",
 	"account_tab_guest_heading": "You're browsing as a guest",
 	"account_tab_guest_body": "Talking to characters, chats, personas and preferences all work locally without an account. Create an account only if you want to publish characters or post comments — it's not required otherwise.",
 	"account_tab_create_heading": "Create an account",

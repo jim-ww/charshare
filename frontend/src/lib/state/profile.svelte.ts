@@ -9,6 +9,12 @@ import { openSettings } from './settingsModal.svelte';
 
 let profile = $state<User | null>(null);
 let ready = $state(false);
+// Whether the live network subscription has confirmed this profile at least
+// once — separate from `ready`, which flips as soon as a local cache copy
+// is available so the UI doesn't sit on "Loading…" for a round-trip. This
+// lets Account settings show "Syncing…" vs "Synced" instead of implying a
+// cached copy is already confirmed current.
+let synced = $state(false);
 let initPromise: Promise<void> | null = null;
 let unsubscribe: (() => void) | null = null;
 
@@ -18,6 +24,10 @@ export function getMyProfile(): User | null {
 
 export function isProfileReady(): boolean {
 	return ready;
+}
+
+export function isProfileSynced(): boolean {
+	return synced;
 }
 
 function subscribeToOwnProfile(): void {
@@ -30,10 +40,14 @@ function subscribeToOwnProfile(): void {
 		(result) => {
 			if (result.ok) {
 				profile = result.doc;
+				synced = true;
 				void saveCachedProfile(result.doc);
 			}
 		},
-		() => profile !== null
+		// Not `profile !== null` — a cached copy already makes that true, which
+		// would stop the retry-poke (see subscribeDocumentWithRetry) before a
+		// relay ever actually answers, leaving `synced` stuck false forever.
+		() => synced
 	);
 }
 
@@ -56,7 +70,14 @@ export function initProfile(): Promise<void> {
 				const pubkey = getCurrentUser();
 				if (pubkey) {
 					const cached = await loadCachedProfile();
-					if (cached && cached.id === pubkey) profile = cached;
+					if (cached && cached.id === pubkey) {
+						profile = cached;
+						// A cached profile is enough to render Account settings — don't
+						// make the UI sit on "Loading…" for a network round-trip just to
+						// redisplay what's already on disk. The subscription below still
+						// runs and keeps `profile` current in the background.
+						ready = true;
+					}
 					await new Promise<void>((resolve) => {
 						let settled = false;
 						unsubscribe = subscribeProfileWithRetry(
@@ -64,6 +85,7 @@ export function initProfile(): Promise<void> {
 							(result) => {
 								if (result.ok) {
 									profile = result.doc;
+									synced = true;
 									void saveCachedProfile(result.doc);
 								}
 								if (!settled) {
@@ -71,7 +93,10 @@ export function initProfile(): Promise<void> {
 									resolve();
 								}
 							},
-							() => profile !== null
+							// Not `profile !== null` — a cached copy already makes that
+							// true, which would stop the retry-poke before a relay ever
+							// actually answers, leaving `synced` stuck false forever.
+							() => synced
 						);
 					});
 				}
@@ -184,6 +209,7 @@ export async function loadProfileForSwitchedAccount(cachedFields?: {
 	image_url?: string;
 }): Promise<void> {
 	profile = null;
+	synced = false;
 	const pubkey = getCurrentUser();
 	if (cachedFields && pubkey) {
 		const placeholder: User = {
@@ -210,5 +236,6 @@ export function clearProfileForLogout(): void {
 	unsubscribe?.();
 	unsubscribe = null;
 	profile = null;
+	synced = false;
 	void clearCachedProfile();
 }

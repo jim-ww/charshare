@@ -2,6 +2,7 @@
 	import {
 		getMyProfile,
 		isProfileReady,
+		isProfileSynced,
 		saveProfile,
 		registerAccount,
 		loadProfileForSwitchedAccount
@@ -15,6 +16,7 @@
 	import ConfirmDialog from '../ConfirmDialog.svelte';
 
 	const profileReady = $derived(isProfileReady());
+	const profileSynced = $derived(isProfileSynced());
 	const registered = $derived(isAccountRegistered());
 
 	let username = $state('');
@@ -196,6 +198,12 @@
 	</div>
 {:else}
 	<div class="flex flex-col gap-6">
+		<div class="badge gap-1.5 {profileSynced ? 'badge-success' : 'badge-ghost'}">
+			{#if !profileSynced}
+				<span class="loading loading-spinner loading-xs"></span>
+			{/if}
+			{profileSynced ? m.account_tab_synced() : m.account_tab_syncing()}
+		</div>
 		<form class="flex flex-col gap-3" onsubmit={handleSave}>
 			<label class="form-control">
 				<span class="label-text">{m.account_tab_username_label()}</span>
