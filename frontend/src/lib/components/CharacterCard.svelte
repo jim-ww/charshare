@@ -19,6 +19,7 @@
 		unblockAuthor,
 		unhideCharacter,
 	} from "$lib/state/preferences.svelte";
+	import { confirmDialog } from "$lib/state/confirmDialog.svelte";
 	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
@@ -37,13 +38,25 @@
 	// "Save" prompt for them would just duplicate what's already there.
 	const alreadyLocal = $derived(isMine || isCharacterInMyCharacters(character.id));
 
-	function toggleSaved(event: MouseEvent) {
+	async function toggleSaved(event: MouseEvent) {
 		event.preventDefault();
 		event.stopPropagation();
 		if (saved) {
-			void unsaveCharacter(character.id);
+			// This saved copy is the only place a deleted-on-remote character
+			// still exists — unsaving it here is unrecoverable, unlike a normal
+			// unsave where the author's copy is still one search away.
+			if (character.deleted) {
+				const confirmed = await confirmDialog({
+					title: m.char_detail_unsave_deleted_confirm_title(),
+					message: m.char_detail_unsave_deleted_confirm_message(),
+					confirmLabel: m.char_card_unsave(),
+					danger: true,
+				});
+				if (!confirmed) return;
+			}
+			await unsaveCharacter(character.id);
 		} else {
-			void saveCharacterLocally(character, { auto: false });
+			await saveCharacterLocally(character, { auto: false });
 		}
 	}
 

@@ -222,12 +222,25 @@
 		await goto(resolve('/chats/[id]', { id: chat.id }));
 	}
 
-	function handleToggleSaved() {
+	async function handleToggleSaved() {
 		if (!character) return;
 		if (isCharacterSaved(character.id)) {
-			void unsaveCharacter(character.id);
+			// Unlike a normal unsave (the author's copy is still one search away
+			// on the network), this saved copy is the only place this character
+			// still exists — losing it here is unrecoverable, so it gets the same
+			// destructive-action confirmation as a delete.
+			if (character.deleted) {
+				const confirmed = await confirmDialog({
+					title: m.char_detail_unsave_deleted_confirm_title(),
+					message: m.char_detail_unsave_deleted_confirm_message(),
+					confirmLabel: m.char_card_unsave(),
+					danger: true,
+				});
+				if (!confirmed) return;
+			}
+			await unsaveCharacter(character.id);
 		} else {
-			void saveCharacterLocally(character, { auto: false });
+			await saveCharacterLocally(character, { auto: false });
 		}
 	}
 
@@ -811,12 +824,13 @@
 					</div>
 				{/if}
 
-				<div class="mt-4">
-					<h2 class="mb-2 text-lg font-semibold">
-						{m.char_detail_comments_heading()}
-					</h2>
+				{#if isMine || !character.deleted}
+					<div class="mt-4">
+						<h2 class="mb-2 text-lg font-semibold">
+							{m.char_detail_comments_heading()}
+						</h2>
 
-					{#if localOnly}
+						{#if localOnly}
 						<p class="text-sm opacity-60">
 							{m.char_detail_local_only_no_comments()}
 						</p>
@@ -1167,7 +1181,8 @@
 							{m.char_detail_comments_disabled()}
 						</p>
 					{/if}
-				</div>
+					</div>
+				{/if}
 			</div>
 		</div>
 	{/if}
