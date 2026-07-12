@@ -222,11 +222,25 @@ export async function publishMyCharacter(id: CharacterId): Promise<Character> {
 	return doc;
 }
 
-export async function deleteMyCharacter(id: CharacterId): Promise<void> {
+/** Deletes a character. A local-only (never-published) character just drops
+ *  out of the local index — there's nothing on the network to touch.
+ *
+ *  A published character always gets tombstoned on GUN (peers who already
+ *  synced it can't be forced to erase their copy either way — see
+ *  gun/characters.ts:deleteCharacter). `removeLocal` controls whether the
+ *  local "My Characters" entry is dropped too:
+ *  - false (remote-only): the entry stays, still marked published, now
+ *    pointing at the tombstoned doc — editing/republishing it later reuses
+ *    the same id and un-deletes it (see publishCharacter), preserving its
+ *    comment history instead of starting over under a new id.
+ *  - true (both): the entry is removed as well, same as deleting a
+ *    local-only character — nothing left to republish from on this device. */
+export async function deleteMyCharacter(id: CharacterId, options?: { removeLocal?: boolean }): Promise<void> {
 	if (isCharacterLocalOnly(id)) {
 		await removeMyCharacterEntry(id);
 	} else {
 		await gunDeleteCharacter(id);
+		if (options?.removeLocal) await removeMyCharacterEntry(id);
 	}
 	await refresh();
 }

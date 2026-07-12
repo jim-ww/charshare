@@ -10,6 +10,7 @@
 		isAccountRegistered,
 	} from "$lib/state/auth.svelte";
 	import { openSettings } from "$lib/state/settingsModal.svelte";
+	import { confirmDialog, confirmDialogWithExtra } from "$lib/state/confirmDialog.svelte";
 	import { languageName } from "$lib/languages";
 	import {
 		deleteMyCharacter,
@@ -308,7 +309,29 @@
 
 	async function handleDelete() {
 		if (!character) return;
-		await deleteMyCharacter(character.id);
+
+		if (localOnly) {
+			const confirmed = await confirmDialog({
+				title: m.char_detail_delete_confirm_title(),
+				message: m.char_detail_delete_confirm_message_local(),
+				confirmLabel: m.char_detail_delete(),
+				danger: true,
+			});
+			if (!confirmed) return;
+			await deleteMyCharacter(character.id);
+			await goto(resolve('/characters'));
+			return;
+		}
+
+		const result = await confirmDialogWithExtra({
+			title: m.char_detail_delete_confirm_title(),
+			message: m.char_detail_delete_confirm_message_published(),
+			confirmLabel: m.char_detail_delete_confirm_remote_only(),
+			extraLabel: m.char_detail_delete_confirm_both(),
+			danger: true,
+		});
+		if (result === "cancel") return;
+		await deleteMyCharacter(character.id, { removeLocal: result === "extra" });
 		await goto(resolve('/characters'));
 	}
 
