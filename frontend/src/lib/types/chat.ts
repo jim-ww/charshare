@@ -62,7 +62,11 @@ export interface Chat {
   // globally in Settings → Sound; only the *selection* lives here, and
   // travels with the chat on export/import like backgrounds do.
   tts_provider: TtsProviderConfig | null; // null means read-aloud is off for this chat
-  tts_voice_id: 'f1' | 'f2' | 'f3' | 'f4' | 'f5' | 'm1' | 'm2' | 'm3' | 'm4' | 'm5';
+  // Voice id within whichever engine tts_provider.model selects —
+  // Supertonic's f1-f5/m1-m5 or Kokoro's af_*/am_*/bf_*/bm_* (see
+  // lib/tts/kokoroModels.ts). A plain string, not a fixed union, since the
+  // two engines have entirely different voice namespaces.
+  tts_voice_id: string;
   tts_pitch: number; // pitch-only ratio applied on top of the voice, e.g. 1.4 for a higher/younger-sounding read, 0.8 for a deeper one — independent of tts_speed
   tts_speed: number; // speaking-speed-only ratio, independent of tts_pitch — e.g. 1.2 for a faster, energetic delivery
 }

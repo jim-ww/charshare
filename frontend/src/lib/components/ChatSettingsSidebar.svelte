@@ -9,7 +9,9 @@
 		setChatTtsPitch,
 		setChatTtsSpeed
 	} from '$lib/state/chats.svelte';
+	import { getPreferences } from '$lib/state/preferences.svelte';
 	import { TTS_VOICES, type TtsVoiceId } from '$lib/tts/ttsClient';
+	import { fetchSpeakers, type VoicevoxSpeaker } from '$lib/tts/voicevoxClient';
 	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
@@ -27,13 +29,68 @@
 		newUrl = '';
 	}
 
-	const ttsVoiceIds = Object.keys(TTS_VOICES) as TtsVoiceId[];
+	const supertonicVoiceIds = Object.keys(TTS_VOICES) as TtsVoiceId[];
 
 	const ttsEnabled = $derived(chat.tts_provider !== null);
+	const ttsProviderKind = $derived(chat.tts_provider?.provider ?? 'local');
 
 	function handleTtsToggle(event: Event) {
 		const enabled = (event.currentTarget as HTMLInputElement).checked;
 		void setChatTtsProvider(chat.id, enabled ? { provider: 'local' } : null);
+	}
+
+	// Zundamon's "Normal" style — id 3 in VOICEVOX's stable speaker ordering,
+	// well-established across the ecosystem (most sample code/tutorials use
+	// it as the default) — a reasonable default rather than an empty pick.
+	const VOICEVOX_DEFAULT_STYLE_ID = '3';
+
+	// Switching provider resets the voice — Supertonic's "f1" and a VOICEVOX
+	// style id are different namespaces entirely, so keeping the old value
+	// around would silently point at nothing.
+	function setTtsProviderKind(provider: 'local' | 'voicevox') {
+		void setChatTtsProvider(chat.id, { provider });
+		void setChatTtsVoice(chat.id, provider === 'local' ? 'f1' : VOICEVOX_DEFAULT_STYLE_ID);
+	}
+
+	// VOICEVOX has no fixed voice list — it depends on whichever characters
+	// are loaded in the server the user is running, so it's fetched live
+	// rather than baked in like the local model's voices.
+	let voicevoxSpeakers = $state<VoicevoxSpeaker[] | null>(null);
+	let voicevoxError = $state<string | null>(null);
+	let voicevoxLoading = $state(false);
+
+	async function loadVoicevoxSpeakers() {
+		voicevoxLoading = true;
+		voicevoxError = null;
+		try {
+			voicevoxSpeakers = await fetchSpeakers(getPreferences().voicevoxBaseUrl);
+		} catch (err) {
+			voicevoxError = err instanceof Error ? err.message : String(err);
+		} finally {
+			voicevoxLoading = false;
+		}
+	}
+
+	$effect(() => {
+		if (ttsProviderKind === 'voicevox' && voicevoxSpeakers === null && !voicevoxLoading) {
+			void loadVoicevoxSpeakers();
+		}
+	});
+
+	// Character and tone/style are two different axes of the same voice id —
+	// VOICEVOX addresses a specific (character, style) pair as one style id,
+	// but picking "who" and "how they're speaking" (normal/whispering/etc.)
+	// separately is clearer than one long flattened list.
+	const currentVoicevoxSpeaker = $derived(
+		voicevoxSpeakers?.find((speaker) =>
+			speaker.styles.some((style) => String(style.id) === chat.tts_voice_id),
+		) ?? null,
+	);
+
+	function setVoicevoxCharacter(speakerName: string) {
+		const speaker = voicevoxSpeakers?.find((s) => s.name === speakerName);
+		const firstStyle = speaker?.styles[0];
+		if (firstStyle) void setChatTtsVoice(chat.id, String(firstStyle.id));
 	}
 
 	function handlePitchInput(event: Event) {
@@ -44,9 +101,6 @@
 		void setChatTtsSpeed(chat.id, Number((event.currentTarget as HTMLInputElement).value));
 	}
 
-	// Labeled anchor points on the pitch slider — the numbers alone don't
-	// tell you "this sounds like a young kid" vs "this sounds like an old
-	// man", so name the effect instead of just the multiplier.
 	const PITCH_PRESETS: { label: () => string; value: number }[] = [
 		{ label: () => m.chat_settings_tts_pitch_deep(), value: 0.75 },
 		{ label: () => m.chat_settings_tts_pitch_low(), value: 0.9 },
@@ -129,17 +183,68 @@
 
 		{#if ttsEnabled}
 			<div class="mt-1 flex flex-col gap-1">
-				<span class="label-text text-xs">{m.chat_settings_tts_voice_label()}</span>
+				<span class="label-text text-xs">{m.chat_settings_tts_provider_label()}</span>
 				<select
 					class="select select-bordered select-sm w-full"
-					value={chat.tts_voice_id}
-					onchange={(e) => setChatTtsVoice(chat.id, e.currentTarget.value as TtsVoiceId)}
+					bind:value={() => ttsProviderKind, setTtsProviderKind}
 				>
-					{#each ttsVoiceIds as voiceId (voiceId)}
-						<option value={voiceId}>{TTS_VOICES[voiceId].label}</option>
-					{/each}
+					<option value="local">{m.chat_settings_tts_provider_local()}</option>
+					<option value="voicevox">{m.chat_settings_tts_provider_voicevox()}</option>
 				</select>
 			</div>
+
+			{#if ttsProviderKind === 'voicevox'}
+				{#if voicevoxLoading}
+					<span class="text-xs opacity-70">{m.chat_settings_tts_voicevox_loading()}</span>
+				{:else if voicevoxError}
+					<span class="text-error text-xs">
+						{m.chat_settings_tts_voicevox_error({ error: voicevoxError })}
+					</span>
+					<button type="button" class="btn btn-outline btn-xs mt-1 w-fit" onclick={loadVoicevoxSpeakers}>
+						{m.chat_settings_tts_voicevox_retry()}
+					</button>
+				{:else if voicevoxSpeakers}
+					<div class="mt-1 flex flex-col gap-1">
+						<span class="label-text text-xs">{m.chat_settings_tts_voicevox_character_label()}</span>
+						<select
+							class="select select-bordered select-sm w-full"
+							bind:value={() => currentVoicevoxSpeaker?.name ?? '', setVoicevoxCharacter}
+						>
+							{#each voicevoxSpeakers as speaker (speaker.name)}
+								<option value={speaker.name}>{speaker.name}</option>
+							{/each}
+						</select>
+					</div>
+
+					{#if currentVoicevoxSpeaker}
+						<div class="mt-1 flex flex-col gap-1">
+							<span class="label-text text-xs">{m.chat_settings_tts_voicevox_tone_label()}</span>
+							<select
+								class="select select-bordered select-sm w-full"
+								bind:value={
+									() => chat.tts_voice_id, (v) => setChatTtsVoice(chat.id, v)
+								}
+							>
+								{#each currentVoicevoxSpeaker.styles as style (style.id)}
+									<option value={String(style.id)}>{style.name}</option>
+								{/each}
+							</select>
+						</div>
+					{/if}
+				{/if}
+			{:else}
+				<div class="mt-1 flex flex-col gap-1">
+					<span class="label-text text-xs">{m.chat_settings_tts_voice_label()}</span>
+					<select
+						class="select select-bordered select-sm w-full"
+						bind:value={() => chat.tts_voice_id, (v) => setChatTtsVoice(chat.id, v)}
+					>
+						{#each supertonicVoiceIds as voiceId (voiceId)}
+							<option value={voiceId}>{TTS_VOICES[voiceId].label}</option>
+						{/each}
+					</select>
+				</div>
+			{/if}
 
 			<div class="mt-2 flex flex-col gap-1">
 				<span class="label-text text-xs">
@@ -167,7 +272,6 @@
 						</button>
 					{/each}
 				</div>
-				<span class="mt-1 text-xs opacity-70">{m.chat_settings_tts_pitch_hint()}</span>
 			</div>
 
 			<div class="mt-2 flex flex-col gap-1">
@@ -196,7 +300,6 @@
 						</button>
 					{/each}
 				</div>
-				<span class="mt-1 text-xs opacity-70">{m.chat_settings_tts_speed_hint()}</span>
 			</div>
 		{/if}
 	</div>

@@ -7,7 +7,13 @@
 	import { getMyProfile } from '$lib/state/profile.svelte';
 	import { getPersona, personaDisplayName } from '$lib/state/personas.svelte';
 	import { getPreferences, updatePreferences } from '$lib/state/preferences.svelte';
-	import { TTS_MODELS, preloadModel as preloadTtsModel, synthesize } from '$lib/tts/ttsClient';
+	import {
+		TTS_MODELS,
+		preloadModel as preloadTtsModel,
+		synthesize,
+		type TtsVoiceId,
+	} from '$lib/tts/ttsClient';
+	import { synthesize as synthesizeVoicevox } from '$lib/tts/voicevoxClient';
 	import { playWithPitch, type PitchedPlayback } from '$lib/tts/playback';
 	import Avatar from './Avatar.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
@@ -188,6 +194,7 @@
 	// --- Read aloud (local text-to-speech) --------------------------------
 
 	const ttsAvailable = $derived(!readonly && chat.tts_provider !== null);
+	const ttsIsLocal = $derived(chat.tts_provider?.provider === 'local');
 
 	let ttsState = $state<'idle' | 'loading' | 'playing'>('idle');
 	let ttsPlayback: PitchedPlayback | undefined;
@@ -198,11 +205,25 @@
 	// keep talking in the background.
 	$effect(() => () => ttsPlayback?.stop());
 
-	async function downloadAndPlayTts() {
+	/** Local (on-device model) vs VOICEVOX (HTTP call to a server the user
+	 *  runs themselves) have nothing in common except both end in a WAV
+	 *  blob — this is the one place that branches on which a chat uses. */
+	async function synthesizeForChat(): Promise<Blob> {
+		if (chat.tts_provider?.provider === 'voicevox') {
+			return synthesizeVoicevox(
+				getPreferences().voicevoxBaseUrl,
+				displayContent,
+				Number(chat.tts_voice_id),
+			);
+		}
+		await preloadTtsModel('default', () => {});
+		return synthesize(displayContent, 'default', chat.tts_voice_id as TtsVoiceId);
+	}
+
+	async function playTts() {
 		ttsState = 'loading';
 		try {
-			await preloadTtsModel('default', () => {});
-			const blob = await synthesize(displayContent, 'default', chat.tts_voice_id);
+			const blob = await synthesizeForChat();
 			ttsPlayback?.stop();
 			ttsState = 'playing';
 			ttsPlayback = await playWithPitch(blob, chat.tts_pitch, chat.tts_speed, () => {
@@ -221,17 +242,19 @@
 			return;
 		}
 		if (ttsState === 'loading') return;
-		if (!getPreferences().ttsConsentGiven) {
+		// VOICEVOX has nothing to download — the consent flow only applies to
+		// the local model, which actually pulls something onto the device.
+		if (ttsIsLocal && !getPreferences().ttsConsentGiven) {
 			showTtsConsent = true;
 			return;
 		}
-		await downloadAndPlayTts();
+		await playTts();
 	}
 
 	async function handleTtsConsentConfirm() {
 		showTtsConsent = false;
 		await updatePreferences({ ttsConsentGiven: true });
-		await downloadAndPlayTts();
+		await playTts();
 	}
 
 	function handleTtsConsentCancel() {

@@ -80,10 +80,20 @@ export type ProviderConfigMap = {
 };
 
 export interface LocalTtsProviderConfig {
-  provider: 'local'; // runs fully on-device via transformers.js, see lib/tts
+  provider: 'local'; // the built-in Supertonic model, see lib/tts/models.ts
 }
 
-export type TtsProviderConfig = LocalTtsProviderConfig; // union grows as more TTS providers are added
+// Talks to a VOICEVOX Engine instance (https://voicevox.hiroshiba.jp/) the
+// user runs themselves — same shape as our Ollama chat provider: nothing
+// downloaded or bundled by us, just HTTP calls to a local server the user
+// already has open. `baseUrl` is a device-wide preference (see Sound
+// settings); which speaker/style to use is chosen per chat, like voice
+// selection for the local provider.
+export interface VoicevoxTtsProviderConfig {
+  provider: 'voicevox';
+}
+
+export type TtsProviderConfig = LocalTtsProviderConfig | VoicevoxTtsProviderConfig; // union grows as more TTS providers are added
 
 export interface Preferences {
   gunRelays: string[]; // includes the default, user can add/remove
@@ -102,6 +112,8 @@ export interface Preferences {
   whisperModelSize: 'tiny' | 'base'; // which Whisper model size to use for mic transcription
   micSilenceTimeoutMs: number | null; // auto-stop recording after this much silence; null disables auto-stop entirely
   // Provider/voice/pitch selection is per-chat, not global — see Chat.tts_*
-  // in chat.ts. Only device-level model consent stays here.
+  // in chat.ts. Only device-level model consent and the VOICEVOX server
+  // address (shared across every chat using it) stay here.
   ttsConsentGiven: boolean; // user agreed to download the local text-to-speech model
+  voicevoxBaseUrl: string; // e.g. "http://localhost:50021", the default VOICEVOX Engine port
 }

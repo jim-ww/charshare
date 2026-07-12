@@ -73,6 +73,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
 	whisperModelSize: "tiny",
 	micSilenceTimeoutMs: 1500,
 	ttsConsentGiven: false,
+	voicevoxBaseUrl: "http://localhost:50021",
 	provider: DEFAULT_HUGGINGFACE_CONFIG,
 	providerConfigs: {
 		openrouter: DEFAULT_OPENROUTER_CONFIG,
@@ -130,6 +131,7 @@ export function initPreferences(): Promise<void> {
 					whisperModelSize: preferences.whisperModelSize ?? "tiny",
 					micSilenceTimeoutMs: preferences.micSilenceTimeoutMs ?? 1500,
 					ttsConsentGiven: preferences.ttsConsentGiven ?? false,
+				voicevoxBaseUrl: preferences.voicevoxBaseUrl ?? "http://localhost:50021",
 					providerConfigs: {
 						...DEFAULT_PREFERENCES.providerConfigs,
 						...preferences.providerConfigs,

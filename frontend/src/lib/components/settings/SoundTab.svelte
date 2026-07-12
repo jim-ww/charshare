@@ -137,6 +137,15 @@
 			previewing = false;
 		}
 	}
+
+	// --- VOICEVOX (remote/local-HTTP engine) ---------------------------------
+	// No download to manage here — this is a server the user runs themselves,
+	// same as the Ollama chat provider. Only the address is configured here;
+	// which character/voice to use is picked per chat.
+
+	function handleVoicevoxUrlChange(event: Event) {
+		updatePreferences({ voicevoxBaseUrl: (event.currentTarget as HTMLInputElement).value });
+	}
 </script>
 
 <div class="flex flex-col gap-4">
@@ -232,6 +241,7 @@
 	<h3 class="text-sm font-semibold opacity-70">{m.sound_tab_tts_heading()}</h3>
 	<p class="-mt-2 text-sm opacity-70">{m.sound_tab_tts_intro()}</p>
 
+	<h4 class="text-sm font-semibold opacity-60">{m.sound_tab_tts_engine_supertonic()}</h4>
 	<div class="form-control w-full max-w-md">
 		<span class="label-text mb-1 block">{m.sound_tab_tts_model_label()}</span>
 		<div class="flex flex-col gap-2">
@@ -287,4 +297,18 @@
 			{previewing ? m.sound_tab_tts_preview_playing() : m.sound_tab_tts_preview_button()}
 		</button>
 	</div>
+
+	<div class="divider my-0"></div>
+
+	<h4 class="text-sm font-semibold opacity-60">{m.sound_tab_tts_engine_voicevox()}</h4>
+	<label class="form-control w-full max-w-md">
+		<span class="label-text mb-1 block">{m.sound_tab_tts_voicevox_url_label()}</span>
+		<input
+			class="input input-bordered w-full"
+			type="url"
+			value={preferences.voicevoxBaseUrl}
+			onchange={handleVoicevoxUrlChange}
+		/>
+		<span class="mt-1 text-sm opacity-70">{m.sound_tab_tts_voicevox_url_hint()}</span>
+	</label>
 </div>
