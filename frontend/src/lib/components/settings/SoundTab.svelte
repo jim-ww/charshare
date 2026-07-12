@@ -146,6 +146,10 @@
 	function handleVoicevoxUrlChange(event: Event) {
 		updatePreferences({ voicevoxBaseUrl: (event.currentTarget as HTMLInputElement).value });
 	}
+
+	function handleAutoReadAloudToggle(event: Event) {
+		updatePreferences({ autoReadAloud: (event.currentTarget as HTMLInputElement).checked });
+	}
 </script>
 
 <div class="flex flex-col gap-4">
@@ -240,6 +244,17 @@
 
 	<h3 class="text-sm font-semibold opacity-70">{m.sound_tab_tts_heading()}</h3>
 	<p class="-mt-2 text-sm opacity-70">{m.sound_tab_tts_intro()}</p>
+
+	<label class="label w-fit cursor-pointer gap-2">
+		<input
+			type="checkbox"
+			class="toggle"
+			checked={preferences.autoReadAloud}
+			onchange={handleAutoReadAloudToggle}
+		/>
+		<span class="label-text">{m.sound_tab_tts_auto_label()}</span>
+	</label>
+	<p class="-mt-2 text-sm opacity-70">{m.sound_tab_tts_auto_hint()}</p>
 
 	<h4 class="text-sm font-semibold opacity-60">{m.sound_tab_tts_engine_supertonic()}</h4>
 	<div class="form-control w-full max-w-md">

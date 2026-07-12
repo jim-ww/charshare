@@ -74,6 +74,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
 	micSilenceTimeoutMs: 1500,
 	ttsConsentGiven: false,
 	voicevoxBaseUrl: "http://localhost:50021",
+	autoReadAloud: false,
 	provider: DEFAULT_HUGGINGFACE_CONFIG,
 	providerConfigs: {
 		openrouter: DEFAULT_OPENROUTER_CONFIG,
@@ -132,6 +133,7 @@ export function initPreferences(): Promise<void> {
 					micSilenceTimeoutMs: preferences.micSilenceTimeoutMs ?? 1500,
 					ttsConsentGiven: preferences.ttsConsentGiven ?? false,
 				voicevoxBaseUrl: preferences.voicevoxBaseUrl ?? "http://localhost:50021",
+				autoReadAloud: preferences.autoReadAloud ?? false,
 					providerConfigs: {
 						...DEFAULT_PREFERENCES.providerConfigs,
 						...preferences.providerConfigs,

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { resolve } from '$app/paths';
 	import type { Chat, Character, Message } from '$lib/types';
 	import { deleteMessage, getSiblings, switchBranch, updateMessageContent } from '$lib/state/chats.svelte';
@@ -15,6 +16,7 @@
 	} from '$lib/tts/ttsClient';
 	import { synthesize as synthesizeVoicevox } from '$lib/tts/voicevoxClient';
 	import { playWithPitch, type PitchedPlayback } from '$lib/tts/playback';
+	import { isMessageStreaming } from '$lib/state/messageStreaming.svelte';
 	import Avatar from './Avatar.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import { m } from '$lib/paraglide/messages.js';
@@ -234,6 +236,36 @@
 			console.error('Read aloud failed:', err);
 		}
 	}
+
+	// Auto-play a reply once it finishes streaming — never for messages that
+	// were already complete when this bubble mounted (opening a chat
+	// shouldn't read its whole history aloud), and never forces the
+	// download-consent prompt on its own; if consent isn't already given,
+	// the reply just doesn't auto-play, same as if auto-read were off.
+	let sawStreaming = $state(untrack(() => isMessageStreaming(message.id)));
+	let autoPlayed = $state(false);
+
+	$effect(() => {
+		const streaming = isMessageStreaming(message.id);
+		if (streaming) {
+			sawStreaming = true;
+			return;
+		}
+		if (
+			!sawStreaming ||
+			autoPlayed ||
+			readonly ||
+			message.role !== 'character' ||
+			message.content === '' ||
+			chat.tts_provider === null ||
+			!getPreferences().autoReadAloud
+		) {
+			return;
+		}
+		autoPlayed = true;
+		if (ttsIsLocal && !getPreferences().ttsConsentGiven) return;
+		void playTts();
+	});
 
 	async function handleReadAloud() {
 		if (ttsState === 'playing') {

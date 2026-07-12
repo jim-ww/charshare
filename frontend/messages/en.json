@@ -507,6 +507,8 @@
 	"sound_tab_stt_heading": "Speech-to-text",
 	"sound_tab_tts_heading": "Read aloud (text-to-speech)",
 	"sound_tab_tts_intro": "Provider, voice, and pitch are chosen per chat — see a chat's own settings (⚙) to set them up.",
+	"sound_tab_tts_auto_label": "Automatically read new replies aloud",
+	"sound_tab_tts_auto_hint": "Only applies to chats where read-aloud is enabled — doesn't trigger the download-consent prompt on its own.",
 	"sound_tab_tts_engine_supertonic": "Supertonic (~250MB, 10 voices)",
 	"sound_tab_tts_engine_voicevox": "VOICEVOX",
 	"sound_tab_tts_voicevox_url_label": "Server address",

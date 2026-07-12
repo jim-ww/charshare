@@ -16,6 +16,7 @@ import {
 } from "$lib/state/chats.svelte";
 import { getPersona } from "$lib/state/personas.svelte";
 import { DEFAULT_SYSTEM_PROMPT } from "$lib/data/defaultSystemPrompt";
+import { startStreaming, endStreaming } from "$lib/state/messageStreaming.svelte";
 import { requestCompletion, type CompletionMessage } from "./index";
 
 const MAX_CONTINUATIONS = 3;
@@ -125,6 +126,7 @@ async function streamReply(
 	options: CompleteOptions = {},
 ): Promise<void> {
 	let latest = "";
+	startStreaming(messageId);
 	try {
 		latest = await completeWithContinuation(config, messages, {
 			signal: options.signal,
@@ -143,6 +145,7 @@ async function streamReply(
 	} finally {
 		if (latest)
 			await updateMessageContent(chatId, messageId, latest, { persist: true });
+		endStreaming(messageId);
 	}
 }
 
@@ -271,6 +274,7 @@ export async function continueMessage(
 	];
 
 	let latest = original;
+	startStreaming(messageId);
 	try {
 		const appended = await completeWithContinuation(getPreferences().provider, messages, {
 			signal: options.signal,
@@ -285,6 +289,7 @@ export async function continueMessage(
 		// stopped mid-stream — keep whatever was appended so far
 	} finally {
 		await updateMessageContent(chat.id, messageId, latest, { persist: true });
+		endStreaming(messageId);
 	}
 }
 

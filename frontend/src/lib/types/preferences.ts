@@ -116,4 +116,5 @@ export interface Preferences {
   // address (shared across every chat using it) stay here.
   ttsConsentGiven: boolean; // user agreed to download the local text-to-speech model
   voicevoxBaseUrl: string; // e.g. "http://localhost:50021", the default VOICEVOX Engine port
+  autoReadAloud: boolean; // automatically play read-aloud for a new character reply, for chats where it's enabled
 }
