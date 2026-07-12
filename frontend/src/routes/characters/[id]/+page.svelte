@@ -15,6 +15,7 @@
 	import {
 		deleteMyCharacter,
 		exportCharacter,
+		exportCharacterAsPng,
 		forkCharacter,
 		getMyCharacters,
 		isCharacterInMyCharacters,
@@ -333,17 +334,37 @@
 		}
 	}
 
+	function downloadBlob(blob: Blob, filename: string) {
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement("a");
+		a.href = url;
+		a.download = filename;
+		a.click();
+		URL.revokeObjectURL(url);
+	}
+
 	function handleExport() {
 		if (!character) return;
 		const blob = new Blob([exportCharacter(character)], {
 			type: "application/json",
 		});
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement("a");
-		a.href = url;
-		a.download = `${character.name.replace(/[^a-z0-9_-]+/gi, "_") || "character"}.json`;
-		a.click();
-		URL.revokeObjectURL(url);
+		downloadBlob(blob, `${character.name.replace(/[^a-z0-9_-]+/gi, "_") || "character"}.json`);
+	}
+
+	let exportingCard = $state(false);
+
+	/** Exports as a TavernAI/SillyTavern-compatible character-card PNG (see
+	 *  state/characters.svelte.ts:exportCharacterAsPng) — for taking this
+	 *  character to a third-party site/app that already knows how to read one. */
+	async function handleExportCard() {
+		if (!character) return;
+		exportingCard = true;
+		try {
+			const blob = await exportCharacterAsPng(character);
+			downloadBlob(blob, `${character.name.replace(/[^a-z0-9_-]+/gi, "_") || "character"}.png`);
+		} finally {
+			exportingCard = false;
+		}
 	}
 
 	async function handleDelete() {
@@ -612,6 +633,14 @@
 						onclick={handleExport}
 						>{m.char_detail_export()}</button
 					>
+					<button
+						class="btn btn-sm btn-ghost"
+						type="button"
+						disabled={exportingCard}
+						onclick={handleExportCard}
+					>
+						{exportingCard ? m.char_detail_exporting_card() : m.char_detail_export_card()}
+					</button>
 					{#if isMine}
 						<a
 							class="btn btn-sm btn-ghost"

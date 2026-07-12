@@ -1,8 +1,8 @@
+- feat(character view): in 'Continue past chat' section display date of last message in each chat
 - feat(browse): rework Browse/search to avoid fetching the entire published network unbounded on every load (currently `browseNetwork()` reads every id under the `__network__` pseudo-tag and fetches+verifies each one) — implement proper sorting (by updated_at, created_at) and pagination
 - feat(core): rating system for characters? then add sorting by popularity
 - feat(core): after implementing rating system, add rating to comments? also allow to sort by rating, then created_at
 - feat: scrape characters from other platforms?
 - consider: multipersona chats? option to change persona mid-chat, preserving Name, Description of previous persona/s
-- feat(import/export): TavernAI-PNG (and other third-party format) import/export adapters — only our own versioned JSON format is supported today
 - consider: android build target
 - consider(GUN store): move all top-level postings (comments, tags, usernames) under user-space?

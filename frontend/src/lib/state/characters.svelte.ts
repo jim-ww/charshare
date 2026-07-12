@@ -20,6 +20,7 @@ import {
 	publishLocalCharacter as gunPublishLocalCharacter,
 	undeleteCharacter as gunUndeleteCharacter
 } from '$lib/gun/characters';
+import { embedTavernCardInPng, parseTavernCardJson, parseTavernCardPng } from '$lib/import/characterCard';
 
 type CharacterFormFields = Parameters<typeof gunPublishCharacter>[0];
 
@@ -337,6 +338,69 @@ export async function restoreCharacter(character: Character): Promise<'added' | 
  *  through importCharacterDraft (see below). */
 export function exportCharacter(character: Character): string {
 	return JSON.stringify(character, null, 2);
+}
+
+/** Builds a TavernAI/SillyTavern-compatible character-card PNG for `character`
+ *  — a small, self-contained image third-party sites/apps already know how
+ *  to read (see import/characterCard.ts). Uses the character's first image
+ *  as the card's picture when it's reachable, falling back to a blank square
+ *  otherwise; either way the result is re-encoded through <canvas> so the
+ *  embedded `tEXt` chunk is always written into real, well-formed PNG bytes
+ *  regardless of the source image's original format. The card spec has no
+ *  required dimensions, so the source image's own aspect ratio is kept as-is
+ *  — stretching it to a fixed square would visibly distort anything that
+ *  isn't already 1:1. */
+export async function exportCharacterAsPng(character: Character): Promise<Blob> {
+	const sourceUrl = character.image_urls[0];
+	const image = sourceUrl ? await loadImage(sourceUrl).catch(() => null) : null;
+
+	const canvas = document.createElement('canvas');
+	const ctx = canvas.getContext('2d');
+	if (!ctx) throw new Error('Canvas 2D context unavailable.');
+
+	if (image) {
+		canvas.width = image.naturalWidth;
+		canvas.height = image.naturalHeight;
+		ctx.drawImage(image, 0, 0);
+	} else {
+		canvas.width = 512;
+		canvas.height = 512;
+		ctx.fillStyle = '#1f2937';
+		ctx.fillRect(0, 0, canvas.width, canvas.height);
+	}
+
+	const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+	if (!blob) throw new Error('Failed to encode PNG.');
+	const bytes = new Uint8Array(await blob.arrayBuffer());
+	const withCard = embedTavernCardInPng(bytes, character);
+	return new Blob([withCard.slice().buffer], { type: 'image/png' });
+}
+
+function loadImage(url: string): Promise<HTMLImageElement> {
+	return new Promise((resolve, reject) => {
+		const img = new Image();
+		img.crossOrigin = 'anonymous';
+		img.onload = () => resolve(img);
+		img.onerror = () => reject(new Error(`Failed to load image: ${url}`));
+		img.src = url;
+	});
+}
+
+/** Parses a raw TavernAI/SillyTavern character-card JSON blob (the "V1" flat
+ *  shape, or the wrapped "V2" `chara_card_v2` spec) into a fresh draft — same
+ *  "always creates a new character" contract as importCharacterDraft, since
+ *  a third-party card has no id in our system to collide with. No embedded
+ *  image support here (see the PNG variant below) — images stay externally
+ *  hosted only, per the "no upload" rule the character form enforces. */
+export function importCharacterCardJson(json: string): CharacterFormFields {
+	return { ...parseTavernCardJson(json), image_urls: [] };
+}
+
+/** Same as importCharacterCardJson, but for a card embedded in a PNG image
+ *  (the common TavernAI/SillyTavern distribution format — see
+ *  import/characterCard.ts). */
+export function importCharacterCardPng(bytes: Uint8Array): CharacterFormFields {
+	return { ...parseTavernCardPng(bytes), image_urls: [] };
 }
 
 /** Parses a previously-exported character JSON into a fresh draft — strips
