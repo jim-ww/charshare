@@ -27,6 +27,17 @@ let publishedMap = $state<Record<CharacterId, boolean>>({});
 let ready = $state(false);
 let initPromise: Promise<void> | null = null;
 
+/** refresh() has several independent call sites (startup resync, every
+ *  publish/delete/fork/import) that can overlap — e.g. a slow startup
+ *  `resyncMissing` resync racing a bulk backup restore's own per-item
+ *  refreshes. Without this, whichever call happens to *finish* last wins,
+ *  even if it started from an older loadMyCharacterEntries() snapshot —
+ *  silently reverting characters a later call already got right (see the
+ *  "just-imported characters show as published" bug this was written for).
+ *  Each call stamps its own start order and only applies its result if
+ *  nothing newer has started since. */
+let refreshCallSeq = 0;
+
 export function getMyCharacters(): Character[] {
 	return myCharacters;
 }
@@ -70,6 +81,7 @@ function normalizeLocalCharacter(character: Character): Character {
  *  every refresh() (e.g. right after a normal edit) would just be redundant
  *  network writes for a relay that's reachable and already current. */
 async function refresh(options?: { resyncMissing?: boolean }): Promise<void> {
+	const callSeq = ++refreshCallSeq;
 	const resyncMissing = options?.resyncMissing ?? false;
 	if (resyncMissing) await gunPeerReady();
 	const keyring = getKeyring();
@@ -122,6 +134,13 @@ async function refresh(options?: { resyncMissing?: boolean }): Promise<void> {
 				: null;
 		})
 	);
+
+	// A newer refresh() call has started (and, since these are always awaited
+	// by their caller before that caller proceeds, quite possibly already
+	// finished and applied its own — more current — results) — applying this
+	// older call's results now would clobber them with stale data.
+	if (callSeq !== refreshCallSeq) return;
+
 	const valid = resolved.filter((r): r is { character: Character; published: boolean } => r !== null);
 	myCharacters = valid.map((r) => r.character);
 	publishedMap = Object.fromEntries(valid.map((r) => [r.character.id, r.published]));
