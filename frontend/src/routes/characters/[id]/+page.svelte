@@ -20,6 +20,7 @@
 		isCharacterInMyCharacters,
 		isCharacterLocalOnly,
 		publishMyCharacter,
+		restoreMyCharacter,
 	} from "$lib/state/characters.svelte";
 	import {
 		getSavedCharacter,
@@ -286,11 +287,36 @@
 	 *  refresh()'s resyncMissing in characters.svelte.ts). */
 	async function handleRepublish() {
 		if (!character) return;
+		const confirmed = await confirmDialog({
+			title: m.char_detail_republish_confirm_title(),
+			message: m.char_detail_republish_confirm_message(),
+			confirmLabel: m.char_detail_republish(),
+		});
+		if (!confirmed) return;
 		republishing = true;
 		try {
 			await publishMyCharacter(character.id);
 		} finally {
 			republishing = false;
+		}
+	}
+
+	let restoring = $state(false);
+
+	/** Un-deletes a "delete remote only" character — see restoreMyCharacter. */
+	async function handleRestore() {
+		if (!character) return;
+		const confirmed = await confirmDialog({
+			title: m.char_detail_republish_confirm_title(),
+			message: m.char_detail_republish_restore_confirm_message(),
+			confirmLabel: m.char_detail_republish(),
+		});
+		if (!confirmed) return;
+		restoring = true;
+		try {
+			await restoreMyCharacter(character.id);
+		} finally {
+			restoring = false;
 		}
 	}
 
@@ -461,24 +487,26 @@
 				{/if}
 
 				<div>
-					<h1
-						class:line-through={character.deleted}
-						class="text-2xl font-semibold"
-					>
+					<h1 class="text-2xl font-semibold">
 						{character.name}
 						<span
 							class="badge badge-sm align-middle"
-							class:badge-outline={isMine && localOnly}
-							class:badge-primary={isMine && !localOnly}
+							class:badge-outline={isMine && (localOnly || character.deleted)}
+							class:badge-primary={isMine && !localOnly && !character.deleted}
 						>
 							{#if isMine}
-								{localOnly
+								{localOnly || character.deleted
 									? m.char_detail_local_only()
 									: m.char_detail_published()}
 							{:else}
 								{m.char_detail_from_network()}
 							{/if}
 						</span>
+						{#if character.deleted}
+							<span class="badge badge-sm badge-warning align-middle">
+								{m.char_detail_deleted_remote_badge()}
+							</span>
+						{/if}
 					</h1>
 					<div
 						class="mt-1 flex items-center gap-1.5 text-sm opacity-70"
@@ -588,6 +616,17 @@
 									? m.char_detail_publishing()
 									: m.char_detail_publish()}
 							</button>
+						{:else if character.deleted}
+							<button
+								class="btn btn-sm btn-primary"
+								type="button"
+								disabled={restoring}
+								onclick={handleRestore}
+							>
+								{restoring
+									? m.char_detail_republishing()
+									: m.char_detail_republish()}
+							</button>
 						{:else}
 							<button
 								class="btn btn-sm btn-ghost"
@@ -600,13 +639,15 @@
 									: m.char_detail_republish()}
 							</button>
 						{/if}
-						<button
-							class="btn btn-sm btn-error btn-outline"
-							type="button"
-							onclick={handleDelete}
-						>
-							{m.char_detail_delete()}
-						</button>
+						{#if !character.deleted}
+							<button
+								class="btn btn-sm btn-error btn-outline"
+								type="button"
+								onclick={handleDelete}
+							>
+								{m.char_detail_delete()}
+							</button>
+						{/if}
 					{:else}
 						<button
 							class="btn btn-sm btn-ghost"

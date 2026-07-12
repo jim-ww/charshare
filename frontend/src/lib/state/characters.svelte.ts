@@ -17,7 +17,8 @@ import {
 	forkCharacter as gunForkCharacter,
 	getCharacter,
 	publishCharacter as gunPublishCharacter,
-	publishLocalCharacter as gunPublishLocalCharacter
+	publishLocalCharacter as gunPublishLocalCharacter,
+	undeleteCharacter as gunUndeleteCharacter
 } from '$lib/gun/characters';
 
 type CharacterFormFields = Parameters<typeof gunPublishCharacter>[0];
@@ -229,12 +230,12 @@ export async function publishMyCharacter(id: CharacterId): Promise<Character> {
  *  synced it can't be forced to erase their copy either way — see
  *  gun/characters.ts:deleteCharacter). `removeLocal` controls whether the
  *  local "My Characters" entry is dropped too:
- *  - false (remote-only): the entry stays, still marked published, now
- *    pointing at the tombstoned doc — editing/republishing it later reuses
- *    the same id and un-deletes it (see publishCharacter), preserving its
- *    comment history instead of starting over under a new id.
+ *  - false (remote-only): the entry stays (now pointing at the tombstoned
+ *    doc, see restoreMyCharacter) — a one-click Restore later reuses the
+ *    same id and un-deletes it, preserving its comment history instead of
+ *    starting over under a new id.
  *  - true (both): the entry is removed as well, same as deleting a
- *    local-only character — nothing left to republish from on this device. */
+ *    local-only character — nothing left to restore from on this device. */
 export async function deleteMyCharacter(id: CharacterId, options?: { removeLocal?: boolean }): Promise<void> {
 	if (isCharacterLocalOnly(id)) {
 		await removeMyCharacterEntry(id);
@@ -243,6 +244,19 @@ export async function deleteMyCharacter(id: CharacterId, options?: { removeLocal
 		if (options?.removeLocal) await removeMyCharacterEntry(id);
 	}
 	await refresh();
+}
+
+/** Reverses a "delete remote only" — a fresh signed version of the locally-
+ *  cached (tombstoned) copy with `deleted: false`, under the same id/version
+ *  chain (see gun/characters.ts:undeleteCharacter), so the id and every
+ *  comment already posted on it come back untouched. */
+export async function restoreMyCharacter(id: CharacterId): Promise<Character> {
+	const existing = myCharacters.find((c) => c.id === id);
+	if (!existing) throw new Error('Character not found.');
+	const doc = await gunUndeleteCharacter(existing);
+	await addPublishedCharacterId(doc.id, doc);
+	await refresh();
+	return doc;
 }
 
 /** Forks `id` into a new local-only character owned by the current user

@@ -1,15 +1,12 @@
-- add when deleting character, ask if user wants to save local copy of it? but with separate ID, so he can publish again? or just set deleted = false on republish, to preserve comments history? in any way, deleting should ask to delete remote-only or both(local and remote)
-- feat(browse): rework Browse/search to avoid fetching the entire published network unbounded on every load (currently `browseNetwork()` reads every id under the `__network__` pseudo-tag and fetches+verifies each one) — implement proper sorting (by updated_at, created_at) and pagination
+- feat(providers): generic OpenAI-compatible proxy support for providers beyond the three built-in ones (OpenRouter/Ollama/Hugging Face)
+- feat(characters): fork discovery — index/UI for "remixes of this character" (forking itself already works, just no way to find forks of a given character)
 - feat(browse): `browseByAuthor` currently filters the full network feed client-side by author instead of a targeted lookup; a native per-author index already exists implicitly (each author's characters live under their own GUN user-space graph, enumerable via `.map()`) but isn't wired up for this — use it
+- feat(browse): rework Browse/search to avoid fetching the entire published network unbounded on every load (currently `browseNetwork()` reads every id under the `__network__` pseudo-tag and fetches+verifies each one) — implement proper sorting (by updated_at, created_at) and pagination
 - feat(core): rating system for characters? then add sorting by popularity
 - feat(core): after implementing rating system, add rating to comments? also allow to sort by rating, then created_at
-- feat(characters): fork discovery — index/UI for "remixes of this character" (forking itself already works, just no way to find forks of a given character)
-- feat(identity): support multiple local identities(accounts) active at once in one session (currently can only switch the single active one). or at least account switching?
-- feat(providers): generic OpenAI-compatible proxy support for providers beyond the three built-in ones (OpenRouter/Ollama/Hugging Face)
 - feat: scrape characters from other platforms?
 - consider: multipersona chats? option to change persona mid-chat, preserving Name, Description of previous persona/s
 - feat(import/export): TavernAI-PNG (and other third-party format) import/export adapters — only our own versioned JSON format is supported today
 - consider: android build target
 - consider(providers): on wails, implement more robust support of ollama provider, like downloading/starting ollama server?
 - consider(gun store): move all top-level postings (comments, tags, usernames) under user-space?
-- consider: spam/abuse mitigation for an unmoderated, backend-less network (mass-published garbage characters/comments) — no plan yet

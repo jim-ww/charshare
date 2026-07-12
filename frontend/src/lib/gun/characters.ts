@@ -154,6 +154,25 @@ export async function deleteCharacter(id: CharacterId): Promise<Character> {
 	);
 }
 
+/** Reverses a "delete remote only" (see deleteCharacter) — a new signed
+ *  snapshot with `deleted: false` under the same id/version chain, so the
+ *  character's id and every comment already posted on it (keyed by that same
+ *  id, see gun/comments.ts) come back untouched. Takes the caller's own
+ *  cached copy directly rather than re-fetching, since a locally-tracked
+ *  deleted character is exactly what's being restored from. */
+export async function undeleteCharacter(existing: Character): Promise<Character> {
+	const keyring = getKeyring();
+	if (!keyring) throw new Error('No identity available yet — call initAuth() first.');
+	requireAccount();
+	if (existing.author !== keyring.publicKey) throw new Error('Only the author can restore this character.');
+
+	const { signature: _signature, updated_at: _updatedAt, ...rest } = existing;
+	return signAndPublish(
+		{ ...rest, version: rest.version + 1, deleted: false, deleted_at: null },
+		keyring
+	);
+}
+
 /** Copies `id`'s fields into a new document under a new id, authored and
  *  signed by the current user, with `forked_from` set for provenance (see
  *  spec: Fork). Non-authors get this instead of edit/delete. Kept local-only

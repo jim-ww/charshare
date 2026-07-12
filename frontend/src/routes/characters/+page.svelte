@@ -46,12 +46,13 @@
 	let lastRunQuery: string | null = $state(null);
 	let lastRunTags: string | null = $state(null);
 
-	const myCharacters = $derived(
-		getMyCharacters().filter((c) => !c.deleted),
-	);
-	// Unlike myCharacters, deliberately not filtered by `!c.deleted` — a saved
-	// character stays visible (marked deleted) even once the author tombstones
-	// it, per spec: Character Management's "save character locally" behavior.
+	// Not filtered by `!c.deleted` — a "delete remote only" deliberately keeps
+	// the local entry around (see characters.svelte.ts:deleteMyCharacter) so
+	// it can still be found and republished under the same id later. Filtering
+	// it out here would make that option indistinguishable from "delete both"
+	// (see savedCharacters below, which has the same reasoning for the
+	// already-tombstoned characters other people saved).
+	const myCharacters = $derived(getMyCharacters());
 	const savedCharacters = $derived(getSavedCharacters());
 	const savedIds = $derived(new Set(savedCharacters.map((c) => c.id)));
 	const ready = $derived(isCharactersReady());

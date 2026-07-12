@@ -71,7 +71,7 @@
 <a
 	href={resolve('/characters/[id]', { id: character.id })}
 	class="card relative bg-base-200 shadow-sm [content-visibility:auto] [contain-intrinsic-size:0_320px] hover:bg-base-300"
-	class:opacity-60={character.deleted || hidden}
+	class:opacity-60={(!isMine && character.deleted) || hidden}
 >
 	<div class="absolute left-2 top-2 z-10 flex flex-col items-start gap-1">
 		{#if !alreadyLocal}
@@ -131,7 +131,7 @@
 			{/if}
 		</figure>
 		<h3
-			class:line-through={character.deleted}
+			class:line-through={!isMine && character.deleted}
 			class="mt-1 line-clamp-2 text-sm font-semibold"
 		>
 			{character.name}
@@ -139,11 +139,13 @@
 		<div class="flex flex-wrap items-center justify-center gap-1">
 			<span
 				class="badge badge-xs"
-				class:badge-outline={isMine && localOnly}
-				class:badge-primary={isMine && !localOnly}
+				class:badge-outline={isMine && (localOnly || character.deleted)}
+				class:badge-primary={isMine && !localOnly && !character.deleted}
 			>
 				{#if isMine}
-					{localOnly ? m.char_card_local_only() : m.char_card_published()}
+					{localOnly || character.deleted
+						? m.char_card_local_only()
+						: m.char_card_published()}
 				{:else}
 					{m.char_card_from_network()}
 				{/if}
