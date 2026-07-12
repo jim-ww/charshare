@@ -45,6 +45,12 @@ export interface Chat {
   // Unsent composer text, kept so navigating away or closing the page
   // doesn't lose an in-progress draft.
   draft: string;
+  // Which message is currently being edited (see ChatBubble/chatEditing.svelte),
+  // and its in-progress text — null/empty when nothing's being edited.
+  // Restored on reload the same way `draft` is, so switching away mid-edit
+  // and coming back doesn't silently drop the edit.
+  editing_message_id: MessageId | null;
+  editing_draft: string;
   // Selected index in the character image viewer, so it stays put when
   // navigating away and back. Clamp against the current image count when
   // reading — the character's images can change after this was saved.

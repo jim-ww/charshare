@@ -38,6 +38,8 @@ export function initChats(): Promise<void> {
 				if (chat.tts_voice_id === undefined) chat.tts_voice_id = 'f1';
 				if (chat.tts_pitch === undefined) chat.tts_pitch = 1;
 				if (chat.tts_speed === undefined) chat.tts_speed = 1;
+				if (chat.editing_message_id === undefined) chat.editing_message_id = null;
+				if (chat.editing_draft === undefined) chat.editing_draft = '';
 			}
 			chats = loaded;
 			ready = true;
@@ -75,7 +77,9 @@ export async function createChat(
 		tts_provider: { provider: 'local' },
 		tts_voice_id: 'f1',
 		tts_pitch: 1,
-		tts_speed: 1
+		tts_speed: 1,
+		editing_message_id: null,
+		editing_draft: ''
 	};
 	chats = { ...chats, [chat.id]: chat };
 	await persist();
@@ -127,6 +131,38 @@ export function setChatImageIndex(id: ChatId, imageIndex: number): void {
 	const chat = chats[id];
 	if (!chat || chat.image_index === imageIndex) return;
 	chats = { ...chats, [id]: { ...chat, image_index: imageIndex } };
+	if (draftPersistTimer) clearTimeout(draftPersistTimer);
+	draftPersistTimer = setTimeout(() => {
+		draftPersistTimer = null;
+		void persist();
+	}, 400);
+}
+
+/** Records which message is being edited (and seeds its draft to the
+ *  message's current content), or clears it when `messageId` is null —
+ *  a discrete state transition, persisted immediately rather than
+ *  debounced like the draft text itself. */
+export async function setChatEditingMessage(
+	id: ChatId,
+	messageId: MessageId | null,
+	initialDraft = ''
+): Promise<void> {
+	const chat = chats[id];
+	if (!chat) return;
+	chats = {
+		...chats,
+		[id]: { ...chat, editing_message_id: messageId, editing_draft: messageId ? initialDraft : '' }
+	};
+	await persist();
+}
+
+/** Persists the in-progress edit text, debounced like setChatDraft so
+ *  every keystroke doesn't hit disk. Only meaningful while editing_message_id
+ *  is set — callers shouldn't call this once editing has stopped. */
+export function setChatEditingDraft(id: ChatId, draft: string): void {
+	const chat = chats[id];
+	if (!chat || chat.editing_draft === draft) return;
+	chats = { ...chats, [id]: { ...chat, editing_draft: draft } };
 	if (draftPersistTimer) clearTimeout(draftPersistTimer);
 	draftPersistTimer = setTimeout(() => {
 		draftPersistTimer = null;
@@ -247,7 +283,12 @@ export async function importChat(
 		tts_provider: source.tts_provider ?? { provider: 'local' },
 		tts_voice_id: source.tts_voice_id ?? 'f1',
 		tts_pitch: source.tts_pitch ?? 1,
-		tts_speed: source.tts_speed ?? 1
+		tts_speed: source.tts_speed ?? 1,
+		// Not carried from the export, same as `draft` above — an in-progress
+		// edit is ephemeral device-side UI state, not something that makes
+		// sense to hand to whoever imports this chat.
+		editing_message_id: null,
+		editing_draft: ''
 	};
 	chats = { ...chats, [chat.id]: chat };
 	await persist();

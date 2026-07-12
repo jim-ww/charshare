@@ -2,7 +2,14 @@
 	import { untrack } from 'svelte';
 	import { resolve } from '$app/paths';
 	import type { Chat, Character, Message } from '$lib/types';
-	import { deleteMessage, getSiblings, switchBranch, updateMessageContent } from '$lib/state/chats.svelte';
+	import {
+		deleteMessage,
+		getSiblings,
+		switchBranch,
+		updateMessageContent,
+		setChatEditingMessage,
+		setChatEditingDraft,
+	} from '$lib/state/chats.svelte';
 	import { continueMessage, editUserMessage, regenerateMessage } from '$lib/ai/chat';
 	import { getEditingMessageId, requestStartEdit, stopEditing } from '$lib/state/chatEditing.svelte';
 	import { getMyProfile } from '$lib/state/profile.svelte';
@@ -102,8 +109,30 @@
 
 	// The edit lock lives in a module-level singleton, not component state —
 	// release it on unmount so navigating away mid-edit (e.g. switching
-	// chats) doesn't leave a stale lock nothing can ever clear again.
+	// chats) doesn't leave a stale lock nothing can ever clear again. This
+	// only clears the in-memory lock, not the persisted editing_message_id/
+	// editing_draft — those stay put so the edit resumes on reload.
 	$effect(() => () => stopEditing(message.id));
+
+	// Resume an edit that was still in progress when the app was last closed
+	// (or this chat was navigated away from) — the lock itself is always
+	// empty on a fresh mount, so this silently re-acquires it rather than
+	// prompting, same as if the user had never left.
+	if (untrack(() => chat.editing_message_id) === message.id) {
+		draft = untrack(() => chat.editing_draft);
+		void requestStartEdit({
+			messageId: message.id,
+			hasChanges: () => draft !== message.content,
+			save: () => updateMessageContent(chatId, message.id, draft, { persist: true }),
+		});
+	}
+
+	// Persists the in-progress draft as it's typed, so it survives a reload —
+	// mirrors ChatComposer's setChatDraft for the unsent-message composer.
+	$effect(() => {
+		if (!editing) return;
+		setChatEditingDraft(chatId, draft);
+	});
 
 	async function startEdit() {
 		const switched = await requestStartEdit({
@@ -111,7 +140,10 @@
 			hasChanges: () => draft !== message.content,
 			save: () => updateMessageContent(chatId, message.id, draft, { persist: true }),
 		});
-		if (switched) draft = message.content;
+		if (switched) {
+			draft = message.content;
+			void setChatEditingMessage(chatId, message.id, draft);
+		}
 	}
 
 	// Grows the textarea to exactly fit its content, so editing a message
@@ -157,12 +189,14 @@
 	async function saveEditOnly() {
 		await updateMessageContent(chatId, message.id, draft, { persist: true });
 		stopEditing(message.id);
+		void setChatEditingMessage(chatId, null);
 	}
 
 	/** Edits the message and resends the conversation so the character
 	 *  reacts to the new wording — the common case for a user message edit. */
 	async function saveAndResend() {
 		stopEditing(message.id);
+		void setChatEditingMessage(chatId, null);
 		regenerating = true;
 		try {
 			await editUserMessage(chat, character, message.id, draft);
@@ -405,7 +439,16 @@
 				{:else}
 					<button class="btn btn-xs" type="button" onclick={saveEditOnly}>{m.chat_bubble_save()}</button>
 				{/if}
-				<button class="btn btn-xs" type="button" onclick={() => stopEditing(message.id)}>{m.chat_bubble_cancel()}</button>
+				<button
+					class="btn btn-xs"
+					type="button"
+					onclick={() => {
+						stopEditing(message.id);
+						void setChatEditingMessage(chatId, null);
+					}}
+				>
+					{m.chat_bubble_cancel()}
+				</button>
 			</div>
 		{:else if message.role === 'character' && message.content === ''}
 			<p class="italic opacity-60">{m.chat_bubble_replying()}</p>

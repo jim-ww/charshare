@@ -19,6 +19,8 @@ function makeChat(overrides: Partial<Chat> = {}): Chat {
 		active_child: { m1: 'm2' },
 		created_at: 0,
 		draft: '',
+		editing_message_id: null,
+		editing_draft: '',
 		image_index: 0,
 		backgrounds: [],
 		active_background: null,

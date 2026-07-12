@@ -48,6 +48,8 @@
 			active_child,
 			created_at: 0,
 			draft: '',
+			editing_message_id: null,
+			editing_draft: '',
 			image_index: 0,
 			backgrounds: [],
 			active_background: null,
