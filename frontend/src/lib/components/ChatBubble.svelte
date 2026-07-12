@@ -199,6 +199,9 @@
 	const ttsIsLocal = $derived(chat.tts_provider?.provider === 'local');
 
 	let ttsState = $state<'idle' | 'loading' | 'playing'>('idle');
+	// Only meaningful for the local model — VOICEVOX has nothing to download,
+	// so this stays null on that path and the button just shows a spinner.
+	let ttsDownloadProgress = $state<number | null>(null);
 	let ttsPlayback: PitchedPlayback | undefined;
 	let showTtsConsent = $state(false);
 
@@ -218,7 +221,14 @@
 				Number(chat.tts_voice_id),
 			);
 		}
-		await preloadTtsModel('default', () => {});
+		try {
+			ttsDownloadProgress = 0;
+			await preloadTtsModel('default', (percent) => {
+				ttsDownloadProgress = percent;
+			});
+		} finally {
+			ttsDownloadProgress = null;
+		}
 		return synthesize(displayContent, 'default', chat.tts_voice_id as TtsVoiceId);
 	}
 
@@ -459,13 +469,24 @@
 					disabled={message.content === '' || ttsState === 'loading'}
 					aria-label={ttsState === 'playing'
 						? m.chat_bubble_read_aloud_stop()
-						: m.chat_bubble_read_aloud()}
+						: ttsDownloadProgress !== null
+							? m.chat_bubble_read_aloud_downloading({ percent: ttsDownloadProgress })
+							: m.chat_bubble_read_aloud()}
 					title={ttsState === 'playing'
 						? m.chat_bubble_read_aloud_stop()
-						: m.chat_bubble_read_aloud()}
+						: ttsDownloadProgress !== null
+							? m.chat_bubble_read_aloud_downloading({ percent: ttsDownloadProgress })
+							: m.chat_bubble_read_aloud()}
 					onclick={handleReadAloud}
 				>
-					{#if ttsState === 'loading'}
+					{#if ttsDownloadProgress !== null}
+						<div
+							class="radial-progress text-xs"
+							style="--value:{ttsDownloadProgress}; --size:1rem; --thickness: 2px;"
+							role="progressbar"
+							aria-valuenow={ttsDownloadProgress}
+						></div>
+					{:else if ttsState === 'loading'}
 						<span class="loading loading-spinner loading-xs"></span>
 					{:else if ttsState === 'playing'}
 						<svg

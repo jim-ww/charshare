@@ -214,6 +214,7 @@
 	"chat_bubble_continue_message": "Continue this message",
 	"chat_bubble_read_aloud": "Read aloud",
 	"chat_bubble_read_aloud_stop": "Stop reading",
+	"chat_bubble_read_aloud_downloading": "Downloading voice model… {percent}%",
 	"chat_bubble_tts_consent_title": "Enable read aloud?",
 	"chat_bubble_tts_consent_message": "The first time you use this, a text-to-speech model (about {sizeMB}MB) downloads and is cached in your browser. All speech synthesis then runs entirely on your device — the message text is never sent anywhere. You can change the provider in Settings.",
 	"chat_bubble_tts_consent_confirm": "Download & enable",
