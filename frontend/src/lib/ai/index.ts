@@ -2,6 +2,7 @@ import type { ProviderConfig } from '$lib/types';
 import { requestCompletion as requestOpenRouterCompletion } from './openrouter';
 import { requestCompletion as requestOllamaCompletion } from './ollama';
 import { requestCompletion as requestHuggingFaceCompletion } from './huggingface';
+import { requestCompletion as requestOpenAiCompatibleCompletion } from './openaiCompatible';
 import type { CompletionMessage, CompletionResult, RequestCompletionOptions } from './openrouter';
 
 export type { CompletionMessage, CompletionResult, RequestCompletionOptions };
@@ -18,5 +19,7 @@ export function requestCompletion(
 			return requestOllamaCompletion(config, messages, options);
 		case 'huggingface':
 			return requestHuggingFaceCompletion(config, messages, options);
+		case 'openai_compatible':
+			return requestOpenAiCompatibleCompletion(config, messages, options);
 	}
 }

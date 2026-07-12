@@ -3,6 +3,7 @@ import { get, set } from "idb-keyval";
 import type {
 	HuggingFaceProviderConfig,
 	OllamaProviderConfig,
+	OpenAiCompatibleProviderConfig,
 	OpenRouterProviderConfig,
 	Preferences,
 	ProviderConfig,
@@ -58,6 +59,22 @@ export const DEFAULT_HUGGINGFACE_CONFIG: HuggingFaceProviderConfig = {
 	disable_thinking: true,
 };
 
+export const DEFAULT_OPENAI_COMPATIBLE_CONFIG: OpenAiCompatibleProviderConfig = {
+	provider: "openai_compatible",
+	baseUrl: "",
+	apiKey: "",
+	model: "",
+	temperature: 1,
+	max_tokens: 512,
+	context_size: 8192,
+	top_k: 0,
+	top_p: 1,
+	repetition_penalty: 1,
+	frequency_penalty: 0,
+	forbidden_words: [],
+	disable_thinking: true,
+};
+
 export const DEFAULT_PREFERENCES: Preferences = {
 	gunRelays: DEFAULT_GUN_RELAYS,
 	theme: "sunset", // best: dark forest halloween dracula night coffee dim sunset
@@ -80,6 +97,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
 		openrouter: DEFAULT_OPENROUTER_CONFIG,
 		ollama: DEFAULT_OLLAMA_CONFIG,
 		huggingface: DEFAULT_HUGGINGFACE_CONFIG,
+		openai_compatible: DEFAULT_OPENAI_COMPATIBLE_CONFIG,
 	},
 };
 

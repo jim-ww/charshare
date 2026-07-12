@@ -69,10 +69,23 @@ export interface HuggingFaceProviderConfig extends CommonProviderConfig {
   // Hugging Face model id, e.g. "meta-llama/Meta-Llama-3-8B-Instruct"
 }
 
+// Any other OpenAI-compatible chat-completions endpoint — a self-hosted
+// proxy, a third-party API, a local inference server that isn't Ollama's
+// native API. Same request/response shape as OpenRouter/HuggingFace
+// (POST {baseUrl}/chat/completions, SSE streaming), just with a
+// user-supplied base URL instead of a fixed one. apiKey is optional (some
+// self-hosted proxies need none) — sent as a Bearer token only when non-empty.
+export interface OpenAiCompatibleProviderConfig extends CommonProviderConfig {
+  provider: 'openai_compatible';
+  baseUrl: string; // e.g. "https://api.example.com/v1", no trailing slash needed
+  apiKey: string; // stored locally only, never published — may be left empty
+}
+
 export type ProviderConfig =
   | OpenRouterProviderConfig
   | OllamaProviderConfig
-  | HuggingFaceProviderConfig; // union grows as more providers are added
+  | HuggingFaceProviderConfig
+  | OpenAiCompatibleProviderConfig; // union grows as more providers are added
 
 // Per-provider saved settings, so switching providers doesn't clobber the other's config.
 export type ProviderConfigMap = {

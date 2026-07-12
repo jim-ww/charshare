@@ -33,6 +33,7 @@
 			<option value="openrouter">{m.ai_tab_provider_openrouter()}</option>
 			<option value="ollama">{m.ai_tab_provider_ollama()}</option>
 			<option value="huggingface">{m.ai_tab_provider_huggingface()}</option>
+			<option value="openai_compatible">{m.ai_tab_provider_openai_compatible()}</option>
 		</select>
 	</label>
 
@@ -59,7 +60,7 @@
 				{m.ai_tab_ollama_hint()}
 			</span>
 		</label>
-	{:else}
+	{:else if provider.provider === 'huggingface'}
 		<label class="form-control">
 			<span class="label-text">{m.ai_tab_huggingface_key_label()}</span>
 			<input
@@ -69,6 +70,27 @@
 				oninput={(e) => update('apiKey', e.currentTarget.value)}
 			/>
 			<span class="text-sm opacity-70">{m.ai_tab_stored_locally()}</span>
+		</label>
+	{:else}
+		<label class="form-control">
+			<span class="label-text">{m.ai_tab_openai_compatible_url_label()}</span>
+			<input
+				class="input input-bordered w-full"
+				placeholder="https://api.example.com/v1"
+				value={provider.baseUrl}
+				oninput={(e) => update('baseUrl', e.currentTarget.value)}
+			/>
+			<span class="text-sm opacity-70">{m.ai_tab_openai_compatible_url_hint()}</span>
+		</label>
+		<label class="form-control">
+			<span class="label-text">{m.ai_tab_openai_compatible_key_label()}</span>
+			<input
+				class="input input-bordered w-full"
+				type="password"
+				value={provider.apiKey}
+				oninput={(e) => update('apiKey', e.currentTarget.value)}
+			/>
+			<span class="text-sm opacity-70">{m.ai_tab_openai_compatible_key_hint()}</span>
 		</label>
 	{/if}
 
