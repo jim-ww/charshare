@@ -24,6 +24,7 @@
 	import { synthesize as synthesizeVoicevox } from '$lib/tts/voicevoxClient';
 	import { playWithPitch, type PitchedPlayback } from '$lib/tts/playback';
 	import { isMessageStreaming } from '$lib/state/messageStreaming.svelte';
+	import { isWailsDesktop } from '$lib/wails';
 	import Avatar from './Avatar.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import { m } from '$lib/paraglide/messages.js';
@@ -229,7 +230,10 @@
 
 	// --- Read aloud (local text-to-speech) --------------------------------
 
-	const ttsAvailable = $derived(!readonly && chat.tts_provider !== null);
+	// The Wails desktop webview (WebKitGTK) crashes its WebProcess outright on
+	// audio playback — see playback.ts — so read-aloud is unavailable there,
+	// the same way ChatComposer.svelte hides the mic button.
+	const ttsAvailable = $derived(!readonly && chat.tts_provider !== null && !isWailsDesktop());
 	const ttsIsLocal = $derived(chat.tts_provider?.provider === 'local');
 
 	let ttsState = $state<'idle' | 'loading' | 'playing'>('idle');

@@ -12,6 +12,7 @@
 	import { getPreferences } from '$lib/state/preferences.svelte';
 	import { TTS_VOICES, type TtsVoiceId } from '$lib/tts/ttsClient';
 	import { fetchSpeakers, type VoicevoxSpeaker } from '$lib/tts/voicevoxClient';
+	import { isWailsDesktop } from '$lib/wails';
 	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
@@ -173,6 +174,7 @@
 		</div>
 	</div>
 
+	{#if !isWailsDesktop()}
 	<div class="divider my-0"></div>
 
 	<div class="flex flex-col gap-2">
@@ -303,4 +305,5 @@
 			</div>
 		{/if}
 	</div>
+	{/if}
 </div>
