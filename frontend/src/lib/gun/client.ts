@@ -62,7 +62,7 @@ export function getGun(relays: string[] = DEFAULT_GUN_RELAYS): IGunInstance {
 
 /** Resolves once a relay peer has connected (see the 'hi' handler above), or
  *  after `timeoutMs`, whichever comes first — so a cold-started reader (e.g.
- *  the very first browseNetwork() of a fresh page load) can give the
+ *  the very first browseNetworkPage() of a fresh page load) can give the
  *  WebSocket handshake a moment to finish before starting a fixed-duration
  *  enumeration window (see signedIndex.ts:readBucket), instead of racing it
  *  and coming back empty just because no peer had connected yet. */

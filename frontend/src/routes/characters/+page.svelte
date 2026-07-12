@@ -21,13 +21,18 @@
 	import {
 		effectiveQuery,
 		getNetworkResults,
+		getNetworkSortOrder,
 		getRemoteResults,
 		getSearchQuery,
 		getSearchedQuery,
 		getSelectedTags,
+		isNetworkExhausted,
+		isNetworkLoadingMore,
+		loadMoreNetwork,
 		matchesQuery,
 		refreshNetwork,
 		runSearch,
+		setNetworkSortOrder,
 		setSearchQuery,
 		setSelectedTags,
 		toggleTag,
@@ -282,6 +287,30 @@
 					>{m.char_list_hide_forks()}</span
 				>
 			</label>
+			{#if !getSearchedQuery()}
+				<label class="label cursor-pointer gap-2 py-0">
+					<span class="label-text"
+						>{m.char_list_sort_label()}</span
+					>
+					<select
+						class="select select-bordered select-xs"
+						value={getNetworkSortOrder()}
+						onchange={(e) =>
+							setNetworkSortOrder(
+								e.currentTarget.value === "asc"
+									? "asc"
+									: "desc",
+							)}
+					>
+						<option value="desc"
+							>{m.char_list_sort_newest()}</option
+						>
+						<option value="asc"
+							>{m.char_list_sort_oldest()}</option
+						>
+					</select>
+				</label>
+			{/if}
 		</div>
 	</div>
 
@@ -303,5 +332,19 @@
 				<CharacterCard {character} />
 			{/each}
 		</div>
+		{#if !getSearchedQuery() && !isNetworkExhausted()}
+			<div class="mt-4 flex justify-center">
+				<button
+					class="btn btn-sm"
+					type="button"
+					disabled={isNetworkLoadingMore()}
+					onclick={loadMoreNetwork}
+				>
+					{isNetworkLoadingMore()
+						? m.char_list_loading()
+						: m.char_list_load_more()}
+				</button>
+			</div>
+		{/if}
 	{/if}
 </div>

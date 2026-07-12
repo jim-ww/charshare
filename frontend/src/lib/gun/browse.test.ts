@@ -5,9 +5,13 @@ import { __setGunForTests } from './client';
 import { __setKeyringForTests } from '$lib/state/auth.svelte';
 import { generateKeyring } from '$lib/crypto/keys';
 import { deleteCharacter, forkCharacter, publishCharacter, publishLocalCharacter } from './characters';
-import { browseByTag, browseNetwork, browseByName, browseByAuthor, browseForksOf } from './browse';
+import { browseByTag, browseNetworkPage, browseByName, browseByAuthor, browseForksOf } from './browse';
 import { publishProfile } from './users';
 import { __setPreferencesForTests } from '$lib/state/preferences.svelte';
+
+async function browseNetwork() {
+	return (await browseNetworkPage(null, 1000)).characters;
+}
 
 const RADATA_DIR = `test-radata-browse-${crypto.randomUUID()}`;
 
@@ -76,6 +80,72 @@ describe('browseNetwork', () => {
 
 		const results = await browseNetwork();
 		expect(results.map((c) => c.id)).not.toContain(created.id);
+	});
+});
+
+describe('browseNetworkPage', () => {
+	it('pages through results and eventually returns a null cursor', async () => {
+		const tag = `t-${crypto.randomUUID()}`;
+		const created = await Promise.all(
+			[0, 1, 2].map((i) => publishCharacter({ ...baseFields, name: `Page${i}`, tags: [tag] }))
+		);
+
+		const seen: string[] = [];
+		let cursor = null;
+		let guard = 0;
+		do {
+			const page = await browseNetworkPage(cursor, 1);
+			expect(page.characters.length).toBeLessThanOrEqual(1);
+			seen.push(...page.characters.map((c) => c.id));
+			cursor = page.cursor;
+			guard += 1;
+		} while (cursor !== null && guard < 100);
+
+		for (const c of created) expect(seen).toContain(c.id);
+	});
+
+	it('sorts newest-created first within a bucket', async () => {
+		const tag = `t-${crypto.randomUUID()}`;
+		const older = await publishCharacter({ ...baseFields, name: 'Older', tags: [tag] });
+		await new Promise((resolve) => setTimeout(resolve, 5));
+		const newer = await publishCharacter({ ...baseFields, name: 'Newer', tags: [tag] });
+
+		const { characters } = await browseNetworkPage(null, 1000);
+		const olderIndex = characters.findIndex((c) => c.id === older.id);
+		const newerIndex = characters.findIndex((c) => c.id === newer.id);
+
+		expect(newerIndex).toBeLessThan(olderIndex);
+	});
+
+	it('sorts oldest-created first when order is asc', async () => {
+		const tag = `t-${crypto.randomUUID()}`;
+		const older = await publishCharacter({ ...baseFields, name: 'AscOlder', tags: [tag] });
+		await new Promise((resolve) => setTimeout(resolve, 5));
+		const newer = await publishCharacter({ ...baseFields, name: 'AscNewer', tags: [tag] });
+
+		const { characters } = await browseNetworkPage(null, 1000, 'asc');
+		const olderIndex = characters.findIndex((c) => c.id === older.id);
+		const newerIndex = characters.findIndex((c) => c.id === newer.id);
+
+		expect(olderIndex).toBeLessThan(newerIndex);
+	});
+
+	it('keeps the same order across pages once a cursor is established', async () => {
+		const tag = `t-${crypto.randomUUID()}`;
+		await Promise.all(
+			[0, 1, 2, 3].map((i) => publishCharacter({ ...baseFields, name: `Asc${i}`, tags: [tag] }))
+		);
+
+		const first = await browseNetworkPage(null, 2, 'asc');
+		expect(first.cursor).not.toBeNull();
+		// Continuing the cursor must keep walking ascending even though no
+		// `order` argument is passed here — the cursor is the source of truth.
+		const second = await browseNetworkPage(first.cursor, 2);
+
+		const allSortedAsc = [...first.characters, ...second.characters]
+			.map((c) => c.created_at)
+			.every((t, i, arr) => i === 0 || arr[i - 1] <= t);
+		expect(allSortedAsc).toBe(true);
 	});
 });
 

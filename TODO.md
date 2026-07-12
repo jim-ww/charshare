@@ -1,3 +1,4 @@
+- character view: show created_at, updated_at
 - feat(browse): rework Browse/search to avoid fetching the entire published network unbounded on every load (currently `browseNetwork()` reads every id under the `__network__` pseudo-tag and fetches+verifies each one) — implement proper sorting (by updated_at, created_at) and pagination
 - feat(core): rating system for characters? then add sorting by popularity
 - feat(core): after implementing rating system, add rating to comments? also allow to sort by rating, then created_at

@@ -114,6 +114,10 @@
 	"char_list_loading": "Loading…",
 	"char_list_empty_mine": "You haven't created any characters yet.",
 	"char_list_empty_all": "No characters found.",
+	"char_list_load_more": "Load more",
+	"char_list_sort_label": "Sort",
+	"char_list_sort_newest": "Newest first",
+	"char_list_sort_oldest": "Oldest first",
 
 	"char_new_heading": "New character",
 	"char_import_json": "Import character",

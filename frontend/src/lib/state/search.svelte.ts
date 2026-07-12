@@ -4,7 +4,9 @@ import {
 	browseByName,
 	browseByTag,
 	browseForksOf,
-	browseNetwork,
+	browseNetworkPage,
+	type BrowseCursor,
+	type BrowseSortOrder,
 } from "$lib/gun/browse";
 
 let query = $state("");
@@ -14,8 +16,27 @@ let query = $state("");
 let selectedTags = $state<Set<string>>(new Set());
 let remoteResults = $state<Character[]>([]);
 let networkResults = $state<Character[]>([]);
+let networkCursor: BrowseCursor | null = null;
+let networkExhausted = $state(false);
+let networkLoadingMore = $state(false);
+let networkSortOrder = $state<BrowseSortOrder>("desc");
 let searching = $state(false);
 let searchedQuery = $state("");
+
+const NETWORK_PAGE_SIZE = 30;
+
+export function getNetworkSortOrder(): BrowseSortOrder {
+	return networkSortOrder;
+}
+
+/** Changes sort order and restarts the network feed from scratch — an
+ *  in-progress cursor was walked in the old order, so it can't be resumed
+ *  under the new one. */
+export function setNetworkSortOrder(order: BrowseSortOrder): void {
+	if (order === networkSortOrder) return;
+	networkSortOrder = order;
+	void refreshNetwork();
+}
 
 export function getSearchQuery(): string {
 	return query;
@@ -57,20 +78,51 @@ export function getNetworkResults(): Character[] {
 	return networkResults;
 }
 
+export function isNetworkExhausted(): boolean {
+	return networkExhausted;
+}
+
+export function isNetworkLoadingMore(): boolean {
+	return networkLoadingMore;
+}
+
 // A cold GUN client can have its WebSocket connected (see gunPeerReady) but
 // still not have synced the tag index data from the relay yet — the first
-// browseNetwork() of a session can come back empty even though the network
-// isn't actually empty. Retrying a couple times with a growing delay picks
-// up the data once it arrives, without the user having to notice and press
-// search themselves to force a second fetch.
+// page of a session can come back empty even though the network isn't
+// actually empty. Retrying a couple times with a growing delay picks up the
+// data once it arrives, without the user having to notice and press search
+// themselves to force a second fetch.
 const NETWORK_RETRY_DELAYS_MS = [1500, 3000];
 
+async function loadFirstNetworkPage(): Promise<void> {
+	const { characters, cursor } = await browseNetworkPage(null, NETWORK_PAGE_SIZE, networkSortOrder);
+	networkResults = characters;
+	networkCursor = cursor;
+	networkExhausted = cursor === null;
+}
+
 export async function refreshNetwork(): Promise<void> {
-	networkResults = await browseNetwork();
+	await loadFirstNetworkPage();
 	for (const delay of NETWORK_RETRY_DELAYS_MS) {
 		if (networkResults.length > 0) return;
 		await new Promise((resolve) => setTimeout(resolve, delay));
-		networkResults = await browseNetwork();
+		await loadFirstNetworkPage();
+	}
+}
+
+/** Fetches and appends the next page of the network feed — a no-op if
+ *  already exhausted or a load is already in flight (guards the "Load more"
+ *  button against double-fires from a fast double-click). */
+export async function loadMoreNetwork(): Promise<void> {
+	if (networkExhausted || networkLoadingMore) return;
+	networkLoadingMore = true;
+	try {
+		const { characters, cursor } = await browseNetworkPage(networkCursor, NETWORK_PAGE_SIZE);
+		networkResults = [...networkResults, ...characters];
+		networkCursor = cursor;
+		networkExhausted = cursor === null;
+	} finally {
+		networkLoadingMore = false;
 	}
 }
 

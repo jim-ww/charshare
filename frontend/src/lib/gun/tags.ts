@@ -15,4 +15,5 @@ export function isSystemTag(tag: string): boolean {
 const tagIndex = createSignedPointerIndex('tags');
 
 export const getTagIndex = tagIndex.getIndex;
+export const getTagIndexBucket = tagIndex.getIndexBucket;
 export const addToTagIndex = tagIndex.addToIndex;

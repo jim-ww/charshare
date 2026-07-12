@@ -60,18 +60,32 @@ function monthBucket(date: Date): string {
 	return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
 }
 
-/** New pointers always land in the current calendar month's bucket, and reads
- *  only scan the most recent READ_MONTHS buckets — bounding read cost for a
- *  very popular key instead of an ever-growing single index/blob. A character
- *  published long enough ago simply stops surfacing once its bucket ages out;
- *  acceptable since browse/search are discovery, not an archive (see spec:
- *  Browse). */
-const READ_MONTHS = 24;
+/** New pointers always land in the current calendar month's bucket. Reads
+ *  scan back to `GENESIS_MONTH` — the month this indexing scheme was built
+ *  (this repo's initial commit) — rather than an arbitrary rolling window,
+ *  since no character could possibly have been published before it exists.
+ *  Nothing ever ages out or stops surfacing; the number of buckets scanned
+ *  just grows by one every month (see {@link getReadWindowSize}), which is
+ *  cheap since bucket reads are batched (see browse.ts:BUCKET_BATCH_SIZE),
+ *  not all fired in parallel on every load. */
+const GENESIS_MONTH = { year: 2026, month: 7 };
+
+/** How many monthly buckets exist between now and {@link GENESIS_MONTH},
+ *  inclusive of the current month — i.e. the full size of the read/write
+ *  window. Exported so callers that walk buckets by offset (see
+ *  browse.ts:browseNetworkPage) know where the oldest end is, without
+ *  needing to read anything first (pure date arithmetic). */
+export function getReadWindowSize(): number {
+	const now = new Date();
+	return (
+		(now.getUTCFullYear() - GENESIS_MONTH.year) * 12 + (now.getUTCMonth() + 1 - GENESIS_MONTH.month) + 1
+	);
+}
 
 function recentBuckets(): string[] {
 	const now = new Date();
 	const buckets: string[] = [];
-	for (let i = 0; i < READ_MONTHS; i++) {
+	for (let i = 0; i < getReadWindowSize(); i++) {
 		buckets.push(monthBucket(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1))));
 	}
 	return buckets;
@@ -111,6 +125,14 @@ export interface SignedPointerIndex {
 	/** Fetches the (deduped) set of document ids pointed at `key` across the
 	 *  recent-months read window. */
 	getIndex(key: string): Promise<string[]>;
+	/** Fetches the ids in a single bucket, identified by its offset into
+	 *  {@link recentBuckets} (0 = current/oldest end depending on `order` —
+	 *  see browse.ts:browseNetworkPage, the only caller, which walks one
+	 *  bucket at a time and stops as soon as it has enough resolved
+	 *  characters for a page, instead of always reading the whole window.
+	 *  Returns `null` once `bucketOffset` runs past the read window — the
+	 *  "no more buckets" signal. */
+	getIndexBucket(key: string, bucketOffset: number): Promise<string[] | null>;
 	/** Adds a signed pointer for `docId` under `key`, in the current month's
 	 *  bucket. Idempotent in effect (re-adding writes the same key), and safe
 	 *  under concurrent publishers indexing under the same key since each
@@ -165,6 +187,12 @@ export function createSignedPointerIndex(
 		return Array.from(new Set(perBucket.flat()));
 	}
 
+	async function getIndexBucket(key: string, bucketOffset: number): Promise<string[] | null> {
+		const buckets = recentBuckets();
+		if (bucketOffset < 0 || bucketOffset >= buckets.length) return null;
+		return readBucket(key, buckets[bucketOffset]);
+	}
+
 	async function addToIndex(key: string, docId: string, keyring: Keyring): Promise<void> {
 		const draft: IndexPointer = { key, docId, authorPub: keyring.publicKey, signature: '' };
 		draft.signature = await signDocument(draft, keyring);
@@ -172,5 +200,5 @@ export function createSignedPointerIndex(
 		await putDocument(node, draft);
 	}
 
-	return { getIndex, addToIndex };
+	return { getIndex, getIndexBucket, addToIndex };
 }
