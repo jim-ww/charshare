@@ -4,8 +4,8 @@ import Gun from 'gun/gun.js';
 import { __setGunForTests } from './client';
 import { __setKeyringForTests } from '$lib/state/auth.svelte';
 import { generateKeyring } from '$lib/crypto/keys';
-import { deleteCharacter, publishCharacter } from './characters';
-import { browseByTag, browseNetwork, browseByName, browseByAuthor } from './browse';
+import { deleteCharacter, forkCharacter, publishCharacter, publishLocalCharacter } from './characters';
+import { browseByTag, browseNetwork, browseByName, browseByAuthor, browseForksOf } from './browse';
 import { publishProfile } from './users';
 import { __setPreferencesForTests } from '$lib/state/preferences.svelte';
 
@@ -113,6 +113,35 @@ describe('author blocklist', () => {
 
 		__setPreferencesForTests({ blockedAuthors: [] });
 		expect((await browseByTag(tag)).map((c) => c.id)).toContain(created.id);
+	});
+});
+
+describe('browseForksOf', () => {
+	it('finds a published fork of the original character', async () => {
+		const original = await publishCharacter({ ...baseFields, name: 'Original', tags: [] });
+
+		const fork = await forkCharacter(original.id);
+		expect(fork.forked_from).toBe(original.id);
+		await publishLocalCharacter(fork);
+
+		const results = await browseForksOf(original.id);
+		expect(results.map((c) => c.id)).toContain(fork.id);
+	});
+
+	it('does not surface a fork that was never published', async () => {
+		const original = await publishCharacter({ ...baseFields, name: 'OriginalUnpublishedFork', tags: [] });
+
+		await forkCharacter(original.id);
+
+		const results = await browseForksOf(original.id);
+		expect(results).toEqual([]);
+	});
+
+	it('returns nothing for a character with no forks', async () => {
+		const original = await publishCharacter({ ...baseFields, name: 'NoForks', tags: [] });
+
+		const results = await browseForksOf(original.id);
+		expect(results).toEqual([]);
 	});
 });
 

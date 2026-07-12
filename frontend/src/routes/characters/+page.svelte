@@ -99,15 +99,18 @@
 		const searchedQuery = getSearchedQuery();
 		const rawQuery = getSearchQuery().trim();
 		const isAuthorQuery = rawQuery.startsWith("@");
-		// Selected tags don't apply to an "@" author lookup — see runSearch.
-		const trimmed = isAuthorQuery ? rawQuery : effectiveQuery();
+		const isForkQuery = rawQuery.startsWith("fork:");
+		// Selected tags don't apply to an "@" author lookup or a "fork:" link —
+		// see runSearch.
+		const trimmed = isAuthorQuery || isForkQuery ? rawQuery : effectiveQuery();
 		const me = getCurrentUser();
 
 		const combined = new Map<string, Character>();
 
-		// "@name"/"@pubkey" author search has no meaningful local text-match
-		// equivalent — remoteResults (browseByAuthor) is the whole answer.
-		if (!isAuthorQuery) {
+		// "@name"/"@pubkey" author search and "fork:<id>" both have no
+		// meaningful local text-match equivalent — remoteResults (browseByAuthor/
+		// browseForksOf) is the whole answer for either.
+		if (!isAuthorQuery && !isForkQuery) {
 			const localMatches = [
 				...myCharacters,
 				...savedCharacters,

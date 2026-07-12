@@ -4,6 +4,7 @@ import { getCharacter } from './characters';
 import { getTagIndex, NETWORK_INDEX_TAG } from './tags';
 import { searchByName } from './names';
 import { getUsernameClaim } from './usernames';
+import { getForkIndex } from './forks';
 
 /** Resolves a tag index to published, non-deleted characters, excluding any
  *  that also carry a tag the user has blocked (see spec: Browse). Invalid or
@@ -48,6 +49,14 @@ export async function browseByName(query: string): Promise<Character[]> {
  *  / "@pubkey" search syntax. There's no per-author character index yet, so
  *  this filters the full network feed rather than a targeted lookup; fine at
  *  today's scale, and it stays correct (just not fast) if that ever changes. */
+/** Fetches published characters forked from `id` — the "remixes of this
+ *  character" list (see gun/forks.ts). Only ever contains forks their author
+ *  chose to publish; a local-only fork draft never shows up here. */
+export async function browseForksOf(id: string): Promise<Character[]> {
+	const ids = await getForkIndex(id);
+	return resolveIndex(ids);
+}
+
 export async function browseByAuthor(identifier: string): Promise<Character[]> {
 	const trimmed = identifier.trim();
 	if (!trimmed) return [];

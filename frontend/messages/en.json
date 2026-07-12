@@ -156,6 +156,7 @@
 	"char_detail_first_messages_heading": "First message(s)",
 	"char_detail_example_dialogues_heading": "Example dialogues",
 	"char_detail_system_prompt_heading": "Custom system prompt",
+	"char_detail_view_forks": "View forks",
 	"char_detail_comments_heading": "Comments",
 	"char_detail_local_only_no_comments": "Local-only characters can't have comments — publish this character to enable them.",
 	"char_detail_comment_placeholder": "Write a comment…",

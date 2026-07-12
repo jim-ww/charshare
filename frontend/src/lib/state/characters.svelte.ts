@@ -194,9 +194,13 @@ export async function createOrEditCharacter(
 	}
 
 	if (isCharacterLocalOnly(fields.id)) {
+		// myCharacters is a $state array, so its elements are reactive proxies —
+		// de-proxy before this escapes into GUN/IndexedDB writes, both of which
+		// use structured cloning under the hood and throw on a live Proxy (see
+		// publishMyCharacter/restoreMyCharacter below for the same fix).
 		const existing = myCharacters.find((c) => c.id === fields.id);
 		if (!existing) throw new Error('Character not found.');
-		const edited = await gunEditLocalCharacter(existing, fields);
+		const edited = await gunEditLocalCharacter($state.snapshot(existing), fields);
 		if (localOnly) {
 			await saveLocalOnlyCharacter(edited);
 			await refresh();
@@ -215,9 +219,13 @@ export async function createOrEditCharacter(
 }
 
 export async function publishMyCharacter(id: CharacterId): Promise<Character> {
+	// De-proxy: myCharacters is a $state array, and writeToGun/addPublishedCharacterId
+	// both eventually hit a structured-clone boundary (GUN's put, idb-keyval's
+	// IndexedDB set) that throws "Proxy object could not be cloned" on a live
+	// Svelte reactive proxy — e.g. publishing a freshly-forked character.
 	const existing = myCharacters.find((c) => c.id === id);
 	if (!existing) throw new Error('Character not found.');
-	const doc = await gunPublishLocalCharacter(existing);
+	const doc = await gunPublishLocalCharacter($state.snapshot(existing));
 	await addPublishedCharacterId(doc.id, doc);
 	await refresh();
 	return doc;
@@ -251,9 +259,11 @@ export async function deleteMyCharacter(id: CharacterId, options?: { removeLocal
  *  chain (see gun/characters.ts:undeleteCharacter), so the id and every
  *  comment already posted on it come back untouched. */
 export async function restoreMyCharacter(id: CharacterId): Promise<Character> {
+	// See publishMyCharacter above — de-proxy before this hits a
+	// structured-clone boundary.
 	const existing = myCharacters.find((c) => c.id === id);
 	if (!existing) throw new Error('Character not found.');
-	const doc = await gunUndeleteCharacter(existing);
+	const doc = await gunUndeleteCharacter($state.snapshot(existing));
 	await addPublishedCharacterId(doc.id, doc);
 	await refresh();
 	return doc;

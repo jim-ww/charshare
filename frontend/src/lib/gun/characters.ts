@@ -5,6 +5,7 @@ import { getDocument, putDocument, subscribeDocument, subscribeDocumentWithRetry
 import { authorNode, ensureGunUserAuth, getGun, ownNode } from './client';
 import { addToTagIndex, NETWORK_INDEX_TAG } from './tags';
 import { addToNameIndex } from './names';
+import { addToForkIndex } from './forks';
 import { makeCharacterId, parseCharacterId } from './characterId';
 
 const isCharacter: Validator<Character> = (data): data is Character => {
@@ -59,7 +60,11 @@ async function writeToGun(doc: Character, keyring: Keyring): Promise<Character> 
 	await Promise.all([
 		...doc.tags.map((tag) => addToTagIndex(tag, doc.id, keyring)),
 		addToTagIndex(NETWORK_INDEX_TAG, doc.id, keyring),
-		addToNameIndex(doc.name, doc.id, keyring)
+		addToNameIndex(doc.name, doc.id, keyring),
+		// Only indexed once actually published — a fork kept as a local-only
+		// draft (the default right after forking, see forkCharacter) stays
+		// undiscoverable until its author explicitly publishes it.
+		...(doc.forked_from ? [addToForkIndex(doc.forked_from, doc.id, keyring)] : [])
 	]);
 	return doc;
 }

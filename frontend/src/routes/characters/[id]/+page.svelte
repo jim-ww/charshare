@@ -824,6 +824,15 @@
 					</div>
 				{/if}
 
+				{#if !localOnly}
+					<a
+						class="btn btn-sm btn-ghost mt-2 w-fit"
+						href="{resolve('/characters')}?q={encodeURIComponent(`fork:${character.id}`)}"
+					>
+						{m.char_detail_view_forks()}
+					</a>
+				{/if}
+
 				{#if isMine || !character.deleted}
 					<div class="mt-4">
 						<h2 class="mb-2 text-lg font-semibold">

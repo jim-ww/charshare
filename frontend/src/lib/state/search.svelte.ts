@@ -3,6 +3,7 @@ import {
 	browseByAuthor,
 	browseByName,
 	browseByTag,
+	browseForksOf,
 	browseNetwork,
 } from "$lib/gun/browse";
 
@@ -114,6 +115,22 @@ export async function runSearch(): Promise<void> {
 		searching = true;
 		try {
 			remoteResults = await browseByAuthor(rawQuery.slice(1));
+			searchedQuery = rawQuery;
+		} finally {
+			searching = false;
+		}
+		return;
+	}
+
+	// "fork:<characterId>" — not something a user types by hand, this is the
+	// query the "View forks" link on a character's page builds (see
+	// characters/[id]/+page.svelte) since there's no room there to render a
+	// whole grid of results. Same "its own mode" treatment as "@": no local
+	// text-match equivalent, tags don't apply.
+	if (rawQuery.startsWith("fork:")) {
+		searching = true;
+		try {
+			remoteResults = await browseForksOf(rawQuery.slice("fork:".length));
 			searchedQuery = rawQuery;
 		} finally {
 			searching = false;
