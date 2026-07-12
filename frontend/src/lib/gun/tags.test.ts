@@ -24,7 +24,7 @@ describe('addToTagIndex / getTagIndex', () => {
 		const tag = `t-${crypto.randomUUID()}`;
 		const charId = makeCharacterId(keyring.publicKey);
 
-		await addToTagIndex(tag, charId, keyring);
+		await addToTagIndex(tag, charId, Date.now(), keyring);
 
 		expect(await getTagIndex(tag)).toEqual([charId]);
 	});
@@ -36,7 +36,7 @@ describe('addToTagIndex / getTagIndex', () => {
 		const idA = makeCharacterId(a.publicKey);
 		const idB = makeCharacterId(b.publicKey);
 
-		await Promise.all([addToTagIndex(tag, idA, a), addToTagIndex(tag, idB, b)]);
+		await Promise.all([addToTagIndex(tag, idA, Date.now(), a), addToTagIndex(tag, idB, Date.now(), b)]);
 
 		const results = await getTagIndex(tag);
 		expect(results).toContain(idA);

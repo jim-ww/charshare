@@ -58,13 +58,13 @@ async function writeToGun(doc: Character, keyring: Keyring): Promise<Character> 
 	await ensureGunUserAuth(keyring.pair);
 	await putDocument(ownNode(getGun(), ['characters', uuid]), doc);
 	await Promise.all([
-		...doc.tags.map((tag) => addToTagIndex(tag, doc.id, keyring)),
-		addToTagIndex(NETWORK_INDEX_TAG, doc.id, keyring),
-		addToNameIndex(doc.name, doc.id, keyring),
+		...doc.tags.map((tag) => addToTagIndex(tag, doc.id, doc.created_at, keyring)),
+		addToTagIndex(NETWORK_INDEX_TAG, doc.id, doc.created_at, keyring),
+		addToNameIndex(doc.name, doc.id, doc.created_at, keyring),
 		// Only indexed once actually published — a fork kept as a local-only
 		// draft (the default right after forking, see forkCharacter) stays
 		// undiscoverable until its author explicitly publishes it.
-		...(doc.forked_from ? [addToForkIndex(doc.forked_from, doc.id, keyring)] : [])
+		...(doc.forked_from ? [addToForkIndex(doc.forked_from, doc.id, doc.created_at, keyring)] : [])
 	]);
 	return doc;
 }

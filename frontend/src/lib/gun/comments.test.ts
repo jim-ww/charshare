@@ -61,7 +61,7 @@ describe('postComment / getCommentsForCharacter', () => {
 		// getCommentsForCharacter is what has to catch this.
 		const { createSignedPointerIndex } = await import('./signedIndex');
 		const commentIndex = createSignedPointerIndex('comments', () => true);
-		await commentIndex.addToIndex(characterId, comment.id, keyring);
+		await commentIndex.addToIndex(characterId, comment.id, comment.created_at, keyring);
 
 		expect(await getCommentsForCharacter(characterId)).toEqual([]);
 	});

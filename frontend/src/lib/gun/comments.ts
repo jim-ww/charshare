@@ -178,7 +178,7 @@ export async function postComment(
 		},
 		keyring
 	);
-	await commentIndex.addToIndex(characterId, doc.id, keyring);
+	await commentIndex.addToIndex(characterId, doc.id, doc.created_at, keyring);
 	await indexAuthoredComment(doc.id, characterId, keyring);
 	return doc;
 }

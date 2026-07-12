@@ -17,8 +17,15 @@ export function tokenizeName(name: string): string[] {
 }
 
 /** Adds a signed pointer for `charId` under every word token in `name`. */
-export async function addToNameIndex(name: string, charId: CharacterId, keyring: Keyring): Promise<void> {
-	await Promise.all(tokenizeName(name).map((token) => nameIndex.addToIndex(token, charId, keyring)));
+export async function addToNameIndex(
+	name: string,
+	charId: CharacterId,
+	createdAt: number,
+	keyring: Keyring
+): Promise<void> {
+	await Promise.all(
+		tokenizeName(name).map((token) => nameIndex.addToIndex(token, charId, createdAt, keyring))
+	);
 }
 
 /** Searches published characters by name: tokenizes `query` and returns the

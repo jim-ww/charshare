@@ -32,7 +32,7 @@ describe('addToNameIndex / searchByName', () => {
 		const charId = makeCharacterId(keyring.publicKey);
 		const suffix = crypto.randomUUID().slice(0, 8);
 
-		await addToNameIndex(`Aria ${suffix}`, charId, keyring);
+		await addToNameIndex(`Aria ${suffix}`, charId, Date.now(), keyring);
 
 		expect(await searchByName(suffix)).toEqual([charId]);
 		expect(await searchByName(`aria ${suffix}`)).toEqual([charId]);

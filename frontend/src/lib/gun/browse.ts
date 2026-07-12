@@ -2,7 +2,7 @@ import type { Character } from '$lib/types';
 import { getPreferences } from '$lib/state/preferences.svelte';
 import { getCharacter, listCharacterIdsByAuthor } from './characters';
 import { getTagIndex, getTagIndexBucket, NETWORK_INDEX_TAG } from './tags';
-import { getReadWindowSize } from './signedIndex';
+import { getReadWindowSize, type IndexEntry } from './signedIndex';
 import { searchByName } from './names';
 import { getUsernameClaim } from './usernames';
 import { getForkIndex } from './forks';
@@ -36,12 +36,13 @@ export type BrowseSortOrder = 'desc' | 'asc';
  *  signedIndex.ts's read window — 0 is the current month, walked forward
  *  for `desc`, or the oldest month in the window (see
  *  signedIndex.ts:getReadWindowSize), walked backward — for `asc`), and any
- *  already-resolved characters left over from a bucket that didn't wholly
- *  fit in the previous page. `null` means fully exhausted. */
+ *  already-sorted pointer entries left over from a batch that didn't wholly
+ *  fit in the previous page — not yet resolved into full `Character`
+ *  documents (see {@link browseNetworkPage}). `null` means fully exhausted. */
 export interface BrowseCursor {
 	order: BrowseSortOrder;
 	bucketIndex: number;
-	leftover: Character[];
+	leftover: IndexEntry[];
 }
 
 /** How many buckets to read per round — a middle ground between reading one
@@ -62,12 +63,19 @@ const BUCKET_BATCH_SIZE = 4;
  *  buckets (monthly — see signedIndex.ts) a batch at a time (see
  *  {@link BUCKET_BATCH_SIZE}) and stopping as soon as a page's worth of
  *  characters is filled, instead of eagerly reading every bucket in the
- *  window on every call. Each batch's ids are resolved and sorted together
- *  (pointers carry no timestamp, so exact order is only knowable after
- *  resolving via getCharacter() — the expensive, signature-verifying part
- *  this bounds to roughly what's shown), then handed out `pageSize` at a
- *  time. `desc` walks newest-month-first, `asc` walks oldest-month-first
- *  from the edge of the read window.
+ *  window on every call. Sorting happens on the pointer entries themselves —
+ *  `created_at` is denormalized onto each signed pointer (see
+ *  signedIndex.ts:IndexEntry) specifically so a batch, even one spanning a
+ *  bucket with far more entries than one page needs, can be sorted and
+ *  sliced to exactly `pageSize` *before* paying the expensive part
+ *  (resolveIndex: fetching + signature-verifying the actual `Character`
+ *  documents via getCharacter). Without this, a single popular month's
+ *  bucket would force resolving every character published that month just
+ *  to show one page — this is what keeps the per-page cost bounded by
+ *  `pageSize` regardless of how large any individual bucket grows.
+ *
+ *  `desc` walks newest-month-first, `asc` walks oldest-month-first from the
+ *  edge of the read window.
  *
  *  Pass the previous call's returned cursor to continue (its own `order`
  *  takes precedence over the `order` argument, which only matters for
@@ -97,15 +105,22 @@ export async function browseNetworkPage(
 			const batches = await Promise.all(
 				batchIndexes.map((i) => getTagIndexBucket(NETWORK_INDEX_TAG, i))
 			);
-			const ids = batches.flatMap((b) => b ?? []);
-			const resolved = await resolveIndex(ids);
-			pool = resolved.sort((a, b) =>
-				effectiveOrder === 'desc' ? b.created_at - a.created_at : a.created_at - b.created_at
+			const entries = batches.flatMap((b) => b ?? []);
+			pool = entries.sort((a, b) =>
+				effectiveOrder === 'desc' ? b.createdAt - a.createdAt : a.createdAt - b.createdAt
 			);
 			if (pool.length === 0) continue;
 		}
 		const take = pageSize - characters.length;
-		characters.push(...pool.slice(0, take));
+		const slice = pool.slice(0, take);
+		const resolved = await resolveIndex(slice.map((entry) => entry.docId));
+		// Preserve the pointer-sorted order — resolveIndex's own filtering
+		// (blocked/deleted) can drop entries but never reorders what's left.
+		const byId = new Map(resolved.map((c) => [c.id, c]));
+		for (const entry of slice) {
+			const character = byId.get(entry.docId);
+			if (character) characters.push(character);
+		}
 		pool = pool.slice(take);
 	}
 
