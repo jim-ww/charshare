@@ -110,6 +110,7 @@
 	"char_list_filter_network_tooltip": "Only characters from other authors that you haven't saved.",
 	"char_list_show_hidden": "Show hidden",
 	"char_list_show_nsfw": "Show NSFW",
+	"char_list_hide_forks": "Hide forks",
 	"char_list_loading": "Loading…",
 	"char_list_empty_mine": "You haven't created any characters yet.",
 	"char_list_empty_all": "No characters found.",

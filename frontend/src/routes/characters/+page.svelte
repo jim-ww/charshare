@@ -37,6 +37,7 @@
 	type ListFilter = "all" | "mine" | "saved" | "published" | "network";
 	let listFilter = $state<ListFilter>("all");
 	let showHidden = $state(false);
+	let hideForks = $state(false);
 	const showNsfw = $derived(getPreferences().showNsfw);
 	const networkResults = $derived(getNetworkResults());
 	// Tracks the last "?q="/"?tags=" we actually ran a search for, so
@@ -153,6 +154,9 @@
 		if (!showNsfw) {
 			list = list.filter((c) => !c.nsfw);
 		}
+		if (hideForks) {
+			list = list.filter((c) => c.forked_from === null);
+		}
 		return list;
 	});
 </script>
@@ -266,6 +270,16 @@
 				/>
 				<span class="label-text"
 					>{m.char_list_show_nsfw()}</span
+				>
+			</label>
+			<label class="label cursor-pointer gap-2 py-0">
+				<input
+					type="checkbox"
+					class="toggle toggle-sm"
+					bind:checked={hideForks}
+				/>
+				<span class="label-text"
+					>{m.char_list_hide_forks()}</span
 				>
 			</label>
 		</div>
