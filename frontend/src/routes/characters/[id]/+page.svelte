@@ -209,6 +209,10 @@
 		return `${date.toLocaleDateString(undefined, { month: "short", day: "numeric" })}, ${time}`;
 	}
 
+	function chatLastMessageAt(chat: (typeof pastChats)[number]): number {
+		return Math.max(chat.created_at, ...chat.messages.map((m) => m.updated_at));
+	}
+
 	let profileModalPubkey = $state<string | null>(null);
 
 	async function handleStartChat() {
@@ -726,13 +730,16 @@
 						</h2>
 						<ul class="flex flex-col gap-1">
 							{#each pastChats as chat (chat.id)}
-								<li>
+								<li class="flex items-baseline gap-2">
 									<a
 										class="link link-hover text-sm"
 										href={resolve('/chats/[id]', { id: chat.id })}
 									>
 										{chat.name}
 									</a>
+									<span class="text-xs opacity-60">
+										{formatCommentTime(chatLastMessageAt(chat))}
+									</span>
 								</li>
 							{/each}
 						</ul>
