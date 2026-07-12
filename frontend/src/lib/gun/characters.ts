@@ -2,7 +2,7 @@ import type { Character, CharacterDraft, CharacterId, Keyring, PubKey, Verified 
 import { signDocument } from '$lib/crypto/sign';
 import { getKeyring, requireAccount } from '$lib/state/auth.svelte';
 import { getDocument, putDocument, subscribeDocument, subscribeDocumentWithRetry, type Validator } from './document';
-import { authorNode, ensureGunUserAuth, getGun, ownNode } from './client';
+import { authorNode, ensureGunUserAuth, getGun, gunPeerReady, ownNode } from './client';
 import { addToTagIndex, NETWORK_INDEX_TAG } from './tags';
 import { addToNameIndex } from './names';
 import { addToForkIndex } from './forks';
@@ -77,6 +77,42 @@ async function signAndPublish(draft: Omit<Character, 'signature' | 'updated_at'>
 export function getCharacter(id: CharacterId): Promise<Verified<Character>> {
 	const { author, uuid } = parseCharacterId(id);
 	return getDocument(authorNode(getGun(), author, ['characters', uuid]), isCharacter, pubkeyOf);
+}
+
+// Same "no explicit done-enumerating signal" wait GUN gives everywhere else
+// (see signedIndex.ts) — resolves once no new child has shown up within the
+// timeout window instead of any positive completion event.
+const ENUMERATE_TIMEOUT_MS = 1000;
+
+/** Lists every character id under `author`'s own protected space — a native
+ *  per-author index that already exists implicitly (each author's
+ *  characters live under their own GUN user-space graph, see
+ *  client.ts:authorNode), just via direct enumeration instead of a separate
+ *  index. Ids only, unverified — callers resolve/verify each one themselves
+ *  (see browse.ts:resolveIndex), same as every other id-list this app
+ *  produces. Used by browseByAuthor for a targeted per-author lookup instead
+ *  of filtering the entire network feed client-side. */
+export function listCharacterIdsByAuthor(author: PubKey): Promise<CharacterId[]> {
+	return new Promise((resolve) => {
+		const uuids = new Set<string>();
+		let settled = false;
+
+		function finish() {
+			if (settled) return;
+			settled = true;
+			resolve(Array.from(uuids).map((uuid) => `${author}:${uuid}`));
+		}
+
+		gunPeerReady().then(() => {
+			if (settled) return;
+			setTimeout(finish, ENUMERATE_TIMEOUT_MS);
+			authorNode(getGun(), author, ['characters'])
+				.map()
+				.once((_data: unknown, uuid: string) => {
+					if (!settled) uuids.add(uuid);
+				});
+		});
+	});
 }
 
 export function subscribeCharacter(id: CharacterId, onUpdate: (result: Verified<Character>) => void): () => void {

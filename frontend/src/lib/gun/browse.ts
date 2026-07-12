@@ -1,6 +1,6 @@
 import type { Character } from '$lib/types';
 import { getPreferences } from '$lib/state/preferences.svelte';
-import { getCharacter } from './characters';
+import { getCharacter, listCharacterIdsByAuthor } from './characters';
 import { getTagIndex, NETWORK_INDEX_TAG } from './tags';
 import { searchByName } from './names';
 import { getUsernameClaim } from './usernames';
@@ -44,11 +44,6 @@ export async function browseByName(query: string): Promise<Character[]> {
 	return resolveIndex(ids);
 }
 
-/** Fetches published characters authored by `identifier`, which may be either
- *  a claimed username (see usernames.ts) or a raw author pubkey — the "@name"
- *  / "@pubkey" search syntax. There's no per-author character index yet, so
- *  this filters the full network feed rather than a targeted lookup; fine at
- *  today's scale, and it stays correct (just not fast) if that ever changes. */
 /** Fetches published characters forked from `id` — the "remixes of this
  *  character" list (see gun/forks.ts). Only ever contains forks their author
  *  chose to publish; a local-only fork draft never shows up here. */
@@ -57,11 +52,16 @@ export async function browseForksOf(id: string): Promise<Character[]> {
 	return resolveIndex(ids);
 }
 
+/** Fetches published characters authored by `identifier`, which may be either
+ *  a claimed username (see usernames.ts) or a raw author pubkey — the "@name"
+ *  / "@pubkey" search syntax. A targeted per-author lookup (see
+ *  characters.ts:listCharacterIdsByAuthor) rather than filtering the whole
+ *  network feed client-side. */
 export async function browseByAuthor(identifier: string): Promise<Character[]> {
 	const trimmed = identifier.trim();
 	if (!trimmed) return [];
 	const claim = await getUsernameClaim(trimmed);
 	const authorPub = claim.ok && !claim.doc.deleted ? claim.doc.authorPub : trimmed;
-	const all = await browseNetwork();
-	return all.filter((c) => c.author === authorPub);
+	const ids = await listCharacterIdsByAuthor(authorPub);
+	return resolveIndex(ids);
 }
