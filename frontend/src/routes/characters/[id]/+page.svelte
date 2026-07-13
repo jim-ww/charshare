@@ -718,6 +718,12 @@
 							href={resolve('/characters/[id]/edit', { id: character.id })}
 							>{m.char_detail_edit()}</a
 						>
+						<button
+							class="btn btn-sm btn-ghost"
+							type="button"
+							onclick={handleFork}
+							>{m.char_detail_fork()}</button
+						>
 						{#if localOnly}
 							<button
 								class="btn btn-sm btn-primary"
