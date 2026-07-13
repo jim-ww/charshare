@@ -150,11 +150,7 @@
 			);
 		}
 		if (!showHidden) {
-			list = list.filter(
-				(c) =>
-					c.author === me ||
-					!isCharacterHidden(c.id),
-			);
+			list = list.filter((c) => !isCharacterHidden(c.id));
 		}
 		if (!showNsfw) {
 			list = list.filter((c) => !c.nsfw);

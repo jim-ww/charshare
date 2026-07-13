@@ -112,18 +112,18 @@
 			</button>
 		{/if}
 	</div>
-	{#if !isMine}
-		<div class="absolute right-2 top-2 z-10 flex gap-1">
-			<button
-				type="button"
-				class="btn btn-xs btn-circle"
-				title={hidden
-					? m.char_card_unhide()
-					: m.char_card_hide()}
-				onclick={toggleHidden}
-			>
-				{hidden ? "🙈" : "👁"}
-			</button>
+	<div class="absolute right-2 top-2 z-10 flex gap-1">
+		<button
+			type="button"
+			class="btn btn-xs btn-circle"
+			title={hidden
+				? m.char_card_unhide()
+				: m.char_card_hide()}
+			onclick={toggleHidden}
+		>
+			{hidden ? "🙈" : "👁"}
+		</button>
+		{#if !isMine}
 			<button
 				type="button"
 				class="btn btn-xs btn-circle"
@@ -134,8 +134,8 @@
 			>
 				{authorBlocked ? "🔓" : "🚫"}
 			</button>
-		</div>
-	{/if}
+		{/if}
+	</div>
 	<div class="card-body items-center gap-1 p-3 text-center">
 		<figure
 			class="h-44 w-44 overflow-hidden rounded-lg bg-base-300"
