@@ -319,15 +319,18 @@ export async function importDataFile(file: File): Promise<ImportSummary[]> {
 	}
 	const buffer = new Uint8Array(await file.arrayBuffer());
 	const entries = unzipSync(buffer);
-	// Account first, if present — characters/personas imported afterward get
-	// signed under whichever keyring is active at that point.
-	const names = Object.keys(entries).sort((a, b) =>
-		a.toLowerCase().includes('account') === b.toLowerCase().includes('account')
-			? 0
-			: a.toLowerCase().includes('account')
-				? -1
-				: 1
-	);
+	// Preferences first, if present — it's what applies the user's own relay
+	// set (see getActiveRelays), and every network call made while restoring
+	// later categories (characters' existence checks, relay-list lookups,
+	// etc.) needs that in place first. Account next — characters/personas
+	// imported afterward get signed under whichever keyring is active.
+	const rank = (name: string): number => {
+		const lower = name.toLowerCase();
+		if (lower.includes('preferences')) return 0;
+		if (lower.includes('account')) return 1;
+		return 2;
+	};
+	const names = Object.keys(entries).sort((a, b) => rank(a) - rank(b));
 	const summaries: ImportSummary[] = [];
 	for (const name of names) {
 		summaries.push(await importOne(name, strFromU8(entries[name])));
