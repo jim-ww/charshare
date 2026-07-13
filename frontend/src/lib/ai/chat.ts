@@ -22,6 +22,15 @@ import { estimateTokens, trimLeadingTokens } from "./tokenEstimate";
 
 const MAX_CONTINUATIONS = 3;
 
+/** Our token estimate (see tokenEstimate.ts) is a real BPE tokenizer, but not
+ *  necessarily *the* provider's own tokenizer, and doesn't account for the
+ *  handful of extra tokens each chat API adds per message for role/turn
+ *  delimiters on top of the content itself — both mean the real request can
+ *  come in a bit higher than our estimate. Reserve this fraction of
+ *  `contextSize` as headroom on top of `reservedForOutput` so a close
+ *  estimate still doesn't overflow the provider's own count. */
+const SAFETY_MARGIN_RATIO = 0.1;
+
 /** Trims history from the request sent to the AI provider when it would
  *  overflow the provider's configured context_size — never touches the
  *  actual chat (only the ephemeral array about to be sent), and never drops
@@ -37,7 +46,7 @@ export function fitToContext(
 	reservedForOutput: number,
 ): CompletionMessage[] {
 	if (contextSize <= 0) return messages;
-	const budget = Math.max(0, contextSize - reservedForOutput);
+	const budget = Math.max(0, contextSize - reservedForOutput - Math.ceil(contextSize * SAFETY_MARGIN_RATIO));
 	const result = messages.map((m) => ({ ...m }));
 	let total = result.reduce((sum, m) => sum + estimateTokens(m.content), 0);
 
