@@ -563,6 +563,12 @@
 							)}
 						</button>
 					</div>
+					<div class="mt-1 flex flex-wrap gap-x-2 text-xs opacity-60">
+						<span>{m.char_detail_created({ time: formatCommentTime(character.created_at) })}</span>
+						{#if character.updated_at !== character.created_at}
+							<span>{m.char_detail_updated({ time: formatCommentTime(character.updated_at) })}</span>
+						{/if}
+					</div>
 					{#if character.tags.length || character.language}
 						<div
 							class="mt-4 flex flex-wrap gap-1"

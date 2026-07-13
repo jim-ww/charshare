@@ -134,6 +134,8 @@
 	"char_detail_deleted_remote_badge": "Deleted on remote",
 	"char_detail_from_network": "Network",
 	"char_detail_by": "By:",
+	"char_detail_created": "Created {time}",
+	"char_detail_updated": "Updated {time}",
 	"char_detail_continue_latest_chat": "Continue latest chat",
 	"char_detail_start_new_chat": "Start new chat",
 	"char_detail_import_chat": "Import chat",
