@@ -43,8 +43,15 @@ export async function publishEvent(template: EventTemplate, keyring: Keyring, re
  *  here: the signature check is uniform and kind-agnostic (the pubkey is
  *  part of the event itself). */
 export async function queryEvents(filter: Filter, relays: string[]): Promise<NostrEvent[]> {
-	const connected = await poolConnected(relays);
-	if (!connected) return [];
+	// poolConnected's own timeout is just an optimistic "give the handshake a
+	// moment" wait — real relays routinely take longer than that to connect,
+	// so its result must never gate whether we actually query: doing so would
+	// make queryEvents silently return nothing for any relay that's merely
+	// slow rather than truly unreachable (this broke browsing/search/profile
+	// lookups network-wide once poolConnected's per-relay-set cache started
+	// remembering that false verdict). The QUERY_TIMEOUT_MS race below is
+	// what actually guards against a stalled relay hanging the caller.
+	await poolConnected(relays);
 	const pool = getPool();
 	const events = await Promise.race([
 		pool.querySync(relays, filter),
