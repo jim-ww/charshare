@@ -1,4 +1,4 @@
-import type { Event as NostrEvent } from 'nostr-tools';
+import { nip19, type Event as NostrEvent } from 'nostr-tools';
 import type { Character, CharacterId } from '$lib/types';
 import { getActiveRelays, getPreferences } from '$lib/state/preferences.svelte';
 import { eventToCharacter, listCharacterIdsByAuthor, getCharacter } from './characters';
@@ -52,15 +52,30 @@ export async function browseForksOf(id: CharacterId): Promise<Character[]> {
 	return parseAndFilter(events);
 }
 
-/** Fetches published characters authored by `identifier`, which may be either
- *  a claimed username or a raw author pubkey — the "@name" / "@pubkey" search
- *  syntax. A targeted per-author lookup (relay `authors` filter) rather than
- *  filtering the whole network feed client-side. */
+/** Decodes an `npub1...` (NIP-19 bech32) identifier to a hex pubkey — the
+ *  format most Nostr clients actually surface for copy/paste, as opposed to
+ *  raw hex. Returns the input unchanged if it isn't an npub (a raw hex
+ *  pubkey, or something that'll simply fail to resolve as one). */
+function decodeIfNpub(identifier: string): string {
+	if (!identifier.startsWith('npub1')) return identifier;
+	try {
+		const decoded = nip19.decode(identifier);
+		return decoded.type === 'npub' ? decoded.data : identifier;
+	} catch {
+		return identifier;
+	}
+}
+
+/** Fetches published characters authored by `identifier`, which may be a
+ *  claimed username, a raw hex author pubkey, or an `npub1...`-encoded one —
+ *  the "@name" / "@pubkey" / "@npub" search syntax. A targeted per-author
+ *  lookup (relay `authors` filter) rather than filtering the whole network
+ *  feed client-side. */
 export async function browseByAuthor(identifier: string): Promise<Character[]> {
 	const trimmed = identifier.trim();
 	if (!trimmed) return [];
 	const claim = await getUsernameClaim(trimmed);
-	const authorPub = claim.ok && !claim.doc.deleted ? claim.doc.authorPub : trimmed;
+	const authorPub = claim.ok && !claim.doc.deleted ? claim.doc.authorPub : decodeIfNpub(trimmed);
 	const ids = await listCharacterIdsByAuthor(authorPub);
 	const resolved = await Promise.all(ids.map((id) => getCharacter(id)));
 	const { blockedTags, blockedAuthors } = getPreferences();

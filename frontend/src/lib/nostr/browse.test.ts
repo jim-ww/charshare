@@ -231,4 +231,15 @@ describe('browseByAuthor', () => {
 
 		expect(results.map((c) => c.id)).toEqual([created.id]);
 	});
+
+	it('decodes an npub1... identifier to the same author as its raw hex pubkey', async () => {
+		const keyring = generateKeyring();
+		__setKeyringForTests(keyring);
+		const created = await publishCharacter({ ...baseFields, name: 'ByNpub', tags: [] });
+
+		const { nip19 } = await import('nostr-tools');
+		const results = await browseByAuthor(nip19.npubEncode(keyring.publicKey));
+
+		expect(results.map((c) => c.id)).toEqual([created.id]);
+	});
 });
