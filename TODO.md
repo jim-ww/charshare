@@ -1,5 +1,4 @@
 - feat(core): sort characters/comments by like count (NIP-25 likes are implemented — see nostr/reactions.ts — but popularity sorting itself was explicitly deferred while migrating to Nostr; NIP-45 COUNT isn't universally supported, so this likely means scoping "most liked" to a bounded recent window rather than true all-time global popularity, see nostr/browse.ts's doc comments)
-- character edit: add import button as on character new page
 - introduce keep pinned/keep published functionality? instead of manual 'republish'(unless its local, but not published) button
 - local only saved chars appear as they are accessible on the network and dont prompt before deletion
 - feat: add some characters from other platforms
