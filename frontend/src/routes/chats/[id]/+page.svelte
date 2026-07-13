@@ -21,6 +21,7 @@
 	import ChatCharacterRecovery from "$lib/components/ChatCharacterRecovery.svelte";
 	import { getPreferences } from "$lib/state/preferences.svelte";
 	import { initPersonas } from "$lib/state/personas.svelte";
+	import { getEditingMessageId } from "$lib/state/chatEditing.svelte";
 	import { m } from "$lib/paraglide/messages.js";
 
 	untrack(() => void initPersonas());
@@ -42,10 +43,13 @@
 		if (chat && charactersReady) ensureCharacterLoaded(chat.character_id);
 	});
 
-	// Re-run whenever a message is added and scroll it into view.
+	// Re-run whenever a message is added and scroll it into view — but not
+	// while a message is being edited, since saving an edit elsewhere in the
+	// thread updates `activeMessages` too, and jumping to the bottom would
+	// yank the view away from whatever message the user is actively editing.
 	$effect(() => {
 		const lastMessage = activeMessages[activeMessages.length - 1];
-		if (!lastMessage || !scrollContainer) return;
+		if (!lastMessage || !scrollContainer || getEditingMessageId() !== null) return;
 		untrack(() => {
 			scrollContainer?.scrollTo({
 				top: scrollContainer.scrollHeight,
