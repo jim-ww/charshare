@@ -4,7 +4,7 @@
 	import { goto } from "$app/navigation";
 	import { resolve } from "$app/paths";
 	import { MAX_COMMENT_LENGTH, type Character, type Comment } from "$lib/types";
-	import { subscribeCharacterWithRetry } from "$lib/nostr/characters";
+	import { getCharacter, subscribeCharacterWithRetry } from "$lib/nostr/characters";
 	import {
 		getCurrentUser,
 		isAccountRegistered,
@@ -93,10 +93,20 @@
 	// really answers, instead of stopping immediately because we already had
 	// something to show from the local saved-characters cache.
 	let synced = false;
+	// Whether `id` currently resolves on any relay at all — separate from
+	// `character.deleted` (the author's own tombstone flag), since a saved
+	// character the author simply never published, or one that's no longer
+	// reachable on any relay we know of, needs the same "unsave this and
+	// it's gone for good" warning without ever having that flag set. The
+	// live subscription above only ever fires for events it actually
+	// receives (see subscribeCharacterWithRetry), so it can't signal
+	// "not found" itself — a one-shot check is needed alongside it.
+	let reachable = $state(true);
 
 	$effect(() => {
 		const currentId = id;
 		synced = false;
+		reachable = true;
 		// Show a previously-saved copy instantly instead of always starting
 		// from a blank "Loading…" state — the live subscription below still
 		// runs and refreshes it, but a character we've already seen (viewed,
@@ -117,6 +127,12 @@
 			return;
 		}
 
+		untrack(() => {
+			void getCharacter(currentId).then((result) => {
+				if (currentId === id) reachable = result.ok;
+			});
+		});
+
 		const unsubscribe = untrack(() =>
 			subscribeCharacterWithRetry(
 				currentId,
@@ -125,6 +141,7 @@
 						character = result.doc;
 						synced = true;
 						notFound = false;
+						reachable = true;
 					} else if (!character) {
 						// Only flag not-found while we have nothing to show yet — a relay's
 						// `.on()` can fire once with stale/missing local data before a
@@ -245,6 +262,18 @@
 				const confirmed = await confirmDialog({
 					title: m.char_detail_unsave_deleted_confirm_title(),
 					message: m.char_detail_unsave_deleted_confirm_message(),
+					confirmLabel: m.char_card_unsave(),
+					danger: true,
+				});
+				if (!confirmed) return;
+			} else if (!(await getCharacter(character.id)).ok) {
+				// Not deleted, but not reachable on any relay right now either
+				// (e.g. saved from an out-of-band source, or the author simply
+				// never published it) — same irrecoverable-loss situation as the
+				// deleted case above, just without the author's own delete flag.
+				const confirmed = await confirmDialog({
+					title: m.char_detail_unsave_unreachable_confirm_title(),
+					message: m.char_detail_unsave_unreachable_confirm_message(),
 					confirmLabel: m.char_card_unsave(),
 					danger: true,
 				});
@@ -543,9 +572,9 @@
 								{m.char_detail_from_network()}
 							{/if}
 						</span>
-						{#if character.deleted}
+						{#if character.deleted || (!isMine && !reachable)}
 							<span class="badge badge-sm badge-warning align-middle">
-								{m.char_detail_deleted_remote_badge()}
+								{m.char_detail_unreachable_badge()}
 							</span>
 						{/if}
 					</h1>

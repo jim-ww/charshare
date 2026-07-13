@@ -5,6 +5,7 @@
 		isCharacterInMyCharacters,
 		isCharacterLocalOnly,
 	} from "$lib/state/characters.svelte";
+	import { getCharacter } from "$lib/nostr/characters";
 	import {
 		isCharacterSaved,
 		saveCharacterLocally,
@@ -49,6 +50,18 @@
 				const confirmed = await confirmDialog({
 					title: m.char_detail_unsave_deleted_confirm_title(),
 					message: m.char_detail_unsave_deleted_confirm_message(),
+					confirmLabel: m.char_card_unsave(),
+					danger: true,
+				});
+				if (!confirmed) return;
+			} else if (!(await getCharacter(character.id)).ok) {
+				// Not deleted, but not reachable on any relay right now either
+				// (e.g. saved from an out-of-band source, or the author simply
+				// never published it) — same irrecoverable-loss situation as the
+				// deleted case above, just without the author's own delete flag.
+				const confirmed = await confirmDialog({
+					title: m.char_detail_unsave_unreachable_confirm_title(),
+					message: m.char_detail_unsave_unreachable_confirm_message(),
 					confirmLabel: m.char_card_unsave(),
 					danger: true,
 				});
