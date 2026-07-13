@@ -10,6 +10,14 @@ import { getPool, poolConnected } from './pool';
  *  moves on — an optimistic, non-blocking write stance. */
 const PUBLISH_TIMEOUT_MS = 3000;
 
+/** SimplePool.querySync only resolves once every relay's subscription closes
+ *  (EOSE or its own internal timeout) — if a single relay stalls at the
+ *  connection level (e.g. accepts a handshake but never completes it), the
+ *  whole query can hang forever with no error. This timeout keeps that from
+ *  wedging callers (like account import, which queries once per restored
+ *  character) — falling back to whatever events were already collected. */
+const QUERY_TIMEOUT_MS = 5000;
+
 /** Signs `template` and publishes it to `relays`, resolving once any relay
  *  acks (or after PUBLISH_TIMEOUT_MS, whichever comes first). Returns the
  *  signed event so callers can use its id/tags immediately without a
@@ -35,9 +43,13 @@ export async function publishEvent(template: EventTemplate, keyring: Keyring, re
  *  here: the signature check is uniform and kind-agnostic (the pubkey is
  *  part of the event itself). */
 export async function queryEvents(filter: Filter, relays: string[]): Promise<NostrEvent[]> {
-	await poolConnected(relays);
+	const connected = await poolConnected(relays);
+	if (!connected) return [];
 	const pool = getPool();
-	const events = await pool.querySync(relays, filter);
+	const events = await Promise.race([
+		pool.querySync(relays, filter),
+		new Promise<NostrEvent[]>((resolve) => setTimeout(() => resolve([]), QUERY_TIMEOUT_MS))
+	]);
 	return events.filter(verifySignedEvent);
 }
 

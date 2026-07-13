@@ -19,16 +19,38 @@ export function getPool(): SimplePool {
 	return instance;
 }
 
+/** How long a "none of these relays are reachable" result is trusted before
+ *  re-attempting a real connection. Without this, a caller that checks
+ *  connectivity once per item (e.g. restoring N characters from a data
+ *  archive) pays the full connect timeout on every single item even though
+ *  the relay set hasn't changed and was already known to be unreachable —
+ *  turning an offline import into an O(N) wait instead of O(1). */
+const CONNECTIVITY_CACHE_MS = 10000;
+
+let connectivityCache: { relaysKey: string; connected: boolean; checkedAt: number } | null = null;
+
 /** Resolves once at least one relay in `relays` has connected, or after
  *  `timeoutMs`, whichever comes first — so a cold-started reader can give
  *  the WebSocket handshake a moment to finish before issuing a query,
- *  instead of racing it and coming back empty. */
-export function poolConnected(relays: string[] = getActiveRelays(), timeoutMs = 1500): Promise<void> {
+ *  instead of racing it and coming back empty. Returns whether a relay was
+ *  actually reached, so callers can skip further network calls entirely
+ *  when nothing is reachable rather than attempting them anyway. */
+export async function poolConnected(relays: string[] = getActiveRelays(), timeoutMs = 1500): Promise<boolean> {
+	const relaysKey = [...relays].sort().join(',');
+	if (
+		connectivityCache &&
+		connectivityCache.relaysKey === relaysKey &&
+		Date.now() - connectivityCache.checkedAt < CONNECTIVITY_CACHE_MS
+	) {
+		return connectivityCache.connected;
+	}
 	const pool = getPool();
-	const connected = Promise.any(relays.map((url) => pool.ensureRelay(url).then(() => undefined))).catch(
-		() => undefined
-	);
-	return Promise.race([connected, new Promise<void>((resolve) => setTimeout(resolve, timeoutMs))]);
+	const connected = await Promise.race([
+		Promise.any(relays.map((url) => pool.ensureRelay(url).then(() => true))).catch(() => false),
+		new Promise<boolean>((resolve) => setTimeout(() => resolve(false), timeoutMs))
+	]);
+	connectivityCache = { relaysKey, connected, checkedAt: Date.now() };
+	return connected;
 }
 
 /** In-memory cache of each author's declared NIP-65 relay list (kind 10002),
@@ -50,4 +72,5 @@ export function setCachedRelayList(pubkey: PubKey, relays: { read: string[]; wri
 export function __setPoolForTests(pool: SimplePool | null): void {
 	instance = pool;
 	relayListCache.clear();
+	connectivityCache = null;
 }
