@@ -8,6 +8,7 @@
 		addMessage,
 		getActivePath,
 		createChat,
+		deleteChat,
 	} from "$lib/state/chats.svelte";
 	import {
 		resolveCharacter,
@@ -70,6 +71,20 @@
 		void goto(resolve('/chats/[id]', { id: chatId }));
 	}
 	const chatOpacity = $derived(getPreferences().chatOpacity / 100);
+
+	// A chat that's left with nothing but its auto-posted greeting (or no
+	// messages at all) never became a real conversation — clean it up on the
+	// way out rather than leaving an empty entry in the sidebar forever.
+	// Effect cleanup (not onDestroy) is required here since navigating between
+	// two chats reuses this same +page.svelte instance rather than
+	// destroying/recreating it.
+	$effect(() => {
+		const id = chatId;
+		return () => {
+			const leftChat = getChat(id);
+			if (leftChat && leftChat.messages.length <= 1) void deleteChat(id);
+		};
+	});
 
 	async function handleNewChat() {
 		if (!chat || !character) return;
