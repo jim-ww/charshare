@@ -7,6 +7,7 @@
 		getChat,
 		addMessage,
 		getActivePath,
+		createChat,
 	} from "$lib/state/chats.svelte";
 	import {
 		resolveCharacter,
@@ -70,6 +71,12 @@
 	}
 	const chatOpacity = $derived(getPreferences().chatOpacity / 100);
 
+	async function handleNewChat() {
+		if (!chat || !character) return;
+		const newChat = await createChat(chat.character_id, character.name, chat.persona_id);
+		await goto(resolve("/chats/[id]", { id: newChat.id }));
+	}
+
 	// A brand-new chat has no messages yet — post one of the character's
 	// greetings (picked at random when alternates exist) as the opening
 	// message so a fresh chat isn't just an empty composer.
@@ -121,14 +128,24 @@
 		<div class="flex h-full min-w-0 flex-1 flex-col">
 			<div class="flex flex-wrap items-center justify-between gap-1">
 				<ChatThreadSwitcher {chat} />
-				<button
-					class="btn btn-sm m-2 ml-auto gap-2"
-					type="button"
-					onclick={() =>
-						(sidebarOpen = !sidebarOpen)}
-				>
-					⚙ Chat settings
-				</button>
+				<div class="m-2 ml-auto flex gap-2">
+					<button
+						class="btn btn-sm"
+						type="button"
+						disabled={!character}
+						onclick={handleNewChat}
+					>
+						+ {m.chat_new_chat_button()}
+					</button>
+					<button
+						class="btn btn-sm gap-2"
+						type="button"
+						onclick={() =>
+							(sidebarOpen = !sidebarOpen)}
+					>
+						⚙ Chat settings
+					</button>
+				</div>
 			</div>
 			<div class="relative flex-1 overflow-hidden">
 				<div

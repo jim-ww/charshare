@@ -317,6 +317,7 @@
 	"shared_chat_you": "You",
 	"shared_chat_open_app": "Open Charshare",
 
+	"chat_new_chat_button": "New chat",
 	"chat_thread_switcher_back": "Back",
 	"chat_thread_switcher_position": "Conversation {current} of {total}",
 
