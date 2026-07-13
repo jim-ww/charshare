@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import type { Chat, CharacterId } from '$lib/types';
-	import { getChats, deleteChat, renameChat, exportChat } from '$lib/state/chats.svelte';
+	import { getChats, deleteChat, renameChat, exportChat, chatLastMessageAt } from '$lib/state/chats.svelte';
 	import { resolveCharacter, ensureCharacterLoaded } from '$lib/state/characterCache.svelte';
 	import { isCharactersReady } from '$lib/state/characters.svelte';
 	import { getPersona, personaDisplayName } from '$lib/state/personas.svelte';
@@ -21,7 +21,11 @@
 
 	// Groups chats by character so a character with many conversations shows
 	// one entry (most-recent first) with an expander, rather than flooding
-	// the list with duplicates — see build-order design discussion.
+	// the list with duplicates — see build-order design discussion. Groups
+	// themselves are then ordered by their most recent activity (not
+	// insertion order), so a character you just replied to jumps back to the
+	// top of the list — but never interleaved with another character's chats
+	// in between, unlike a flat sort of every chat individually would.
 	const groups = $derived.by(() => {
 		const byCharacter = new Map<CharacterId, Chat[]>();
 		for (const chat of chats) {
@@ -30,9 +34,11 @@
 			byCharacter.set(chat.character_id, list);
 		}
 		for (const list of byCharacter.values()) {
-			list.sort((a, b) => b.created_at - a.created_at);
+			list.sort((a, b) => chatLastMessageAt(b) - chatLastMessageAt(a));
 		}
-		return [...byCharacter.entries()];
+		return [...byCharacter.entries()].sort(
+			([, a], [, b]) => chatLastMessageAt(b[0]) - chatLastMessageAt(a[0])
+		);
 	});
 
 	$effect(() => {

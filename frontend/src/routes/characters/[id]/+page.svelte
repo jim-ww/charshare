@@ -32,6 +32,7 @@
 		unsaveCharacter,
 	} from "$lib/state/savedCharacters.svelte";
 	import {
+		chatLastMessageAt,
 		createChat,
 		getChats,
 		importChat,
@@ -182,24 +183,8 @@
 	);
 	const latestChat = $derived(
 		pastChats.reduce<(typeof pastChats)[number] | null>(
-			(latest, chat) => {
-				const chatTime = Math.max(
-					chat.created_at,
-					...chat.messages.map(
-						(m) => m.updated_at,
-					),
-				);
-				const latestTime = latest
-					? Math.max(
-							latest.created_at,
-							...latest.messages.map(
-								(m) =>
-									m.updated_at,
-							),
-						)
-					: -Infinity;
-				return chatTime > latestTime ? chat : latest;
-			},
+			(latest, chat) =>
+				chatLastMessageAt(chat) > (latest ? chatLastMessageAt(latest) : -Infinity) ? chat : latest,
 			null,
 		),
 	);
@@ -233,10 +218,6 @@
 		const time = date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
 		if (isToday) return time;
 		return `${date.toLocaleDateString(undefined, { month: "short", day: "numeric" })}, ${time}`;
-	}
-
-	function chatLastMessageAt(chat: (typeof pastChats)[number]): number {
-		return Math.max(chat.created_at, ...chat.messages.map((m) => m.updated_at));
 	}
 
 	let profileModalPubkey = $state<string | null>(null);

@@ -22,6 +22,15 @@ export function isChatsReady(): boolean {
 	return ready;
 }
 
+/** Timestamp of the most recent activity in `chat` — its own creation, or any
+ *  message's last edit — whichever is newest. Used to sort chats (and groups
+ *  of a character's chats) by actual recency rather than just `created_at`,
+ *  which would otherwise leave a chat pinned at its original position after a
+ *  fresh reply or edit. */
+export function chatLastMessageAt(chat: Chat): number {
+	return Math.max(chat.created_at, ...chat.messages.map((m) => m.updated_at));
+}
+
 export function initChats(): Promise<void> {
 	if (!browser) return Promise.resolve();
 	if (!initPromise) {

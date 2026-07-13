@@ -3,6 +3,7 @@ import {
 	__setChatsForTests,
 	addChatBackground,
 	addMessage,
+	chatLastMessageAt,
 	createChat,
 	deleteChat,
 	deleteMessage,
@@ -40,6 +41,22 @@ describe('createChat / deleteChat', () => {
 		const chat = await createChat('char-1', 'Test chat');
 		await renameChat(chat.id, 'New name');
 		expect(getChat(chat.id)!.name).toBe('New name');
+	});
+});
+
+describe('chatLastMessageAt', () => {
+	it("is the chat's own created_at when it has no messages yet", async () => {
+		const chat = await createChat('char-1', 'Test chat');
+		expect(chatLastMessageAt(chat)).toBe(chat.created_at);
+	});
+
+	it("reflects a message's edit time, not just the chat's creation time", async () => {
+		const chat = await createChat('char-1', 'Test chat');
+		const message = await addMessage(chat.id, 'user', 'Hello');
+		const edited = await editMessage(chat.id, message.id, 'Hello, edited');
+
+		expect(chatLastMessageAt(getChat(chat.id)!)).toBe(edited!.updated_at);
+		expect(chatLastMessageAt(getChat(chat.id)!)).toBeGreaterThanOrEqual(chat.created_at);
 	});
 });
 
