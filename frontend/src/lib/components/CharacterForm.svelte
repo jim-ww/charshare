@@ -10,7 +10,6 @@
 	import { LANGUAGES } from "$lib/languages";
 	import { PREDEFINED_TAGS } from "$lib/data/tags";
 	import { DEFAULT_SYSTEM_PROMPT } from "$lib/data/defaultSystemPrompt";
-	import { isSystemTag } from "$lib/gun/tags";
 	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
@@ -327,10 +326,6 @@
 				.split(",")
 				.map((t) => t.trim())
 				.filter(Boolean);
-			const systemTag = tags.find(isSystemTag);
-			if (systemTag) {
-				throw new Error(m.char_form_error_system_tag({ tag: systemTag }));
-			}
 
 			const payload: CharacterDraft = {
 				id: initial?.id,

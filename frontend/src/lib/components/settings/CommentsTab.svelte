@@ -4,7 +4,6 @@
 	import { getCurrentUser, isAccountRegistered } from "$lib/state/auth.svelte";
 	import { closeSettings } from "$lib/state/settingsModal.svelte";
 	import {
-		editMyComment,
 		getMyComments,
 		isLoadingMyComments,
 		loadMyComments,
@@ -19,8 +18,6 @@
 	const comments = $derived(getMyComments());
 	const loading = $derived(isLoadingMyComments());
 
-	let editingCommentId = $state<string | null>(null);
-	let commentDraft = $state("");
 	let deleteTarget = $state<Comment | null>(null);
 
 	onMount(() => {
@@ -29,19 +26,6 @@
 
 	function formatTime(timestamp: number): string {
 		return new Date(timestamp).toLocaleString();
-	}
-
-	function startEdit(comment: Comment) {
-		editingCommentId = comment.id;
-		commentDraft = comment.content;
-	}
-
-	async function saveEdit(comment: Comment) {
-		const content = commentDraft.trim();
-		if (content && content !== comment.content) {
-			await editMyComment(comment.id, content);
-		}
-		editingCommentId = null;
 	}
 
 	async function confirmDelete() {
@@ -60,13 +44,10 @@
 {:else}
 	<ul class="flex flex-col gap-3">
 		{#each comments as comment (comment.id)}
-			<li class="rounded-box border border-base-300 p-3">
+			<li class="rounded-box border border-base-300 p-3" class:opacity-50={comment.deleted}>
 				<div class="flex items-center justify-between gap-2">
 					<span class="text-sm opacity-60" title={formatTime(comment.created_at)}>
 						{formatTime(comment.created_at)}
-						{#if comment.updated_at !== comment.created_at}
-							{m.my_comments_edited_label()}
-						{/if}
 					</span>
 					<a
 						class="link link-primary text-sm"
@@ -77,23 +58,11 @@
 					</a>
 				</div>
 
-				{#if editingCommentId === comment.id}
-					<textarea class="textarea textarea-bordered mt-2 w-full" bind:value={commentDraft}
-					></textarea>
-					<div class="mt-2 flex gap-2">
-						<button class="btn btn-sm btn-primary" onclick={() => saveEdit(comment)}>
-							{m.my_comments_save()}
-						</button>
-						<button class="btn btn-sm" onclick={() => (editingCommentId = null)}>
-							{m.my_comments_cancel()}
-						</button>
-					</div>
+				<p class="mt-2 whitespace-pre-wrap" class:line-through={comment.deleted}>{comment.content}</p>
+				{#if comment.deleted}
+					<p class="mt-1 text-sm italic opacity-70">{m.my_comments_delete_requested()}</p>
 				{:else}
-					<p class="mt-2 whitespace-pre-wrap">{comment.content}</p>
 					<div class="mt-2 flex gap-2">
-						<button class="btn btn-sm" onclick={() => startEdit(comment)}>
-							{m.my_comments_edit()}
-						</button>
 						<button class="btn btn-sm btn-error" onclick={() => (deleteTarget = comment)}>
 							{m.my_comments_delete()}
 						</button>

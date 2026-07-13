@@ -1,32 +1,22 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { rmSync } from 'node:fs';
-import Gun from 'gun/gun.js';
-import { __setGunForTests } from './client';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { __setKeyringForTests } from '$lib/state/auth.svelte';
-import { generateKeyring } from '$lib/crypto/keys';
+import { generateKeyring } from './keys';
+import { __setPoolForTests } from './pool';
+import { createFakePool } from './testUtils';
 import {
 	publishCharacter,
 	deleteCharacter,
 	forkCharacter,
+	forkCharacterFromDoc,
 	getCharacter,
 	createLocalCharacter,
 	editLocalCharacter,
 	publishLocalCharacter
 } from './characters';
 
-// Chained/linked GUN reads (ownNode/authorNode, which protected per-author
-// character storage relies on) only resolve when a storage adapter is
-// enabled — confirmed by isolated testing — so this needs radisk on, unlike
-// the in-memory-only config used before characters lived in gun.user() space.
-const RADATA_DIR = `test-radata-characters-${crypto.randomUUID()}`;
-
-beforeAll(async () => {
-	__setGunForTests(new Gun({ radisk: true, localStorage: false, peers: [], axe: false, multicast: false, file: RADATA_DIR }));
-	__setKeyringForTests(await generateKeyring());
-});
-
-afterAll(() => {
-	rmSync(RADATA_DIR, { recursive: true, force: true });
+beforeEach(() => {
+	__setPoolForTests(createFakePool().pool);
+	__setKeyringForTests(generateKeyring());
 });
 
 const baseFields = {
@@ -45,10 +35,7 @@ const baseFields = {
 	comments_enabled: true
 };
 
-/** With a storage adapter enabled (required for the chained reads protected
- *  per-author storage relies on — see client.ts), `.once()` resolves
- *  promptly even for a path that was never written to, rather than hanging. */
-async function neverWrittenToGun(id: string): Promise<boolean> {
+async function neverPublished(id: string): Promise<boolean> {
 	const result = await getCharacter(id);
 	return !result.ok;
 }
@@ -70,14 +57,13 @@ describe('publishCharacter', () => {
 
 	it('rejects edits from a non-author', async () => {
 		const created = await publishCharacter(baseFields);
-		__setKeyringForTests(await generateKeyring());
+		__setKeyringForTests(generateKeyring());
 		await expect(publishCharacter({ ...baseFields, id: created.id })).rejects.toThrow('Only the author');
 	});
 });
 
 describe('deleteCharacter', () => {
 	it('tombstones instead of removing', async () => {
-		__setKeyringForTests(await generateKeyring());
 		const created = await publishCharacter(baseFields);
 		const deleted = await deleteCharacter(created.id);
 		expect(deleted.deleted).toBe(true);
@@ -89,11 +75,10 @@ describe('deleteCharacter', () => {
 });
 
 describe('forkCharacter', () => {
-	it('copies fields under a new id, authored by the forker, without publishing to GUN', async () => {
-		__setKeyringForTests(await generateKeyring());
+	it('copies fields under a new id, authored by the forker, without publishing', async () => {
 		const original = await publishCharacter(baseFields);
 
-		const forker = await generateKeyring();
+		const forker = generateKeyring();
 		__setKeyringForTests(forker);
 		const fork = await forkCharacter(original.id);
 
@@ -103,41 +88,66 @@ describe('forkCharacter', () => {
 		expect(fork.name).toBe(original.name);
 		expect(fork.version).toBe(1);
 
-		// GUN's .once() never fires at all for a path that's never been written
-		// to (see document.ts) — a resolved "not found" isn't observable here,
-		// so instead assert the read doesn't resolve within a short window.
-		expect(await neverWrittenToGun(fork.id)).toBe(true);
+		expect(await neverPublished(fork.id)).toBe(true);
+	});
+
+	it('rejects forking by id when the character is unreachable on the network', async () => {
+		const original = await publishCharacter(baseFields);
+		__setPoolForTests(createFakePool().pool); // simulate a relay switch that's never seen this character
+
+		await expect(forkCharacter(original.id)).rejects.toThrow('Character not found.');
+	});
+
+	it('forkCharacterFromDoc forks an already-known character with no network call at all — e.g. a saved character whose author is currently unreachable', async () => {
+		const original = await publishCharacter(baseFields);
+		__setPoolForTests(createFakePool().pool); // now unreachable — same as above
+
+		const forker = generateKeyring();
+		__setKeyringForTests(forker);
+		const fork = forkCharacterFromDoc(original);
+
+		expect(fork.id).not.toBe(original.id);
+		expect(fork.forked_from).toBe(original.id);
+		expect(fork.author).toBe(forker.publicKey);
+		expect(fork.name).toBe(original.name);
+		expect(fork.version).toBe(1);
 	});
 });
 
 describe('local-only characters', () => {
-	it('createLocalCharacter signs a document without writing it to GUN', async () => {
-		__setKeyringForTests(await generateKeyring());
+	it('createLocalCharacter signs a document without publishing it', async () => {
 		const draft = await createLocalCharacter(baseFields);
 
 		expect(draft.version).toBe(1);
 		expect(draft.forked_from).toBeNull();
-		expect(await neverWrittenToGun(draft.id)).toBe(true);
+		expect(await neverPublished(draft.id)).toBe(true);
 	});
 
-	it('editLocalCharacter re-signs a new version, still without touching GUN', async () => {
-		__setKeyringForTests(await generateKeyring());
+	it('editLocalCharacter re-signs a new version, still without publishing', async () => {
 		const draft = await createLocalCharacter(baseFields);
 		const edited = await editLocalCharacter(draft, { ...baseFields, name: 'Aria v2' });
 
 		expect(edited.id).toBe(draft.id);
 		expect(edited.version).toBe(2);
 		expect(edited.name).toBe('Aria v2');
-		expect(await neverWrittenToGun(draft.id)).toBe(true);
+		expect(await neverPublished(draft.id)).toBe(true);
 	});
 
-	it('publishLocalCharacter writes the already-signed doc to GUN as-is', async () => {
-		__setKeyringForTests(await generateKeyring());
+	it('publishLocalCharacter publishes the local draft\'s content unchanged', async () => {
+		// The published event is re-signed at publish time (a fresh revision,
+		// same as any other publish), so id/signature/updated_at legitimately
+		// differ from the local-only draft's — only the character's own fields
+		// must round-trip unchanged.
 		const draft = await createLocalCharacter(baseFields);
 		const published = await publishLocalCharacter(draft);
 
-		expect(published).toEqual(draft);
+		expect(published.id).toBe(draft.id);
+		expect(published.author).toBe(draft.author);
+		expect(published.name).toBe(draft.name);
+		expect(published.version).toBe(draft.version);
+		expect(published.created_at).toBe(draft.created_at);
+
 		const fetched = await getCharacter(draft.id);
-		expect(fetched).toEqual({ ok: true, doc: draft });
+		expect(fetched).toEqual({ ok: true, doc: published });
 	});
 });

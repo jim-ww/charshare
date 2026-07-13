@@ -16,7 +16,7 @@ export type Comment = CommentFields & Signed & Tombstonable;
 
 /** Derived, not stored: computed by comparing comment.author to the
  *  parent character's author when rendering. Keep this logic in one
- *  place (lib/gun/comments.ts) rather than recomputing it per-component. */
+ *  place (lib/nostr/comments.ts) rather than recomputing it per-component. */
 export interface CommentDisplay {
   comment: Comment;
   verified: boolean; // always true if signature verified — kept explicit for UI clarity

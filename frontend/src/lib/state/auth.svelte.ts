@@ -1,5 +1,5 @@
 import type { Keyring, PubKey } from '$lib/types';
-import { generateKeyring } from '$lib/crypto/keys';
+import { generateKeyring } from '$lib/nostr/keys';
 import { loadKeyring, saveKeyring, loadRegistered, saveRegistered } from '$lib/db/keyring';
 
 let keyring = $state<Keyring | null>(null);
@@ -58,7 +58,7 @@ export async function setKeyring(next: Keyring): Promise<void> {
  *  must have already warned the user to back up their account first (see
  *  spec: no key recovery — this is the only copy). */
 export async function logout(): Promise<void> {
-	const generated = await generateKeyring();
+	const generated = generateKeyring();
 	await saveKeyring(generated);
 	keyring = generated;
 	registered = false;
@@ -93,7 +93,7 @@ export function initAuth(): Promise<void> {
 			if (existing) {
 				keyring = existing;
 			} else {
-				const generated = await generateKeyring();
+				const generated = generateKeyring();
 				await saveKeyring(generated);
 				keyring = generated;
 			}

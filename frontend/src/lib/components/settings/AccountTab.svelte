@@ -121,7 +121,7 @@
 		try {
 			const text = await file.text();
 			const backup = parseAccountBackup(text);
-			await setKeyring({ publicKey: backup.pair.pub, pair: backup.pair });
+			await setKeyring(backup.keyring);
 			loadedFromProfile = false;
 			await loadProfileForSwitchedAccount(backup.profileFields);
 			imported = true;

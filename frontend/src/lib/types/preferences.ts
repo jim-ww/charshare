@@ -113,7 +113,7 @@ export interface VoicevoxTtsProviderConfig {
 export type TtsProviderConfig = LocalTtsProviderConfig | VoicevoxTtsProviderConfig; // union grows as more TTS providers are added
 
 export interface Preferences {
-  gunRelays: string[]; // includes the default, user can add/remove
+  nostrRelays: string[]; // includes the default, user can add/remove
   theme: ThemeMode;
   blockedTags: string[];
   blockedAuthors: string[]; // author pubkeys whose characters are excluded from Browse, this browser only

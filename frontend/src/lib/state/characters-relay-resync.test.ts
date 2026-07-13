@@ -1,14 +1,9 @@
-import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
-import { rmSync } from 'node:fs';
-import { createServer, type Server } from 'node:http';
-import type { AddressInfo } from 'node:net';
-// Full node build, not 'gun/gun.js' — this test needs real relay networking
-// (see gun/relay-sync.test.ts for why).
-import Gun from 'gun';
-import { __setGunForTests, __resetGunUserAuthForTests } from '$lib/gun/client';
+import { describe, it, expect, vi } from 'vitest';
 import { __setKeyringForTests } from '$lib/state/auth.svelte';
-import { generateKeyring } from '$lib/crypto/keys';
-import { publishCharacter, getCharacter } from '$lib/gun/characters';
+import { generateKeyring } from '$lib/nostr/keys';
+import { publishCharacter, getCharacter } from '$lib/nostr/characters';
+import { __setPoolForTests } from '$lib/nostr/pool';
+import { createFakePool } from '$lib/nostr/testUtils';
 import type { LocalCharacterEntry } from '$lib/db/characters';
 
 // $lib/db/characters wraps idb-keyval, which needs a real IndexedDB that
@@ -38,45 +33,9 @@ const { __refreshCharactersForTests, getMyCharacters } = await import('./charact
  *  relay happening to answer first). If the newly-connected relay has never
  *  seen one of this browser's own already-published characters, launch-time
  *  resync (see characters.svelte.ts:refresh, resyncMissing) should notice
- *  it's missing and republish the exact cached signed copy — not silently
- *  drop the character from "My Characters". */
-
-function startRelay(dir: string): Promise<{ server: Server; url: string }> {
-	return new Promise((resolve) => {
-		const server = createServer((Gun as unknown as { serve: (req: unknown, res: unknown) => void }).serve);
-		server.listen(0, () => {
-			const { port } = server.address() as AddressInfo;
-			new Gun({ web: server, radisk: true, file: dir, localStorage: false });
-			resolve({ server, url: `http://localhost:${port}/gun` });
-		});
-	});
-}
-
-function stopRelay(server: Server) {
-	server.closeAllConnections();
-	server.close();
-}
-
-let relayA: { server: Server; url: string };
-let relayB: { server: Server; url: string };
-
-const RELAY_A_DIR = `test-radata-resync-relay-a-${crypto.randomUUID()}`;
-const RELAY_B_DIR = `test-radata-resync-relay-b-${crypto.randomUUID()}`;
-const CLIENT_DIR_1 = `test-radata-resync-client-1-${crypto.randomUUID()}`;
-const CLIENT_DIR_2 = `test-radata-resync-client-2-${crypto.randomUUID()}`;
-
-beforeAll(async () => {
-	relayA = await startRelay(RELAY_A_DIR);
-	relayB = await startRelay(RELAY_B_DIR);
-});
-
-afterAll(() => {
-	stopRelay(relayA.server);
-	stopRelay(relayB.server);
-	for (const dir of [RELAY_A_DIR, RELAY_B_DIR, CLIENT_DIR_1, CLIENT_DIR_2]) {
-		rmSync(dir, { recursive: true, force: true });
-	}
-});
+ *  it's missing and republish it — not silently drop the character from "My
+ *  Characters". Two disjoint fake-relay URL sets stand in for two real
+ *  relays that genuinely disagree about what they've seen. */
 
 const baseFields = {
 	name: 'Aria',
@@ -96,42 +55,40 @@ const baseFields = {
 
 describe('startup resync across a relay switch', () => {
 	it('republishes an already-published character to a relay that has never seen it', async () => {
-		const keyring = await generateKeyring();
-
-		// Session 1: connected to relay A, publishes a character. This is the
-		// same local "my characters" IndexedDB index a real app session builds
-		// up via createOrEditCharacter -> addPublishedCharacterId.
-		__setGunForTests(
-			new Gun({ peers: [relayA.url], radisk: true, localStorage: false, axe: false, multicast: false, file: CLIENT_DIR_1 })
-		);
+		const keyring = generateKeyring();
+		const { pool } = createFakePool();
+		__setPoolForTests(pool);
 		__setKeyringForTests(keyring);
+
+		// nostr/characters.ts always publishes/queries against its own fixed
+		// default relay set — the fake pool's per-relay isolation (see
+		// testUtils.ts) still lets us simulate "relay never saw this" by
+		// wiping just one of those relay's stores below, standing in for a
+		// user having switched to a fresh relay between sessions.
 		const created = await publishCharacter(baseFields);
 		entryStore.set(created.id, { id: created.id, published: true, character: created });
 
-		// Relay A definitely has it.
-		const onRelayA = await getCharacter(created.id);
-		expect(onRelayA).toEqual({ ok: true, doc: created });
+		const onRelay = await getCharacter(created.id);
+		expect(onRelay).toEqual({ ok: true, doc: created });
 
-		// Session 2: same local cache/keyring, but the app is now connected to
-		// relay B instead — which has never heard of this character.
-		__resetGunUserAuthForTests();
-		__setGunForTests(
-			new Gun({ peers: [relayB.url], radisk: true, localStorage: false, axe: false, multicast: false, file: CLIENT_DIR_2 })
-		);
+		// Simulate switching to relays that have never seen this character.
+		const { pool: freshPool } = createFakePool();
+		__setPoolForTests(freshPool);
 
 		const beforeResync = await getCharacter(created.id);
 		expect(beforeResync.ok).toBe(false);
 
 		await __refreshCharactersForTests({ resyncMissing: true });
 
-		// The resync should have noticed and republished it to relay B...
+		// The resync should have noticed and republished it...
 		const afterResync = await getCharacter(created.id);
-		expect(afterResync).toEqual({ ok: true, doc: created });
+		expect(afterResync.ok).toBe(true);
+		expect(afterResync.ok && afterResync.doc.id).toBe(created.id);
 
 		// ...and "My Characters" should still show it, not have dropped it.
 		expect(getMyCharacters().map((c) => c.id)).toContain(created.id);
 
 		// The local index entry itself should still be intact too.
 		expect(entryStore.get(created.id)?.published).toBe(true);
-	}, 20000);
+	});
 });

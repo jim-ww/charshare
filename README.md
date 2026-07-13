@@ -8,7 +8,7 @@
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPLv3-blue.svg)](LICENSE)
 [![Built with SvelteKit](https://img.shields.io/badge/frontend-SvelteKit-ff3e00)](https://kit.svelte.dev)
-[![Powered by GUN](https://img.shields.io/badge/network-GUN-orange)](https://gun.eco)
+[![Powered by Nostr](https://img.shields.io/badge/network-Nostr-8e44ad)](https://nostr.com)
 [![Desktop app via Wails](https://img.shields.io/badge/desktop-Wails-8A2BE2)](https://wails.io)
 
 [Live app](https://jim-ww.github.io/charshare/) · [Releases](https://github.com/jim-ww/charshare/releases) · [Legal](https://jim-ww.github.io/charshare/legal)
@@ -23,8 +23,8 @@ charshare lets you create, publish, and chat with AI characters — without sign
 
 - **Local-first.** Everything you do — characters, chats, personas, preferences — lives on your device first. Publishing to the network is a choice, not a requirement.
 - **No backend.** charshare ships as a static site (deployable from any CDN) or a desktop binary. There is no server of ours in the loop.
-- **Peer-to-peer.** Anything you publish travels over [GUN](https://gun.eco), a peer-to-peer graph database, through relays anyone can run — including you.
-- **You own your identity.** Users and characters are identified by a public key, not a username/password pair. Documents are signed client-side with GUN SEA (ECDSA P-256); nothing you publish can be forged or reassigned by anyone else, including a relay operator.
+- **Peer-to-peer.** Anything you publish travels over [Nostr](https://nostr.com), an open relay-based protocol, through relays anyone can run — including you.
+- **You own your identity.** Users and characters are identified by a public key, not a username/password pair. Every event is signed client-side per the Nostr protocol (secp256k1); nothing you publish can be forged or reassigned by anyone else, including a relay operator.
 - **Bring your own AI.** Configure OpenRouter, Hugging Face, or a self-hosted Ollama instance. Your key, your requests, straight from your device to the provider you chose.
 - **Free as in freedom.** AGPLv3. Run it, read it, modify it, fork it, self-host a relay.
 

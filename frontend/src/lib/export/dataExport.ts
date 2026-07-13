@@ -207,7 +207,7 @@ function detectCategory(filename: string, parsed: unknown): DataCategory | null 
 	}
 	if (parsed && typeof parsed === 'object') {
 		const obj = parsed as Record<string, unknown>;
-		if ('pair' in obj && obj.pair && typeof (obj.pair as { pub?: unknown }).pub === 'string') return 'account';
+		if (typeof obj.nsec === 'string') return 'account';
 		if ('providerConfigs' in obj || 'theme' in obj) return 'preferences';
 	}
 	return null;
@@ -215,7 +215,7 @@ function detectCategory(filename: string, parsed: unknown): DataCategory | null 
 
 async function importAccountFile(json: string): Promise<void> {
 	const backup = parseAccountBackup(json);
-	await setKeyring({ publicKey: backup.pair.pub, pair: backup.pair });
+	await setKeyring(backup.keyring);
 	await loadProfileForSwitchedAccount(backup.profileFields);
 }
 

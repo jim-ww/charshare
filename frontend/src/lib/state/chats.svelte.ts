@@ -478,7 +478,7 @@ export async function deleteMessage(chatId: ChatId, messageId: MessageId): Promi
 }
 
 /** Test-only escape hatch: bypasses IndexedDB persistence (unavailable
- *  under plain Node/vitest), mirroring __setGunForTests/__setKeyringForTests. */
+ *  under plain Node/vitest), mirroring __setPoolForTests/__setKeyringForTests. */
 export function __setChatsForTests(next: Record<ChatId, Chat>): void {
 	chats = next;
 	ready = true;

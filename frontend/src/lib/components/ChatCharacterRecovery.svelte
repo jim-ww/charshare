@@ -9,7 +9,7 @@
 	import { retryCharacterLoad } from "$lib/state/characterCache.svelte";
 	import { getCurrentUser } from "$lib/state/auth.svelte";
 	import { saveCharacterLocally } from "$lib/state/savedCharacters.svelte";
-	import { browseByName, browseByTag } from "$lib/gun/browse";
+	import { browseByName, browseByTag } from "$lib/nostr/browse";
 	import { queryWords, matchesQuery } from "$lib/state/search.svelte";
 	import { m } from '$lib/paraglide/messages.js';
 

@@ -1,25 +1,18 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { rmSync } from 'node:fs';
-import Gun from 'gun/gun.js';
-import { __setGunForTests } from './client';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { __setKeyringForTests } from '$lib/state/auth.svelte';
-import { generateKeyring } from '$lib/crypto/keys';
-import { publishProfile, getProfile, deleteProfile } from './users';
+import { generateKeyring } from './keys';
+import { __setPoolForTests } from './pool';
+import { createFakePool } from './testUtils';
+import { publishProfile, getProfile, deleteProfile } from './profile';
 import { getUsernameClaim } from './usernames';
 
-const RADATA_DIR = `test-radata-users-${crypto.randomUUID()}`;
-
-beforeAll(() => {
-	__setGunForTests(new Gun({ radisk: true, localStorage: false, peers: [], file: RADATA_DIR }));
-});
-
-afterAll(() => {
-	rmSync(RADATA_DIR, { recursive: true, force: true });
+beforeEach(() => {
+	__setPoolForTests(createFakePool().pool);
 });
 
 describe('publishProfile', () => {
 	it('publishes and claims the username, round-tripping through getProfile', async () => {
-		const keyring = await generateKeyring();
+		const keyring = generateKeyring();
 		__setKeyringForTests(keyring);
 		const username = `alice-${crypto.randomUUID().slice(0, 8)}`;
 
@@ -34,18 +27,18 @@ describe('publishProfile', () => {
 	});
 
 	it('rejects publishing with a username someone else already claimed', async () => {
-		const owner = await generateKeyring();
+		const owner = generateKeyring();
 		__setKeyringForTests(owner);
 		const username = `bob-${crypto.randomUUID().slice(0, 8)}`;
 		await publishProfile({ username, description: '' });
 
-		const other = await generateKeyring();
+		const other = generateKeyring();
 		__setKeyringForTests(other);
 		await expect(publishProfile({ username, description: '' })).rejects.toThrow('already taken');
 	});
 
 	it('releases the old username when changed, freeing it for others', async () => {
-		const keyring = await generateKeyring();
+		const keyring = generateKeyring();
 		__setKeyringForTests(keyring);
 		const oldName = `old-${crypto.randomUUID().slice(0, 8)}`;
 		const newName = `new-${crypto.randomUUID().slice(0, 8)}`;
@@ -55,7 +48,7 @@ describe('publishProfile', () => {
 		const oldClaim = await getUsernameClaim(oldName);
 		expect(oldClaim.ok && oldClaim.doc.deleted).toBe(true);
 
-		const other = await generateKeyring();
+		const other = generateKeyring();
 		__setKeyringForTests(other);
 		await expect(publishProfile({ username: oldName, description: '' })).resolves.toMatchObject({
 			username: oldName
@@ -63,7 +56,7 @@ describe('publishProfile', () => {
 	});
 
 	it('re-publishing under the same username keeps the claim, no error', async () => {
-		const keyring = await generateKeyring();
+		const keyring = generateKeyring();
 		__setKeyringForTests(keyring);
 		const username = `carol-${crypto.randomUUID().slice(0, 8)}`;
 		await publishProfile({ username, description: 'v1' });
@@ -72,11 +65,21 @@ describe('publishProfile', () => {
 			description: 'v2'
 		});
 	});
+
+	it('preserves the original created_at (published_at) across edits', async () => {
+		const keyring = generateKeyring();
+		__setKeyringForTests(keyring);
+		const username = `mallory-${crypto.randomUUID().slice(0, 8)}`;
+		const created = await publishProfile({ username, description: 'v1' });
+		const edited = await publishProfile({ username, description: 'v2' });
+
+		expect(edited.created_at).toBe(created.created_at);
+	});
 });
 
 describe('deleteProfile', () => {
 	it('tombstones instead of removing', async () => {
-		const keyring = await generateKeyring();
+		const keyring = generateKeyring();
 		__setKeyringForTests(keyring);
 		const username = `dave-${crypto.randomUUID().slice(0, 8)}`;
 		await publishProfile({ username, description: '' });

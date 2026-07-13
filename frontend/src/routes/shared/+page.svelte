@@ -8,7 +8,7 @@
 	import { m } from '$lib/paraglide/messages.js';
 
 	// Purely client-derived from the `d` query param — no dependency on
-	// IndexedDB/GUN state, since whoever opens a share link may not have this
+	// IndexedDB/network state, since whoever opens a share link may not have this
 	// character (or an account at all).
 	const shared = $derived.by((): SharedChatData | null => {
 		const encoded = page.url.searchParams.get('d');

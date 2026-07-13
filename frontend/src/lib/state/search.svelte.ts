@@ -7,7 +7,7 @@ import {
 	browseNetworkPage,
 	type BrowseCursor,
 	type BrowseSortOrder,
-} from "$lib/gun/browse";
+} from "$lib/nostr/browse";
 
 let query = $state("");
 // Tags picked via the tag checkboxes — kept separate from the free-text
@@ -86,7 +86,7 @@ export function isNetworkLoadingMore(): boolean {
 	return networkLoadingMore;
 }
 
-// A cold GUN client can have its WebSocket connected (see gunPeerReady) but
+// A cold relay pool can have its WebSocket connected (see poolConnected) but
 // still not have synced the tag index data from the relay yet — the first
 // page of a session can come back empty even though the network isn't
 // actually empty. Retrying a couple times with a growing delay picks up the

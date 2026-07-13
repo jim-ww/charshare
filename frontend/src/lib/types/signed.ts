@@ -1,6 +1,6 @@
 import type { PubKey } from './user';
 
-/** Anything published to GUN and authenticated by a signature carries these.
+/** Anything published to a relay and authenticated by a signature carries these.
  *  Compose with `& Signed` rather than duplicating these fields per type. */
 export interface Signed {
   author: PubKey;

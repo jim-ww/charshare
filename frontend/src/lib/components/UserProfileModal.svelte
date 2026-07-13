@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { PubKey, User } from "$lib/types";
-	import { getProfile } from "$lib/gun/users";
+	import { getProfile } from "$lib/nostr/profile";
 	import Avatar from "./Avatar.svelte";
 	import { m } from '$lib/paraglide/messages.js';
 

@@ -4,7 +4,7 @@
 	import { goto } from "$app/navigation";
 	import { resolve } from "$app/paths";
 	import { MAX_COMMENT_LENGTH, type Character, type Comment } from "$lib/types";
-	import { subscribeCharacterWithRetry } from "$lib/gun/characters";
+	import { subscribeCharacterWithRetry } from "$lib/nostr/characters";
 	import {
 		getCurrentUser,
 		isAccountRegistered,
@@ -38,7 +38,6 @@
 	} from "$lib/state/chats.svelte";
 	import {
 		addComment,
-		editComment,
 		getCommentsFor,
 		isLoadingComments,
 		loadComments,
@@ -49,7 +48,14 @@
 		isCommentHidden,
 		unhideComment,
 	} from "$lib/state/preferences.svelte";
-	import { getProfile } from "$lib/gun/users";
+	import {
+		characterLikeTarget,
+		getLikeCountFor,
+		isLiked,
+		loadLikeState,
+		toggleLike,
+	} from "$lib/state/reactions.svelte";
+	import { getProfile } from "$lib/nostr/profile";
 	import CharacterImageViewer from "$lib/components/CharacterImageViewer.svelte";
 	import PersonaSelectorButton from "$lib/components/PersonaSelectorButton.svelte";
 	import UserProfileModal from "$lib/components/UserProfileModal.svelte";
@@ -69,8 +75,6 @@
 	let newComment = $state("");
 	let posting = $state(false);
 	let showHiddenComments = $state(false);
-	let editingCommentId = $state<string | null>(null);
-	let commentDraft = $state("");
 	let commentDeleteTarget = $state<Comment | null>(null);
 	let authorNames = $state<Record<string, string>>({});
 	let replyingToCommentId = $state<string | null>(null);
@@ -79,11 +83,13 @@
 	let replyError = $state<string | null>(null);
 
 	const localOnly = $derived(isCharacterLocalOnly(id));
+	const liked = $derived(character ? isLiked(characterLikeTarget(character.id)) : false);
+	const likeCount = $derived(character ? getLikeCountFor(characterLikeTarget(character.id)) : null);
 
 	// Whether the live subscription below has actually confirmed this
 	// character from the network — separate from `character !== null`, which
 	// a saved copy already satisfies. Used only to keep the retry-poke (see
-	// gun/document.ts:subscribeDocumentWithRetry) running until a relay
+	// nostr/event.ts:subscribeEventsWithRetry) running until a relay
 	// really answers, instead of stopping immediately because we already had
 	// something to show from the local saved-characters cache.
 	let synced = false;
@@ -99,7 +105,7 @@
 		character = getSavedCharacter(currentId) ?? null;
 		notFound = false;
 
-		// Local-only characters were never written to GUN — subscribing there
+		// Local-only characters were never published to a relay — subscribing there
 		// would never resolve. Their doc lives only in the local store.
 		if (isCharacterLocalOnly(currentId)) {
 			const local = getMyCharacters().find(
@@ -120,7 +126,7 @@
 						synced = true;
 						notFound = false;
 					} else if (!character) {
-						// Only flag not-found while we have nothing to show yet — GUN's
+						// Only flag not-found while we have nothing to show yet — a relay's
 						// `.on()` can fire once with stale/missing local data before a
 						// relay answers, then fire again once the real doc syncs in.
 						notFound = true;
@@ -135,6 +141,7 @@
 		untrack(() => {
 			void initChats();
 			void loadComments(currentId);
+			void loadLikeState(characterLikeTarget(currentId));
 		});
 		return unsubscribe;
 	});
@@ -278,7 +285,11 @@
 
 	async function handleFork() {
 		if (!character) return;
-		const fork = await forkCharacter(character.id);
+		// De-proxy: character is a $state value, and forkCharacter's signing step
+		// eventually hits a structured-clone/JSON.stringify boundary that throws
+		// on a live Svelte reactive proxy (same fix as publishMyCharacter/
+		// restoreMyCharacter in state/characters.svelte.ts).
+		const fork = await forkCharacter($state.snapshot(character));
 		await goto(resolve('/characters/[id]/edit', { id: fork.id }));
 	}
 
@@ -461,25 +472,17 @@
 		}
 	}
 
-	function startEditComment(comment: Comment) {
-		editingCommentId = comment.id;
-		commentDraft = comment.content;
-	}
-
-	async function handleSaveComment(comment: Comment) {
-		const content = commentDraft.trim();
-		if (content && content !== comment.content) {
-			await editComment(id, comment.id, content);
-		}
-		editingCommentId = null;
-	}
-
 	async function handleToggleHideComment(comment: Comment) {
 		if (isCommentHidden(comment.id)) {
 			await unhideComment(comment.id);
 		} else {
 			await hideComment(comment.id);
 		}
+	}
+
+	async function handleToggleLike() {
+		if (!character) return;
+		await toggleLike(characterLikeTarget(character.id));
 	}
 </script>
 
@@ -568,6 +571,20 @@
 						{#if character.updated_at !== character.created_at}
 							<span>{m.char_detail_updated({ time: formatCommentTime(character.updated_at) })}</span>
 						{/if}
+					</div>
+					<div class="mt-2">
+						<button
+							class="btn btn-sm rounded-full"
+							class:btn-primary={liked}
+							class:btn-outline={!liked}
+							type="button"
+							onclick={handleToggleLike}
+						>
+							{liked ? m.char_detail_liked() : m.char_detail_like()}
+							{#if likeCount !== null}
+								<span class="badge badge-sm">{likeCount}</span>
+							{/if}
+						</button>
 					</div>
 					{#if character.tags.length || character.language}
 						<div
@@ -987,30 +1004,10 @@
 													<span class="ml-1 font-normal opacity-60" title={formatCommentTime(comment.created_at)}>
 														{formatCommentTime(comment.created_at)}
 													</span>
-													{#if comment.updated_at !== comment.created_at}
-														<span
-															class="italic opacity-60 ml-1"
-															title={m.char_detail_edited_title({
-																time: formatCommentTime(comment.updated_at),
-															})}
-														>
-															{m.char_detail_edited_label()}
-														</span>
-													{/if}
 												</span>
-												{#if editingCommentId !== comment.id}
-													<div class="flex gap-1">
-														{#if comment.author === getCurrentUser()}
-															<button
-																class="btn btn-xs btn-ghost"
-																type="button"
-																onclick={() =>
-																	startEditComment(
-																		comment,
-																	)}
-															>
-																{m.char_detail_comment_edit()}
-															</button>
+												<div class="flex gap-1">
+													{#if comment.author === getCurrentUser()}
+														{#if !comment.deleted}
 															<button
 																class="btn btn-xs btn-ghost"
 																type="button"
@@ -1021,66 +1018,41 @@
 															>
 																{m.char_detail_comment_delete()}
 															</button>
-														{:else}
-															<button
-																class="btn btn-xs btn-ghost"
-																type="button"
-																title={hidden
-																	? m.char_detail_hide_tooltip_hidden()
-																	: m.char_detail_hide_tooltip_visible()}
-																onclick={() =>
-																	handleToggleHideComment(
-																		comment,
-																	)}
-															>
-																{hidden ? m.char_detail_comment_unhide() : m.char_detail_comment_hide()}
-															</button>
 														{/if}
-														{#if comment.author !== getCurrentUser()}
-															<button
-																class="btn btn-xs btn-ghost"
-																type="button"
-																onclick={() => startReply(comment)}
-															>
-																{m.char_detail_comment_reply()}
-															</button>
-														{/if}
-													</div>
-												{/if}
-											</div>
-											{#if editingCommentId === comment.id}
-												<textarea
-													class="textarea textarea-bordered mt-1 w-full text-sm"
-													bind:value={commentDraft}
-													maxlength={MAX_COMMENT_LENGTH}
-												></textarea>
-												<div class="mt-1 flex gap-1">
-													<button
-														class="btn btn-xs btn-primary"
-														type="button"
-														onclick={() =>
-															handleSaveComment(
-																comment,
-															)}
-													>
-														{m.char_detail_comment_save()}
-													</button>
-													<button
-														class="btn btn-xs"
-														type="button"
-														onclick={() =>
-															(editingCommentId =
-																null)}
-													>
-														{m.char_detail_comment_cancel()}
-													</button>
+													{:else}
+														<button
+															class="btn btn-xs btn-ghost"
+															type="button"
+															title={hidden
+																? m.char_detail_hide_tooltip_hidden()
+																: m.char_detail_hide_tooltip_visible()}
+															onclick={() =>
+																handleToggleHideComment(
+																	comment,
+																)}
+														>
+															{hidden ? m.char_detail_comment_unhide() : m.char_detail_comment_hide()}
+														</button>
+													{/if}
+													{#if comment.author !== getCurrentUser() && !comment.deleted}
+														<button
+															class="btn btn-xs btn-ghost"
+															type="button"
+															onclick={() => startReply(comment)}
+														>
+															{m.char_detail_comment_reply()}
+														</button>
+													{/if}
 												</div>
-											{:else}
-												<p
-													class="mt-1 whitespace-pre-wrap text-sm"
-												>
-													{comment.content}
-												</p>
+											</div>
+											<p
+												class="mt-1 whitespace-pre-wrap text-sm"
+												class:line-through={comment.deleted}
+											>
+												{comment.content}
+											</p>
+											{#if comment.deleted}
+												<p class="mt-1 text-xs italic opacity-70">{m.char_detail_comment_delete_requested()}</p>
 											{/if}
 
 											{#if replies.length > 0}
@@ -1102,27 +1074,10 @@
 																	<span class="ml-1 font-normal opacity-60" title={formatCommentTime(reply.created_at)}>
 																		{formatCommentTime(reply.created_at)}
 																	</span>
-																	{#if reply.updated_at !== reply.created_at}
-																		<span
-																			class="italic opacity-60 ml-1"
-																			title={m.char_detail_edited_title({
-																				time: formatCommentTime(reply.updated_at),
-																			})}
-																		>
-																			{m.char_detail_edited_label()}
-																		</span>
-																	{/if}
 																</span>
-																{#if editingCommentId !== reply.id}
-																	<div class="flex gap-1">
-																		{#if reply.author === getCurrentUser()}
-																			<button
-																				class="btn btn-xs btn-ghost"
-																				type="button"
-																				onclick={() => startEditComment(reply)}
-																			>
-																				{m.char_detail_comment_edit()}
-																			</button>
+																<div class="flex gap-1">
+																	{#if reply.author === getCurrentUser()}
+																		{#if !reply.deleted}
 																			<button
 																				class="btn btn-xs btn-ghost"
 																				type="button"
@@ -1130,53 +1085,33 @@
 																			>
 																				{m.char_detail_comment_delete()}
 																			</button>
-																		{:else}
-																			<button
-																				class="btn btn-xs btn-ghost"
-																				type="button"
-																				title={replyHidden
-																					? m.char_detail_hide_tooltip_hidden()
-																					: m.char_detail_hide_tooltip_visible()}
-																				onclick={() => handleToggleHideComment(reply)}
-																			>
-																				{replyHidden ? m.char_detail_comment_unhide() : m.char_detail_comment_hide()}
-																			</button>
 																		{/if}
-																		{#if reply.author !== getCurrentUser()}
-																			<button
-																				class="btn btn-xs btn-ghost"
-																				type="button"
-																				onclick={() => startReply(reply)}
-																			>
-																				{m.char_detail_comment_reply()}
-																			</button>
-																		{/if}
-																	</div>
-																{/if}
-															</div>
-															{#if editingCommentId === reply.id}
-																<textarea
-																	class="textarea textarea-bordered mt-1 w-full text-sm"
-																	bind:value={commentDraft}
-																></textarea>
-																<div class="mt-1 flex gap-1">
-																	<button
-																		class="btn btn-xs btn-primary"
-																		type="button"
-																		onclick={() => handleSaveComment(reply)}
-																	>
-																		{m.char_detail_comment_save()}
-																	</button>
-																	<button
-																		class="btn btn-xs"
-																		type="button"
-																		onclick={() => (editingCommentId = null)}
-																	>
-																		{m.char_detail_comment_cancel()}
-																	</button>
+																	{:else}
+																		<button
+																			class="btn btn-xs btn-ghost"
+																			type="button"
+																			title={replyHidden
+																				? m.char_detail_hide_tooltip_hidden()
+																				: m.char_detail_hide_tooltip_visible()}
+																			onclick={() => handleToggleHideComment(reply)}
+																		>
+																			{replyHidden ? m.char_detail_comment_unhide() : m.char_detail_comment_hide()}
+																		</button>
+																	{/if}
+																	{#if reply.author !== getCurrentUser() && !reply.deleted}
+																		<button
+																			class="btn btn-xs btn-ghost"
+																			type="button"
+																			onclick={() => startReply(reply)}
+																		>
+																			{m.char_detail_comment_reply()}
+																		</button>
+																	{/if}
 																</div>
-															{:else}
-																<p class="mt-1 whitespace-pre-wrap text-sm">{reply.content}</p>
+															</div>
+															<p class="mt-1 whitespace-pre-wrap text-sm" class:line-through={reply.deleted}>{reply.content}</p>
+															{#if reply.deleted}
+																<p class="mt-1 text-xs italic opacity-70">{m.char_detail_comment_delete_requested()}</p>
 															{/if}
 														</li>
 													{/each}

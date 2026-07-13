@@ -1,5 +1,7 @@
-- feat(browse): rework Browse/search to avoid fetching the entire published network unbounded on every load (currently `browseNetwork()` reads every id under the `__network__` pseudo-tag and fetches+verifies each one) — implement proper sorting (by created_at) and pagination
-- feat(core): rating system for characters? then add sorting by popularity
-- feat(core): after implementing rating system, add rating to comments? also allow to sort by rating, then created_at
+- feat(core): sort characters/comments by like count (NIP-25 likes are implemented — see nostr/reactions.ts — but popularity sorting itself was explicitly deferred while migrating to Nostr; NIP-45 COUNT isn't universally supported, so this likely means scoping "most liked" to a bounded recent window rather than true all-time global popularity, see nostr/browse.ts's doc comments)
+- character edit: add import button as on character new page
+- openai_compatible provider shows as undefined on export and shows as blank line when selected in preferences
+- local only saved chars appear as they are accessible on the network and dont prompt before deletion
 - feat: add some characters from other platforms
 - consider: android build target
+- consider: NIP-05 support as an optional (not required) verified-username convenience layer, now that the core username system is Nostr-native — still no forced external dependency, since users without one just keep using the existing first-come-wins claim

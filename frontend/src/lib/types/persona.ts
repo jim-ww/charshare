@@ -1,7 +1,7 @@
 export type PersonaId = string; // uuid
 
 /** A "mask" the user can wear while chatting with characters — local-only,
- *  never published or synced to GUN. See db/personas.ts and
+ *  never published or synced to a relay. See db/personas.ts and
  *  state/personas.svelte.ts. */
 export interface Persona {
   id: PersonaId;

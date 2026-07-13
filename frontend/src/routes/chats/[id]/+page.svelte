@@ -32,9 +32,9 @@
 	let scrollContainer = $state<HTMLDivElement | undefined>();
 	let sidebarOpen = $state(false);
 
-	// "My characters" (including local-only ones never published to GUN) load
+	// "My characters" (including local-only ones never published to a relay) load
 	// asynchronously from IndexedDB — wait for that before falling back to a
-	// GUN subscription, otherwise a local-only character race-loses to the
+	// relay subscription, otherwise a local-only character race-loses to the
 	// subscription's timeout and wrongly shows the "couldn't be loaded" error.
 	const charactersReady = $derived(isCharactersReady());
 

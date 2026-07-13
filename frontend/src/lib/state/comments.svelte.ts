@@ -1,11 +1,5 @@
 import type { CharacterId, Comment, PubKey } from '$lib/types';
-import {
-	deleteComment as gunDeleteComment,
-	editComment as gunEditComment,
-	getCommentsAuthoredBy,
-	getCommentsForCharacter,
-	postComment
-} from '$lib/gun/comments';
+import { deleteComment, getCommentsAuthoredBy, getCommentsForCharacter, postComment } from '$lib/nostr/comments';
 
 let comments = $state<Record<CharacterId, Comment[]>>({});
 let loading = $state<Record<CharacterId, boolean>>({});
@@ -57,22 +51,17 @@ export async function addComment(
 	await loadComments(characterId);
 }
 
+/** Requests deletion of a comment (see nostr/comments.ts: comments are
+ *  immutable Nostr events, so this is a best-effort NIP-09 request, not a
+ *  guaranteed removal — the comment still shows up here afterward, marked
+ *  `deleted`, for the UI to render as "deletion requested" rather than
+ *  silently disappearing). */
 export async function removeComment(characterId: CharacterId, commentId: string): Promise<void> {
-	await gunDeleteComment(commentId);
-	await loadComments(characterId);
-}
-
-export async function editComment(characterId: CharacterId, commentId: string, content: string): Promise<void> {
-	await gunEditComment(commentId, content);
+	await deleteComment(commentId);
 	await loadComments(characterId);
 }
 
 export async function removeMyComment(commentId: string): Promise<void> {
-	await gunDeleteComment(commentId);
-	myComments = myComments.filter((c) => c.id !== commentId);
-}
-
-export async function editMyComment(commentId: string, content: string): Promise<void> {
-	const updated = await gunEditComment(commentId, content);
+	const updated = await deleteComment(commentId);
 	myComments = myComments.map((c) => (c.id === commentId ? updated : c));
 }

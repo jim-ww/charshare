@@ -1,8 +1,8 @@
 import { browser } from '$app/environment';
 import type { User } from '$lib/types';
 import { getCurrentUser, initAuth, isAccountRegistered, markRegistered } from './auth.svelte';
-import { publishProfile, subscribeProfileWithRetry } from '$lib/gun/users';
-import { getUsernameClaim } from '$lib/gun/usernames';
+import { publishProfile, subscribeProfileWithRetry } from '$lib/nostr/profile';
+import { getUsernameClaim } from '$lib/nostr/usernames';
 import { clearCachedProfile, loadCachedProfile, saveCachedProfile } from '$lib/db/profile';
 import { notify } from './notifications.svelte';
 import { openSettings } from './settingsModal.svelte';
@@ -45,7 +45,7 @@ function subscribeToOwnProfile(): void {
 			}
 		},
 		// Not `profile !== null` — a cached copy already makes that true, which
-		// would stop the retry-poke (see subscribeDocumentWithRetry) before a
+		// would stop the retry-poke (see event.ts:subscribeEventsWithRetry) before a
 		// relay ever actually answers, leaving `synced` stuck false forever.
 		() => synced
 	);
@@ -60,7 +60,7 @@ function subscribeToOwnProfile(): void {
  *
  *  Shows the last-known profile from the local cache immediately, before the
  *  network subscription resolves, so a returning user's own username/avatar
- *  don't flash blank while GUN reconnects. */
+ *  don't flash blank while relays reconnect. */
 export function initProfile(): Promise<void> {
 	if (!browser) return Promise.resolve();
 	if (!initPromise) {
@@ -151,7 +151,7 @@ async function pickAvailableUsername(base: string): Promise<string | null> {
 	return null;
 }
 
-/** Detects a lost username race: GUN has no server-side arbiter, so two
+/** Detects a lost username race: Nostr has no server-side arbiter, so two
  *  clients can each briefly believe they've claimed the same username before
  *  the network converges (see spec: username claims are first-come-wins,
  *  enforced client-side only). If our own published profile's username turns
@@ -202,7 +202,7 @@ export async function checkUsernameConflict(): Promise<void> {
 /** Called after switching this browser to an imported account (backup
  *  restore) — treats it as registered under the new identity and (re)loads
  *  its profile from the network. `cachedFields`, if the backup carried them,
- *  is shown immediately so the profile isn't blank while waiting on GUN. */
+ *  is shown immediately so the profile isn't blank while waiting on relays. */
 export async function loadProfileForSwitchedAccount(cachedFields?: {
 	username: string;
 	description: string;

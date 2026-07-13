@@ -6,7 +6,7 @@ import {
 	isCharacterSaved,
 	saveCharacterLocally
 } from './savedCharacters.svelte';
-import { subscribeCharacterWithRetry } from '$lib/gun/characters';
+import { subscribeCharacterWithRetry } from '$lib/nostr/characters';
 
 /** Small lookup cache for characters referenced by id outside "my
  *  characters" (e.g. chatting with someone else's character) — chat UI
@@ -27,7 +27,7 @@ const LOAD_TIMEOUT_MS = 8000;
 const unsubscribers = new Map<CharacterId, () => void>();
 
 /** Falls back to a locally-saved copy (see state/savedCharacters.svelte.ts)
- *  if neither "my characters" nor the live GUN cache has the doc — so a
+ *  if neither "my characters" nor the live relay cache has the doc — so a
  *  character the user saved still resolves even if the author later deletes
  *  it or no relay with it is reachable. */
 export function resolveCharacter(id: CharacterId): Character | undefined {
@@ -67,13 +67,13 @@ function startSubscription(id: CharacterId): void {
 	unsubscribers.set(id, unsubscribe);
 }
 
-/** Subscribes (once per id) rather than doing a single one-shot read — GUN's
- *  local read can momentarily miss data that hasn't synced from a relay yet,
- *  so a plain one-shot get can silently never resolve the character. See
- *  gun/document.ts:subscribeDocumentWithRetry for why the subscription alone
- *  isn't enough on this app's public relays and needs periodic re-polling. A
- *  timeout separately flags the id as failed so the UI can stop waiting and
- *  offer recovery. */
+/** Subscribes (once per id) rather than doing a single one-shot read — a
+ *  fresh subscription can momentarily miss data that hasn't synced from a
+ *  relay yet, so a plain one-shot query can silently never resolve the
+ *  character. See event.ts:subscribeEventsWithRetry for why the subscription
+ *  alone isn't enough on this app's public relays and needs periodic
+ *  re-polling. A timeout separately flags the id as failed so the UI can
+ *  stop waiting and offer recovery. */
 export function ensureCharacterLoaded(id: CharacterId): void {
 	// Deliberately doesn't early-return just because a saved copy resolves
 	// the character (unlike "my characters"/live cache) — still subscribes

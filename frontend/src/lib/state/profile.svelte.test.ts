@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // profile.svelte.ts touches several network/storage modules that either need
-// a real IndexedDB or real GUN networking, neither available under plain
+// a real IndexedDB or real relay networking, neither available under plain
 // Node/vitest — mock them the same way other state tests do (see
 // characters-relay-resync.test.ts, savedCharacters.svelte.test.ts).
 let registered = true;
@@ -17,7 +17,7 @@ interface UsernameClaimResult {
 	doc?: { authorPub: string; deleted: boolean };
 }
 let claimResolver: (username: string) => UsernameClaimResult = () => ({ ok: false });
-vi.mock('$lib/gun/usernames', () => ({
+vi.mock('$lib/nostr/usernames', () => ({
 	getUsernameClaim: async (username: string) => claimResolver(username)
 }));
 
@@ -30,7 +30,7 @@ const publishProfileMock = vi.fn(async (fields: { username: string; description:
 	deleted: false,
 	deleted_at: null
 }));
-vi.mock('$lib/gun/users', () => ({
+vi.mock('$lib/nostr/profile', () => ({
 	publishProfile: (fields: { username: string; description: string; image_url?: string }) =>
 		publishProfileMock(fields),
 	subscribeProfileWithRetry: () => () => {}

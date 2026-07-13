@@ -8,7 +8,7 @@ import type {
 	Preferences,
 	ProviderConfig,
 } from "$lib/types";
-import { DEFAULT_GUN_RELAYS } from "$lib/gun/relays";
+import { DEFAULT_NOSTR_RELAYS } from "$lib/nostr/relays";
 
 const STORAGE_KEY = "charshare:preferences";
 
@@ -81,7 +81,7 @@ export const DEFAULT_OPENAI_COMPATIBLE_CONFIG: OpenAiCompatibleProviderConfig = 
 };
 
 export const DEFAULT_PREFERENCES: Preferences = {
-	gunRelays: DEFAULT_GUN_RELAYS,
+	nostrRelays: DEFAULT_NOSTR_RELAYS,
 	theme: "sunset", // best: dark forest halloween dracula night coffee dim sunset
 	blockedTags: [],
 	blockedAuthors: [],
@@ -131,6 +131,15 @@ function withTosAgreed<T extends ProviderConfig>(config: T): T {
 
 export function getPreferences(): Preferences {
 	return preferences;
+}
+
+/** The relay set the app actually talks to right now — the user's own
+ *  configured `nostrRelays` (see NetworkTab.svelte), falling back to the
+ *  built-in defaults only if the user has cleared the list entirely. Read
+ *  fresh (not cached) by every nostr/*.ts network call so an in-session
+ *  relay-list change takes effect immediately. */
+export function getActiveRelays(): string[] {
+	return preferences.nostrRelays.length > 0 ? preferences.nostrRelays : DEFAULT_NOSTR_RELAYS;
 }
 
 export function isPreferencesReady(): boolean {
@@ -260,7 +269,7 @@ export function isAuthorBlocked(authorPubkey: string): boolean {
 }
 
 /** Blocks an author locally — their characters stop showing up in Browse for
- *  this browser only (see gun/browse.ts). Not a network action: the author
+ *  this browser only (see nostr/browse.ts). Not a network action: the author
  *  isn't notified and can still publish; nothing prevents them from being
  *  unblocked and reappearing later. */
 export async function blockAuthor(authorPubkey: string): Promise<void> {

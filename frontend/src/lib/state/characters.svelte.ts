@@ -6,23 +6,23 @@ import {
 	removeMyCharacterEntry,
 	saveLocalOnlyCharacter
 } from '$lib/db/characters';
-import { gunPeerReady } from '$lib/gun/client';
+import { poolConnected } from '$lib/nostr/pool';
 import { confirmDialog } from '$lib/state/confirmDialog.svelte';
 import { m } from '$lib/paraglide/messages.js';
 import { getKeyring, initAuth } from '$lib/state/auth.svelte';
 import {
-	createLocalCharacter as gunCreateLocalCharacter,
-	deleteCharacter as gunDeleteCharacter,
-	editLocalCharacter as gunEditLocalCharacter,
-	forkCharacter as gunForkCharacter,
+	createLocalCharacter as nostrCreateLocalCharacter,
+	deleteCharacter as nostrDeleteCharacter,
+	editLocalCharacter as nostrEditLocalCharacter,
+	forkCharacterFromDoc as nostrForkCharacterFromDoc,
 	getCharacter,
-	publishCharacter as gunPublishCharacter,
-	publishLocalCharacter as gunPublishLocalCharacter,
-	undeleteCharacter as gunUndeleteCharacter
-} from '$lib/gun/characters';
+	publishCharacter as nostrPublishCharacter,
+	publishLocalCharacter as nostrPublishLocalCharacter,
+	undeleteCharacter as nostrUndeleteCharacter
+} from '$lib/nostr/characters';
 import { embedTavernCardInPng, parseTavernCardJson, parseTavernCardPng } from '$lib/import/characterCard';
 
-type CharacterFormFields = Parameters<typeof gunPublishCharacter>[0];
+type CharacterFormFields = Parameters<typeof nostrPublishCharacter>[0];
 
 let myCharacters = $state<Character[]>([]);
 let publishedMap = $state<Record<CharacterId, boolean>>({});
@@ -57,7 +57,7 @@ export function isCharacterInMyCharacters(id: CharacterId): boolean {
 /** Whether `id` is a local-only (unpublished) character owned by this
  *  browser. Characters not in the local index at all (someone else's,
  *  found via browse/fork) are treated as published — they only exist
- *  because they were read from GUN. */
+ *  because they were read from the network. */
 export function isCharacterLocalOnly(id: CharacterId): boolean {
 	return publishedMap[id] === false;
 }
@@ -85,7 +85,7 @@ function normalizeLocalCharacter(character: Character): Character {
 async function refresh(options?: { resyncMissing?: boolean }): Promise<void> {
 	const callSeq = ++refreshCallSeq;
 	const resyncMissing = options?.resyncMissing ?? false;
-	if (resyncMissing) await gunPeerReady();
+	if (resyncMissing) await poolConnected();
 	const keyring = getKeyring();
 	const entries = await loadMyCharacterEntries();
 	const resolved = await Promise.all(
@@ -94,7 +94,7 @@ async function refresh(options?: { resyncMissing?: boolean }): Promise<void> {
 				if (!entry.character) return null;
 				const character = normalizeLocalCharacter(entry.character);
 				// A local-only entry can be wrong — e.g. a character imported from a
-				// backup that raced GUN's connection during the network check (see
+				// backup that raced the relay pool's connection during the network check (see
 				// restoreCharacter) can get filed as local-only even though it's
 				// really already published. Only worth checking on startup resync;
 				// a normal local-only draft has no reason to suddenly appear on the
@@ -110,8 +110,8 @@ async function refresh(options?: { resyncMissing?: boolean }): Promise<void> {
 			}
 			const result = await getCharacter(entry.id);
 			if (result.ok) {
-				// Keep the local cache in sync with whatever GUN just returned, so
-				// it stays a good fallback for the next time GUN isn't reachable.
+				// Keep the local cache in sync with whatever the relay just returned, so
+				// it stays a good fallback for the next time no relay is reachable.
 				await addPublishedCharacterId(entry.id, result.doc);
 				return { character: result.doc, published: true };
 			}
@@ -123,7 +123,7 @@ async function refresh(options?: { resyncMissing?: boolean }): Promise<void> {
 			// or someone else's doc — fall back to the cache without writing.
 			if (resyncMissing && entry.character && keyring && entry.character.author === keyring.publicKey) {
 				try {
-					const republished = await gunPublishLocalCharacter(normalizeLocalCharacter(entry.character));
+					const republished = await nostrPublishLocalCharacter(normalizeLocalCharacter(entry.character));
 					await addPublishedCharacterId(entry.id, republished);
 					return { character: republished, published: true };
 				} catch {
@@ -171,7 +171,7 @@ export function initCharacters(): Promise<void> {
 }
 
 /** Creates or edits a character. `localOnly` controls whether a *new*
- *  character (or a still-unpublished one) is published to GUN or kept
+ *  character (or a still-unpublished one) is published to the network or kept
  *  purely in this browser's local storage. Editing a character that's
  *  already published always stays published — publish is one-way except
  *  via the explicit "keep local" choice at creation time. */
@@ -183,12 +183,12 @@ export async function createOrEditCharacter(
 
 	if (!fields.id) {
 		if (localOnly) {
-			const doc = await gunCreateLocalCharacter(fields);
+			const doc = await nostrCreateLocalCharacter(fields);
 			await saveLocalOnlyCharacter(doc);
 			await refresh();
 			return doc;
 		}
-		const doc = await gunPublishCharacter(fields);
+		const doc = await nostrPublishCharacter(fields);
 		await addPublishedCharacterId(doc.id, doc);
 		await refresh();
 		return doc;
@@ -196,37 +196,37 @@ export async function createOrEditCharacter(
 
 	if (isCharacterLocalOnly(fields.id)) {
 		// myCharacters is a $state array, so its elements are reactive proxies —
-		// de-proxy before this escapes into GUN/IndexedDB writes, both of which
+		// de-proxy before this escapes into relay-publish/IndexedDB writes, both of which
 		// use structured cloning under the hood and throw on a live Proxy (see
 		// publishMyCharacter/restoreMyCharacter below for the same fix).
 		const existing = myCharacters.find((c) => c.id === fields.id);
 		if (!existing) throw new Error('Character not found.');
-		const edited = await gunEditLocalCharacter($state.snapshot(existing), fields);
+		const edited = await nostrEditLocalCharacter($state.snapshot(existing), fields);
 		if (localOnly) {
 			await saveLocalOnlyCharacter(edited);
 			await refresh();
 			return edited;
 		}
-		const published = await gunPublishLocalCharacter(edited);
+		const published = await nostrPublishLocalCharacter(edited);
 		await addPublishedCharacterId(published.id, published);
 		await refresh();
 		return published;
 	}
 
-	const doc = await gunPublishCharacter(fields);
+	const doc = await nostrPublishCharacter(fields);
 	await addPublishedCharacterId(doc.id, doc);
 	await refresh();
 	return doc;
 }
 
 export async function publishMyCharacter(id: CharacterId): Promise<Character> {
-	// De-proxy: myCharacters is a $state array, and writeToGun/addPublishedCharacterId
-	// both eventually hit a structured-clone boundary (GUN's put, idb-keyval's
+	// De-proxy: myCharacters is a $state array, and publishLocalCharacter/addPublishedCharacterId
+	// both eventually hit a structured-clone boundary (nostr-tools' event signing, idb-keyval's
 	// IndexedDB set) that throws "Proxy object could not be cloned" on a live
 	// Svelte reactive proxy — e.g. publishing a freshly-forked character.
 	const existing = myCharacters.find((c) => c.id === id);
 	if (!existing) throw new Error('Character not found.');
-	const doc = await gunPublishLocalCharacter($state.snapshot(existing));
+	const doc = await nostrPublishLocalCharacter($state.snapshot(existing));
 	await addPublishedCharacterId(doc.id, doc);
 	await refresh();
 	return doc;
@@ -235,9 +235,9 @@ export async function publishMyCharacter(id: CharacterId): Promise<Character> {
 /** Deletes a character. A local-only (never-published) character just drops
  *  out of the local index — there's nothing on the network to touch.
  *
- *  A published character always gets tombstoned on GUN (peers who already
+ *  A published character always gets tombstoned on the network (peers who already
  *  synced it can't be forced to erase their copy either way — see
- *  gun/characters.ts:deleteCharacter). `removeLocal` controls whether the
+ *  nostr/characters.ts:deleteCharacter). `removeLocal` controls whether the
  *  local "My Characters" entry is dropped too:
  *  - false (remote-only): the entry stays (now pointing at the tombstoned
  *    doc, see restoreMyCharacter) — a one-click Restore later reuses the
@@ -249,7 +249,7 @@ export async function deleteMyCharacter(id: CharacterId, options?: { removeLocal
 	if (isCharacterLocalOnly(id)) {
 		await removeMyCharacterEntry(id);
 	} else {
-		await gunDeleteCharacter(id);
+		await nostrDeleteCharacter(id);
 		if (options?.removeLocal) await removeMyCharacterEntry(id);
 	}
 	await refresh();
@@ -257,24 +257,28 @@ export async function deleteMyCharacter(id: CharacterId, options?: { removeLocal
 
 /** Reverses a "delete remote only" — a fresh signed version of the locally-
  *  cached (tombstoned) copy with `deleted: false`, under the same id/version
- *  chain (see gun/characters.ts:undeleteCharacter), so the id and every
+ *  chain (see nostr/characters.ts:undeleteCharacter), so the id and every
  *  comment already posted on it come back untouched. */
 export async function restoreMyCharacter(id: CharacterId): Promise<Character> {
 	// See publishMyCharacter above — de-proxy before this hits a
 	// structured-clone boundary.
 	const existing = myCharacters.find((c) => c.id === id);
 	if (!existing) throw new Error('Character not found.');
-	const doc = await gunUndeleteCharacter($state.snapshot(existing));
+	const doc = await nostrUndeleteCharacter($state.snapshot(existing));
 	await addPublishedCharacterId(doc.id, doc);
 	await refresh();
 	return doc;
 }
 
-/** Forks `id` into a new local-only character owned by the current user
- *  (see gun/characters.ts forkCharacter) — kept unpublished until the user
- *  edits and explicitly publishes it. */
-export async function forkCharacter(id: CharacterId): Promise<Character> {
-	const doc = await gunForkCharacter(id);
+/** Forks `source` into a new local-only character owned by the current user
+ *  (see nostr/characters.ts:forkCharacterFromDoc) — kept unpublished until
+ *  the user edits and explicitly publishes it. Takes the already-resolved
+ *  character directly rather than re-fetching by id, so forking a saved
+ *  character whose author is currently unreachable on the network still
+ *  works — the caller (the character detail page) already has a verified
+ *  copy on screen, from wherever it originally resolved it. */
+export async function forkCharacter(source: Character): Promise<Character> {
+	const doc = nostrForkCharacterFromDoc(source);
 	await saveLocalOnlyCharacter(doc);
 	await refresh();
 	return doc;
@@ -286,7 +290,7 @@ export async function forkCharacter(id: CharacterId): Promise<Character> {
  *  "characters" category import, so re-restoring the same backup merges
  *  instead of piling up duplicate copies every time.
  *
- *  - Already published under this id → GUN is authoritative, skipped.
+ *  - Already published under this id → the network is authoritative, skipped.
  *  - Not tracked locally, but published on the network → just linked into the
  *    local index, network content wins.
  *  - Not tracked locally at all → added as a new local-only character.
@@ -300,11 +304,11 @@ export async function restoreCharacter(character: Character): Promise<'added' | 
 
 	const existing = existingEntry?.character;
 	if (!existing) {
-		// A fresh import runs before GUN has necessarily connected — without
+		// A fresh import runs before the relay pool has necessarily connected — without
 		// waiting here, this network check can race the connection and lose,
 		// wrongly filing an already-published character as local-only (see
 		// refresh()'s resyncMissing, which waits for the same reason).
-		await gunPeerReady();
+		await poolConnected();
 		const onNetwork = await getCharacter(character.id);
 		if (onNetwork.ok) {
 			await addPublishedCharacterId(character.id, onNetwork.doc);

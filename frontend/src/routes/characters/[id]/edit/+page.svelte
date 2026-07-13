@@ -4,7 +4,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import type { Character, CharacterDraft } from '$lib/types';
-	import { subscribeCharacter } from '$lib/gun/characters';
+	import { subscribeCharacter } from '$lib/nostr/characters';
 	import { createOrEditCharacter, getMyCharacters, isCharacterLocalOnly } from '$lib/state/characters.svelte';
 	import CharacterForm from '$lib/components/CharacterForm.svelte';
 	import { m } from '$lib/paraglide/messages.js';
@@ -19,8 +19,8 @@
 		notFound = false;
 		const currentId = id;
 
-		// Local-only characters were never written to GUN — fetching them from
-		// GUN would always report not-found. Their doc only lives in the local
+		// Local-only characters were never published to a relay — fetching them from
+		// the network would always report not-found. Their doc only lives in the local
 		// "my characters" store.
 		const local = getMyCharacters().find((c) => c.id === currentId);
 		if (local && isCharacterLocalOnly(currentId)) {
@@ -34,7 +34,7 @@
 					character = result.doc;
 					notFound = false;
 				} else if (!character) {
-					// Only flag not-found while we have nothing to show yet — GUN's
+					// Only flag not-found while we have nothing to show yet — a relay's
 					// `.on()` can fire once with stale/missing local data before a
 					// relay answers, then fire again once the real doc syncs in.
 					notFound = true;

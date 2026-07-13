@@ -23,6 +23,11 @@
 
 	onMount(() => {
 		installWailsConsoleForward();
+		// Safe to call unconditionally here — +layout.ts's `load()` has already
+		// awaited this exact promise before this component (or any route
+		// content) rendered at all, so preferences are guaranteed loaded before
+		// initProfile/initCharacters resolve which relays to talk to (see
+		// state/preferences.svelte.ts:getActiveRelays).
 		initPreferences();
 		initAuth();
 		initProfile().then(() => checkUsernameConflict());

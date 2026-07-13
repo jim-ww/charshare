@@ -1,19 +1,16 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { rmSync } from 'node:fs';
-import Gun from 'gun/gun.js';
-import { __setGunForTests } from './client';
+import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import { __setKeyringForTests } from '$lib/state/auth.svelte';
-import { generateKeyring } from '$lib/crypto/keys';
+import { generateKeyring } from './keys';
+import { __setPoolForTests } from './pool';
+import { createFakePool } from './testUtils';
 import { deleteCharacter, forkCharacter, publishCharacter, publishLocalCharacter } from './characters';
 import { browseByTag, browseNetworkPage, browseByName, browseByAuthor, browseForksOf } from './browse';
-import { publishProfile } from './users';
+import { publishProfile } from './profile';
 import { __setPreferencesForTests } from '$lib/state/preferences.svelte';
 
 async function browseNetwork() {
 	return (await browseNetworkPage(null, 1000)).characters;
 }
-
-const RADATA_DIR = `test-radata-browse-${crypto.randomUUID()}`;
 
 const baseFields = {
 	image_urls: [],
@@ -29,13 +26,9 @@ const baseFields = {
 	comments_enabled: true
 };
 
-beforeAll(async () => {
-	__setGunForTests(new Gun({ radisk: true, localStorage: false, peers: [], axe: false, multicast: false, file: RADATA_DIR }));
-	__setKeyringForTests(await generateKeyring());
-});
-
-afterAll(() => {
-	rmSync(RADATA_DIR, { recursive: true, force: true });
+beforeEach(() => {
+	__setPoolForTests(createFakePool().pool);
+	__setKeyringForTests(generateKeyring());
 });
 
 describe('browseByTag', () => {
@@ -104,10 +97,13 @@ describe('browseNetworkPage', () => {
 		for (const c of created) expect(seen).toContain(c.id);
 	});
 
-	it('sorts newest-created first within a bucket', async () => {
+	it('sorts newest-published first within a page', async () => {
+		// published_at is second-resolution (Nostr's own created_at unit), so
+		// the two publishes need to land in different seconds for sort order
+		// to be observable — a plain few-ms gap wouldn't produce a difference.
 		const tag = `t-${crypto.randomUUID()}`;
 		const older = await publishCharacter({ ...baseFields, name: 'Older', tags: [tag] });
-		await new Promise((resolve) => setTimeout(resolve, 5));
+		await new Promise((resolve) => setTimeout(resolve, 1100));
 		const newer = await publishCharacter({ ...baseFields, name: 'Newer', tags: [tag] });
 
 		const { characters } = await browseNetworkPage(null, 1000);
@@ -115,12 +111,12 @@ describe('browseNetworkPage', () => {
 		const newerIndex = characters.findIndex((c) => c.id === newer.id);
 
 		expect(newerIndex).toBeLessThan(olderIndex);
-	});
+	}, 20000);
 
-	it('sorts oldest-created first when order is asc', async () => {
+	it('sorts oldest-published first when order is asc', async () => {
 		const tag = `t-${crypto.randomUUID()}`;
 		const older = await publishCharacter({ ...baseFields, name: 'AscOlder', tags: [tag] });
-		await new Promise((resolve) => setTimeout(resolve, 5));
+		await new Promise((resolve) => setTimeout(resolve, 1100));
 		const newer = await publishCharacter({ ...baseFields, name: 'AscNewer', tags: [tag] });
 
 		const { characters } = await browseNetworkPage(null, 1000, 'asc');
@@ -128,13 +124,11 @@ describe('browseNetworkPage', () => {
 		const newerIndex = characters.findIndex((c) => c.id === newer.id);
 
 		expect(olderIndex).toBeLessThan(newerIndex);
-	});
+	}, 20000);
 
 	it('keeps the same order across pages once a cursor is established', async () => {
 		const tag = `t-${crypto.randomUUID()}`;
-		await Promise.all(
-			[0, 1, 2, 3].map((i) => publishCharacter({ ...baseFields, name: `Asc${i}`, tags: [tag] }))
-		);
+		await Promise.all([0, 1, 2, 3].map((i) => publishCharacter({ ...baseFields, name: `Asc${i}`, tags: [tag] })));
 
 		const first = await browseNetworkPage(null, 2, 'asc');
 		expect(first.cursor).not.toBeNull();
@@ -171,7 +165,7 @@ describe('author blocklist', () => {
 	});
 
 	it('excludes characters from a locally-blocked author', async () => {
-		const keyring = await generateKeyring();
+		const keyring = generateKeyring();
 		__setKeyringForTests(keyring);
 		const tag = `t-${crypto.randomUUID()}`;
 		const created = await publishCharacter({ ...baseFields, name: 'Blocked', tags: [tag] });
@@ -217,7 +211,7 @@ describe('browseForksOf', () => {
 
 describe('browseByAuthor', () => {
 	it('finds characters authored by a raw pubkey', async () => {
-		const keyring = await generateKeyring();
+		const keyring = generateKeyring();
 		__setKeyringForTests(keyring);
 		const created = await publishCharacter({ ...baseFields, name: 'ByPubkey', tags: [] });
 
@@ -227,7 +221,7 @@ describe('browseByAuthor', () => {
 	});
 
 	it('resolves a claimed username to its author', async () => {
-		const keyring = await generateKeyring();
+		const keyring = generateKeyring();
 		__setKeyringForTests(keyring);
 		const username = `author-${crypto.randomUUID().slice(0, 8)}`;
 		await publishProfile({ username, description: '' });
