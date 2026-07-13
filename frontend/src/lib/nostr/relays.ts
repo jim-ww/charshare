@@ -4,8 +4,4 @@
  *  relay to discover where to look for someone's own declared relays. Kept
  *  separate from pool.ts/preferences.svelte.ts so neither module has to
  *  import the other just to reach this constant. */
-export const DEFAULT_NOSTR_RELAYS: string[] = [
-	'wss://relay.damus.io',
-	'wss://nos.lol',
-	'wss://relay.nostr.band'
-];
+export const DEFAULT_NOSTR_RELAYS: string[] = ["ws://127.0.0.1:7447"];
