@@ -24,7 +24,6 @@ vi.mock('$lib/nostr/usernames', () => ({
 const publishProfileMock = vi.fn(async (fields: { username: string; description: string; image_url?: string }) => ({
 	id: 'my-pubkey',
 	...fields,
-	signature: 'sig',
 	created_at: 1,
 	updated_at: 2,
 	deleted: false,

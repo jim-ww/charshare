@@ -36,7 +36,6 @@ function eventToComment(event: NostrEvent, deletedMap: Record<CommentId, number>
 		content: event.content,
 		parent_id: parentEventId ?? null,
 		author: event.pubkey,
-		signature: event.sig,
 		created_at: event.created_at * 1000,
 		updated_at: event.created_at * 1000,
 		deleted: deletedAt !== null,

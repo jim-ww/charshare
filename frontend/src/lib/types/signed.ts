@@ -4,7 +4,6 @@ import type { PubKey } from './user';
  *  Compose with `& Signed` rather than duplicating these fields per type. */
 export interface Signed {
   author: PubKey;
-  signature: string; // base64, over the canonicalized document minus this field
   created_at: number;
   updated_at: number;
 }

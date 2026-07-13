@@ -80,7 +80,6 @@
 			comments_enabled: false,
 			forked_from: null,
 			author: '',
-			signature: '',
 			created_at: 0,
 			updated_at: 0,
 			deleted: false,

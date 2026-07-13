@@ -23,7 +23,6 @@ const character: Character = {
 	forked_from: null,
 	deleted: false,
 	deleted_at: null,
-	signature: 'sig',
 	created_at: 0,
 	updated_at: 0
 };

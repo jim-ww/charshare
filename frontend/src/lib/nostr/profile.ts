@@ -55,7 +55,6 @@ function eventToUser(event: NostrEvent): User | null {
 		username: content.name,
 		description: content.about,
 		...(content.picture ? { image_url: content.picture } : {}),
-		signature: event.sig,
 		created_at: createdAt,
 		updated_at: event.created_at * 1000,
 		deleted: content.charshare_deleted === true,

@@ -11,20 +11,19 @@ import { getActiveRelays } from '$lib/state/preferences.svelte';
 // the current user's own NIP-65 outbox relays (see relayList.ts).
 
 /** A claim on a normalized username — a NIP-33 addressable event, `d` = the
- *  normalized username. Unlike characters, there is no separate `authorPub`/
- *  `signature` field to validate: the event's own `pubkey`/signature already
- *  are those. "First-come-wins" is enforced client-side only, same as
- *  before: NIP-33 replaceable-event semantics only dedupe a single author's
- *  own revisions under a `d` tag — they do NOT give cross-author uniqueness,
- *  so two different authors can each hold their own live claim event under
- *  the same `d` value. `getUsernameClaim` resolves that by picking whichever
- *  live (non-deleted) claim was made first. */
+ *  normalized username. Unlike characters, there is no separate `authorPub`
+ *  field to validate: the event's own `pubkey`/signature already is that.
+ *  "First-come-wins" is enforced client-side only, same as before: NIP-33
+ *  replaceable-event semantics only dedupe a single author's own revisions
+ *  under a `d` tag — they do NOT give cross-author uniqueness, so two
+ *  different authors can each hold their own live claim event under the same
+ *  `d` value. `getUsernameClaim` resolves that by picking whichever live
+ *  (non-deleted) claim was made first. */
 export interface UsernameClaim {
 	username: string;
 	authorPub: PubKey;
 	claimed_at: number;
 	deleted: boolean;
-	signature: string;
 }
 
 interface ClaimContent {
@@ -57,8 +56,7 @@ function eventToClaim(event: NostrEvent): UsernameClaim | null {
 		username,
 		authorPub: event.pubkey,
 		claimed_at: content.claimed_at,
-		deleted: content.deleted,
-		signature: event.sig
+		deleted: content.deleted
 	};
 }
 

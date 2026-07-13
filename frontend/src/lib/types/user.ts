@@ -17,7 +17,6 @@ export interface UserFields {
  *  is the signer's pubkey (see spec ## Signing: "already present as author/id"). */
 export type User = UserFields &
   Tombstonable & {
-    signature: string; // base64, over the canonicalized document minus this field
     created_at: number; // unix ms
     updated_at: number; // unix ms
   };

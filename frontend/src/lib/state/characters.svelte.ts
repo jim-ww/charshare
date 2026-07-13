@@ -408,8 +408,8 @@ export function importCharacterCardPng(bytes: Uint8Array): CharacterFormFields {
 }
 
 /** Parses a previously-exported character JSON into a fresh draft — strips
- *  id/version/signature/timestamps/forked_from so importing always creates a
- *  brand new character rather than colliding with the source. */
+ *  id/version/timestamps/forked_from so importing always creates a brand new
+ *  character rather than colliding with the source. */
 export function importCharacterDraft(json: string): CharacterFormFields {
 	let parsed: unknown;
 	try {

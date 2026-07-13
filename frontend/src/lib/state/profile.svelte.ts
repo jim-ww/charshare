@@ -217,7 +217,6 @@ export async function loadProfileForSwitchedAccount(cachedFields?: {
 			username: cachedFields.username,
 			description: cachedFields.description,
 			...(cachedFields.image_url ? { image_url: cachedFields.image_url } : {}),
-			signature: '',
 			created_at: Date.now(),
 			updated_at: Date.now(),
 			deleted: false,

@@ -66,7 +66,7 @@ function tagValues(tags: string[][], name: string): string[] {
  *  (preserved across edits, unlike the event's own `created_at` — a NIP-33
  *  relay only retains the latest revision's timestamp, so the original must
  *  be carried forward explicitly as the `published_at` tag). */
-function characterToTemplate(doc: Omit<Character, 'author' | 'signature' | 'updated_at'>): EventTemplate {
+function characterToTemplate(doc: Omit<Character, 'author' | 'updated_at'>): EventTemplate {
 	const { uuid } = parseCharacterId(doc.id);
 	const tags: string[][] = [
 		['d', uuid],
@@ -129,7 +129,6 @@ export function eventToCharacter(event: NostrEvent): Character | null {
 	return {
 		id: `${event.pubkey}:${uuid}`,
 		author: event.pubkey,
-		signature: event.sig,
 		tags: tagValues(event.tags, 't'),
 		nsfw: event.tags.some((t) => t[0] === 'content-warning'),
 		forked_from: forkTag ? parseCharacterCoordinate(forkTag) : null,
@@ -148,14 +147,14 @@ function toVerified(event: NostrEvent): Verified<Character> {
  *  before publishing and for local-only drafts that never touch a relay.
  *  Round-trips through the same template/parse functions a relay would use,
  *  so a local-only character has byte-identical shape to a published one. */
-function sign(draft: Omit<Character, 'author' | 'signature' | 'updated_at'>, keyring: Keyring): Character {
+function sign(draft: Omit<Character, 'author' | 'updated_at'>, keyring: Keyring): Character {
 	const event = signEvent(characterToTemplate(draft), keyring);
 	const parsed = eventToCharacter(event);
 	if (!parsed) throw new Error('Failed to sign character.');
 	return parsed;
 }
 
-async function signAndPublish(draft: Omit<Character, 'author' | 'signature' | 'updated_at'>, keyring: Keyring): Promise<Character> {
+async function signAndPublish(draft: Omit<Character, 'author' | 'updated_at'>, keyring: Keyring): Promise<Character> {
 	const relays = await writeRelaysFor(keyring);
 	const event = await publishEvent(characterToTemplate(draft), keyring, relays);
 	const parsed = eventToCharacter(event);
@@ -301,8 +300,10 @@ export async function deleteCharacter(id: CharacterId): Promise<Character> {
 	if (!existing.ok) throw new Error('Character not found.');
 	if (existing.doc.author !== keyring.publicKey) throw new Error('Only the author can delete this character.');
 
-	const { signature: _signature, ...rest } = existing.doc;
-	const published = await signAndPublish({ ...rest, version: rest.version + 1, deleted: true, deleted_at: Date.now() }, keyring);
+	const published = await signAndPublish(
+		{ ...existing.doc, version: existing.doc.version + 1, deleted: true, deleted_at: Date.now() },
+		keyring
+	);
 	await publishDeleteRequest(id, keyring);
 	return published;
 }
@@ -336,8 +337,10 @@ export async function undeleteCharacter(existing: Character): Promise<Character>
 	requireAccount();
 	if (existing.author !== keyring.publicKey) throw new Error('Only the author can restore this character.');
 
-	const { signature: _signature, ...rest } = existing;
-	return signAndPublish({ ...rest, version: rest.version + 1, deleted: false, deleted_at: null }, keyring);
+	return signAndPublish(
+		{ ...existing, version: existing.version + 1, deleted: false, deleted_at: null },
+		keyring
+	);
 }
 
 /** Copies `source`'s fields into a new document under a new id, authored and
@@ -354,7 +357,6 @@ export function forkCharacterFromDoc(source: Character): Character {
 		version: _version,
 		author: _author,
 		forked_from: _forkedFrom,
-		signature: _signature,
 		created_at: _createdAt,
 		updated_at: _updatedAt,
 		deleted: _deleted,

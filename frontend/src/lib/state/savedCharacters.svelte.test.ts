@@ -46,7 +46,6 @@ function makeCharacter(id: string, overrides: Partial<Character> = {}): Characte
 		comments_enabled: true,
 		forked_from: null,
 		author: 'author-pub',
-		signature: 'sig',
 		created_at: 1,
 		updated_at: 1,
 		deleted: false,

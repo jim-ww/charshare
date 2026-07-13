@@ -51,7 +51,6 @@ function makeCharacter(overrides: Partial<Character> = {}): Character {
 		comments_enabled: true,
 		forked_from: null,
 		author: 'pub-1',
-		signature: '',
 		created_at: 0,
 		updated_at: 0,
 		deleted: false,
