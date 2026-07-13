@@ -8,6 +8,7 @@
 		estimateChatTokens,
 	} from "$lib/ai/chat";
 	import { setChatDraft, getActivePath } from "$lib/state/chats.svelte";
+	import { getChatGenerationError, setChatGenerationError } from "$lib/state/chatGenerationError.svelte";
 	import { m } from '$lib/paraglide/messages.js';
 	import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
 	import { startMicRecording, type MicRecording } from "$lib/audio/recordMic";
@@ -67,6 +68,12 @@
 			.map((m) => m.content),
 	);
 
+	// `error` (local) covers mic/transcription failures, which only ever
+	// happen here; `getChatGenerationError` also picks up regenerate/continue/
+	// edit-resend failures from ChatBubble, surfacing them in this same place
+	// instead of a per-message action failing with nothing shown at all.
+	const displayError = $derived(error || getChatGenerationError(chat.id));
+
 	// Live "context usage" readout — the system prompt, full history, and the
 	// not-yet-sent draft, against the active provider's configured
 	// context_size. Purely informational: the actual request sent when
@@ -108,7 +115,7 @@
 		const controller = new AbortController();
 		abortController = controller;
 		sending = true;
-		error = null;
+		setChatGenerationError(chat.id, null);
 		try {
 			if (trimmed) {
 				await sendMessage(chat, character, trimmed, {
@@ -129,9 +136,12 @@
 					err.name === "AbortError"
 				)
 			) {
-				error = m.error_generic({
-					message: err instanceof Error ? err.message : String(err),
-				});
+				setChatGenerationError(
+					chat.id,
+					m.error_generic({
+						message: err instanceof Error ? err.message : String(err),
+					}),
+				);
 			}
 		} finally {
 			sending = false;
@@ -297,15 +307,18 @@
 
 	async function handleGenerateForMe() {
 		generating = true;
-		error = null;
+		setChatGenerationError(chat.id, null);
 		try {
 			content = await generateUserDraft(chat, character);
 			historyIndex = -1;
 			draftBackup = "";
 		} catch (err) {
-			error = m.error_generic({
-				message: err instanceof Error ? err.message : String(err),
-			});
+			setChatGenerationError(
+				chat.id,
+				m.error_generic({
+					message: err instanceof Error ? err.message : String(err),
+				}),
+			);
 		} finally {
 			generating = false;
 		}
@@ -463,8 +476,8 @@
 			})}
 		</p>
 	{/if}
-	{#if error}
-		<p class="text-error text-sm">{error}</p>
+	{#if displayError}
+		<p class="text-error text-sm">{displayError}</p>
 	{/if}
 </form>
 

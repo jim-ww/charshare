@@ -12,6 +12,7 @@
 	} from '$lib/state/chats.svelte';
 	import { continueMessage, editUserMessage, regenerateMessage } from '$lib/ai/chat';
 	import { getEditingMessageId, requestStartEdit, stopEditing } from '$lib/state/chatEditing.svelte';
+	import { setChatGenerationError } from '$lib/state/chatGenerationError.svelte';
 	import { getMyProfile } from '$lib/state/profile.svelte';
 	import { getPersona, personaDisplayName } from '$lib/state/personas.svelte';
 	import { getPreferences, updatePreferences } from '$lib/state/preferences.svelte';
@@ -199,8 +200,11 @@
 		stopEditing(message.id);
 		void setChatEditingMessage(chatId, null);
 		regenerating = true;
+		setChatGenerationError(chat.id, null);
 		try {
 			await editUserMessage(chat, character, message.id, draft);
+		} catch (err) {
+			setChatGenerationError(chat.id, m.error_generic({ message: err instanceof Error ? err.message : String(err) }));
 		} finally {
 			regenerating = false;
 		}
@@ -209,8 +213,11 @@
 	async function handleRegenerate() {
 		if (regenerating) return;
 		regenerating = true;
+		setChatGenerationError(chat.id, null);
 		try {
 			await regenerateMessage(chat, character, message.id);
+		} catch (err) {
+			setChatGenerationError(chat.id, m.error_generic({ message: err instanceof Error ? err.message : String(err) }));
 		} finally {
 			regenerating = false;
 		}
@@ -221,8 +228,11 @@
 	async function handleContinue() {
 		if (regenerating) return;
 		regenerating = true;
+		setChatGenerationError(chat.id, null);
 		try {
 			await continueMessage(chat, character, message.id);
+		} catch (err) {
+			setChatGenerationError(chat.id, m.error_generic({ message: err instanceof Error ? err.message : String(err) }));
 		} finally {
 			regenerating = false;
 		}
