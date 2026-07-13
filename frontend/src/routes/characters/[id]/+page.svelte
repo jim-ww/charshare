@@ -597,20 +597,22 @@
 							<span>{m.char_detail_updated({ time: formatCommentTime(character.updated_at) })}</span>
 						{/if}
 					</div>
-					<div class="mt-2">
-						<button
-							class="btn btn-sm rounded-full"
-							class:btn-primary={liked}
-							class:btn-outline={!liked}
-							type="button"
-							onclick={handleToggleLike}
-						>
-							{liked ? m.char_detail_liked() : m.char_detail_like()}
-							{#if likeCount !== null}
-								<span class="badge badge-sm">{likeCount}</span>
-							{/if}
-						</button>
-					</div>
+					{#if reachable}
+						<div class="mt-2">
+							<button
+								class="btn btn-sm rounded-full"
+								class:btn-primary={liked}
+								class:btn-outline={!liked}
+								type="button"
+								onclick={handleToggleLike}
+							>
+								{liked ? m.char_detail_liked() : m.char_detail_like()}
+								{#if likeCount !== null}
+									<span class="badge badge-sm">{likeCount}</span>
+								{/if}
+							</button>
+						</div>
+					{/if}
 					{#if character.tags.length || character.language}
 						<div
 							class="mt-4 flex flex-wrap gap-1"
@@ -939,7 +941,7 @@
 					</a>
 				{/if}
 
-				{#if isMine || !character.deleted}
+				{#if (isMine || !character.deleted) && reachable}
 					<div class="mt-4">
 						<h2 class="mb-2 text-lg font-semibold">
 							{m.char_detail_comments_heading()}

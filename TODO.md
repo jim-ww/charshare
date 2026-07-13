@@ -1,7 +1,9 @@
 - feat(core): sort characters/comments by like count (NIP-25 likes are implemented — see nostr/reactions.ts — but popularity sorting itself was explicitly deferred while migrating to Nostr; NIP-45 COUNT isn't universally supported, so this likely means scoping "most liked" to a bounded recent window rather than true all-time global popularity, see nostr/browse.ts's doc comments)
 - add 'Start new chat' button (with same char) in chat window somewhere (in top bar, to the left of chat settings)
-- like button, comments should only be shown on reachable entities
-- dont scroll to last message on message edit?
+- disable scroll to last message, when editing a message
+- add option to hide owned cards too
 - allow to specify videos in character cards
+- inside chat: add token counter, and when current_tokens overflows max_tokens, remove message content from oldest message first (remove not whole message, but just the part thats needed to free)
+- continue button fix
 - feat: add some characters from other platforms
 - consider: android build target
