@@ -10,6 +10,16 @@
 
 	const preferences = $derived(getPreferences());
 	const provider = $derived(preferences.provider);
+	// Ollama talks to a server the user runs themselves — no third-party ToS applies.
+	const needsTosAgreement = $derived(provider.provider !== 'ollama' && !provider.tosAgreed);
+	const providerLabel = $derived(
+		{
+			openrouter: m.ai_tab_provider_openrouter(),
+			ollama: m.ai_tab_provider_ollama(),
+			huggingface: m.ai_tab_provider_huggingface(),
+			openai_compatible: m.ai_tab_provider_openai_compatible()
+		}[provider.provider]
+	);
 
 	type KeysOf<T> = T extends unknown ? keyof T : never;
 	type AnyProviderKey = KeysOf<ProviderConfig>;
@@ -37,6 +47,25 @@
 		</select>
 	</label>
 
+	<div class="relative flex flex-col gap-3">
+		{#if needsTosAgreement}
+			<div class="absolute inset-0 z-10 flex items-center justify-center">
+				<button
+					class="btn btn-primary"
+					type="button"
+					onclick={() => update('tosAgreed', true)}
+				>
+					{m.ai_tab_tos_agree_button({ provider: providerLabel })}
+				</button>
+			</div>
+		{/if}
+		<div
+			class="flex flex-col gap-3"
+			class:blur-sm={needsTosAgreement}
+			class:pointer-events-none={needsTosAgreement}
+			aria-hidden={needsTosAgreement}
+			inert={needsTosAgreement}
+		>
 	{#if provider.provider === 'openrouter'}
 		<label class="form-control">
 			<span class="label-text">{m.ai_tab_openrouter_key_label()}</span>
@@ -212,6 +241,8 @@
 			>
 				{m.ai_tab_reset_defaults()}
 			</button>
+		</div>
+	</div>
 		</div>
 	</div>
 </div>

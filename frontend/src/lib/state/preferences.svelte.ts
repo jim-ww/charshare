@@ -27,6 +27,7 @@ export const DEFAULT_OPENROUTER_CONFIG: OpenRouterProviderConfig = {
 	frequency_penalty: 0,
 	forbidden_words: [],
 	disable_thinking: true,
+	tosAgreed: false,
 };
 
 export const DEFAULT_OLLAMA_CONFIG: OllamaProviderConfig = {
@@ -42,6 +43,8 @@ export const DEFAULT_OLLAMA_CONFIG: OllamaProviderConfig = {
 	frequency_penalty: 0,
 	forbidden_words: [],
 	disable_thinking: true,
+	// Ollama talks to a server the user runs themselves — no third-party ToS to agree to.
+	tosAgreed: true,
 };
 
 export const DEFAULT_HUGGINGFACE_CONFIG: HuggingFaceProviderConfig = {
@@ -57,6 +60,7 @@ export const DEFAULT_HUGGINGFACE_CONFIG: HuggingFaceProviderConfig = {
 	frequency_penalty: 0,
 	forbidden_words: [],
 	disable_thinking: true,
+	tosAgreed: false,
 };
 
 export const DEFAULT_OPENAI_COMPATIBLE_CONFIG: OpenAiCompatibleProviderConfig = {
@@ -73,6 +77,7 @@ export const DEFAULT_OPENAI_COMPATIBLE_CONFIG: OpenAiCompatibleProviderConfig = 
 	frequency_penalty: 0,
 	forbidden_words: [],
 	disable_thinking: true,
+	tosAgreed: false,
 };
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -118,6 +123,12 @@ let preferences = $state<Preferences>(DEFAULT_PREFERENCES);
 let ready = $state(false);
 let initPromise: Promise<void> | null = null;
 
+/** Backfills `tosAgreed` on configs saved before the field existed. Ollama
+ *  talks to a server the user runs themselves, so it never needed agreement. */
+function withTosAgreed<T extends ProviderConfig>(config: T): T {
+	return { ...config, tosAgreed: config.tosAgreed ?? config.provider === "ollama" };
+}
+
 export function getPreferences(): Preferences {
 	return preferences;
 }
@@ -152,11 +163,14 @@ export function initPreferences(): Promise<void> {
 					ttsConsentGiven: preferences.ttsConsentGiven ?? false,
 				voicevoxBaseUrl: preferences.voicevoxBaseUrl ?? "http://localhost:50021",
 				autoReadAloud: preferences.autoReadAloud ?? false,
-					providerConfigs: {
-						...DEFAULT_PREFERENCES.providerConfigs,
-						...preferences.providerConfigs,
-						[preferences.provider.provider]: preferences.provider,
-					},
+					provider: withTosAgreed(preferences.provider),
+					providerConfigs: Object.fromEntries(
+						Object.entries({
+							...DEFAULT_PREFERENCES.providerConfigs,
+							...preferences.providerConfigs,
+							[preferences.provider.provider]: preferences.provider,
+						}).map(([key, config]) => [key, withTosAgreed(config as ProviderConfig)]),
+					) as typeof preferences.providerConfigs,
 				};
 			}
 			ready = true;

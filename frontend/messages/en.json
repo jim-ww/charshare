@@ -564,6 +564,7 @@
 	"ai_tab_openai_compatible_url_hint": "Any server exposing an OpenAI-compatible /chat/completions endpoint — a self-hosted proxy, a third-party API, a local inference server.",
 	"ai_tab_openai_compatible_key_label": "API key (optional)",
 	"ai_tab_openai_compatible_key_hint": "Leave blank if your server doesn't require one. Stored locally only, never published.",
+	"ai_tab_tos_agree_button": "I agree to {provider}'s Terms of Service",
 	"ai_tab_model_label": "Model",
 	"ai_tab_disable_thinking_label": "Disable thinking/reasoning",
 	"ai_tab_advanced_heading": "Advanced",

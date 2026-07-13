@@ -49,6 +49,10 @@ interface CommonProviderConfig {
   frequency_penalty: number;
   forbidden_words: string[];
   disable_thinking: boolean;
+  // Whether the user has accepted this provider's terms of service. Gates
+  // enabling the provider in Settings; not required for Ollama, which talks
+  // to a server the user runs themselves rather than a third party.
+  tosAgreed: boolean;
 }
 
 export interface OpenRouterProviderConfig extends CommonProviderConfig {
