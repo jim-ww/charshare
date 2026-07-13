@@ -217,6 +217,8 @@
 	"my_comments_signed_in_required": "Sign in to see the comments you've posted.",
 
 	"chat_composer_placeholder": "Message… (Enter to send, Shift+Enter for a new line)",
+	"chat_composer_token_usage": "{used} / {total} tokens",
+	"chat_composer_token_usage_hint": "Estimated tokens the AI would receive right now (system prompt + history + draft), against the active provider's configured context size. If a request would overflow this, the oldest history is trimmed automatically when sending — never what's shown here in the chat.",
 	"chat_composer_generating": "Generating…",
 	"chat_composer_generate_for_me": "Generate for me",
 	"chat_composer_stop": "Stop",

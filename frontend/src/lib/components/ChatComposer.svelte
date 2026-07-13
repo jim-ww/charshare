@@ -5,6 +5,7 @@
 		sendMessage,
 		continueChat,
 		generateUserDraft,
+		estimateChatTokens,
 	} from "$lib/ai/chat";
 	import { setChatDraft, getActivePath } from "$lib/state/chats.svelte";
 	import { m } from '$lib/paraglide/messages.js';
@@ -65,6 +66,14 @@
 			.filter((m) => m.role === "user")
 			.map((m) => m.content),
 	);
+
+	// Live "context usage" readout — the system prompt, full history, and the
+	// not-yet-sent draft, against the active provider's configured
+	// context_size. Purely informational: the actual request sent when
+	// submitting is separately trimmed to fit if it would overflow (see
+	// ai/chat.ts:fitToContext) regardless of whether this is shown.
+	const promptTokens = $derived(estimateChatTokens(chat, character, content));
+	const contextSize = $derived(getPreferences().provider.context_size);
 
 	// The composer stays mounted while navigating between chats (same route,
 	// different :id param), so `content` needs re-syncing to the new chat's
@@ -282,6 +291,10 @@
 		await startRecording();
 	}
 
+	function formatTokenCount(n: number): string {
+		return n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, "")}k` : String(n);
+	}
+
 	async function handleGenerateForMe() {
 		generating = true;
 		error = null;
@@ -438,6 +451,18 @@
 			{/if}
 		</button>
 	</div>
+	{#if contextSize > 0}
+		<p
+			class="text-right text-xs opacity-50"
+			class:text-warning={promptTokens > contextSize}
+			title={m.chat_composer_token_usage_hint()}
+		>
+			{m.chat_composer_token_usage({
+				used: formatTokenCount(promptTokens),
+				total: formatTokenCount(contextSize),
+			})}
+		</p>
+	{/if}
 	{#if error}
 		<p class="text-error text-sm">{error}</p>
 	{/if}

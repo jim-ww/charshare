@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { Character, Chat } from '$lib/types';
 import { __setChatsForTests, addMessage, createChat, getActivePath, getChat, switchBranch } from '$lib/state/chats.svelte';
-import { sendMessage, generateUserDraft, regenerateMessage } from './chat';
+import { sendMessage, generateUserDraft, regenerateMessage, fitToContext } from './chat';
+import type { CompletionMessage } from './index';
 
 const character: Character = {
 	id: 'char-1',
@@ -220,5 +221,56 @@ describe('truncated replies', () => {
 
 		const stored = getChat(chat.id)!;
 		expect(stored.messages[1].content).toBe('xxxx');
+	});
+});
+
+describe('fitToContext', () => {
+	function msg(role: CompletionMessage['role'], content: string): CompletionMessage {
+		return { role, content };
+	}
+
+	it('leaves messages untouched when well within budget', () => {
+		const messages = [msg('system', 'be nice'), msg('user', 'hi'), msg('assistant', 'hello')];
+		expect(fitToContext(messages, 8192, 512)).toEqual(messages);
+	});
+
+	it('disables truncation entirely when contextSize is not configured (<=0)', () => {
+		const messages = [msg('system', 'x'), msg('user', 'y'.repeat(100000))];
+		expect(fitToContext(messages, 0, 512)).toEqual(messages);
+	});
+
+	it('trims content off the oldest non-system message first, never the system message or the newest one', () => {
+		const messages = [
+			msg('system', 'System prompt.'),
+			msg('user', 'a'.repeat(2000)),
+			msg('assistant', 'b'.repeat(50)),
+			msg('user', 'c'.repeat(50))
+		];
+		const result = fitToContext(messages, 60, 0);
+
+		expect(result[0]).toEqual(messages[0]);
+		expect(result[result.length - 1]).toEqual(messages[messages.length - 1]);
+		expect(result.find((m) => m.role === 'user' && m.content.startsWith('a'))?.content.length).toBeLessThan(2000);
+	});
+
+	it('drops an oldest message entirely once fully drained, then continues trimming the next one', () => {
+		const messages = [
+			msg('system', 'System prompt.'),
+			msg('user', 'short'),
+			msg('assistant', 'd'.repeat(2000)),
+			msg('user', 'newest message')
+		];
+		const result = fitToContext(messages, 40, 0);
+
+		// The tiny "short" message should be fully dropped rather than left as
+		// an empty husk, since draining it alone can't close the gap.
+		expect(result.some((m) => m.content === 'short')).toBe(false);
+		expect(result[result.length - 1]).toEqual(messages[messages.length - 1]);
+	});
+
+	it('never trims the final message even if the whole thing is over budget', () => {
+		const messages = [msg('system', 's'), msg('user', 'e'.repeat(5000))];
+		const result = fitToContext(messages, 10, 0);
+		expect(result[result.length - 1]).toEqual(messages[messages.length - 1]);
 	});
 });

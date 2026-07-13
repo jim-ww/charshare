@@ -18,8 +18,48 @@ import { getPersona } from "$lib/state/personas.svelte";
 import { DEFAULT_SYSTEM_PROMPT } from "$lib/data/defaultSystemPrompt";
 import { startStreaming, endStreaming } from "$lib/state/messageStreaming.svelte";
 import { requestCompletion, type CompletionMessage } from "./index";
+import { estimateTokens, trimLeadingTokens } from "./tokenEstimate";
 
 const MAX_CONTINUATIONS = 3;
+
+/** Trims history from the request sent to the AI provider when it would
+ *  overflow the provider's configured context_size — never touches the
+ *  actual chat (only the ephemeral array about to be sent), and never drops
+ *  a leading system message or the final (newest) message. Frees just enough
+ *  by removing characters off the front of the oldest remaining message's
+ *  content first; if that alone isn't enough, that message (now fully
+ *  drained) is dropped and the next-oldest one is trimmed next, and so on.
+ *  A non-positive `contextSize` (context size not actually configured)
+ *  disables this entirely rather than guessing. */
+export function fitToContext(
+	messages: CompletionMessage[],
+	contextSize: number,
+	reservedForOutput: number,
+): CompletionMessage[] {
+	if (contextSize <= 0) return messages;
+	const budget = Math.max(0, contextSize - reservedForOutput);
+	const result = messages.map((m) => ({ ...m }));
+	let total = result.reduce((sum, m) => sum + estimateTokens(m.content), 0);
+
+	let i = result[0]?.role === "system" ? 1 : 0;
+	while (total > budget && i < result.length - 1) {
+		const msg = result[i];
+		const msgTokens = estimateTokens(msg.content);
+		const overflow = total - budget;
+		if (overflow >= msgTokens) {
+			// This message's whole content is needed to close the gap — drop it
+			// (not "the whole message" in general, just this one that's now
+			// fully drained) and keep going from the next-oldest.
+			total -= msgTokens;
+			result.splice(i, 1);
+			continue;
+		}
+		msg.content = trimLeadingTokens(msg.content, overflow);
+		total -= overflow;
+		break;
+	}
+	return result;
+}
 
 interface CompleteOptions {
 	signal?: AbortSignal;
@@ -39,7 +79,7 @@ async function completeWithContinuation(
 	options: CompleteOptions = {},
 ): Promise<string> {
 	let full = "";
-	let pending = messages;
+	let pending = fitToContext(messages, config.context_size, config.max_tokens);
 	for (let i = 0; i <= MAX_CONTINUATIONS; i++) {
 		const roundStart = full;
 		const { content, finishReason } = await requestCompletion(config, pending, {
@@ -113,6 +153,18 @@ function systemPrompt(character: Character, chat: Chat): string {
 	]
 		.filter(Boolean)
 		.join("\n\n");
+}
+
+/** Estimated token count of what sendMessage would actually send right now —
+ *  the system prompt plus the full active-path history plus `draft` (the
+ *  composer's current, not-yet-sent text) — for a live "context usage"
+ *  readout in the UI. Uses the same estimateTokens the request-truncation
+ *  logic in completeWithContinuation is built on, so the two stay
+ *  consistent with each other. */
+export function estimateChatTokens(chat: Chat, character: Character, draft = ""): number {
+	const historyTokens = getActivePath(chat).reduce((sum, m) => sum + estimateTokens(m.content), 0);
+	const systemTokens = estimateTokens(systemPrompt(character, chat));
+	return systemTokens + historyTokens + (draft ? estimateTokens(draft) : 0);
 }
 
 /** Streams a completion into an already-created (empty) message, keeping
