@@ -5,6 +5,17 @@ import { __setPersonasForTests, createPersona, getPersonas } from '$lib/state/pe
 import type { Character } from '$lib/types';
 import type { SavedCharacterEntry } from '$lib/db/savedCharacters';
 
+// idb-keyval needs a real IndexedDB that isn't available under plain
+// Node/vitest — swap it for an in-memory map so updatePreferences (used by
+// the preferences import path) doesn't throw.
+let idbStore = new Map<string, unknown>();
+vi.mock('idb-keyval', () => ({
+	get: async (key: string) => idbStore.get(key),
+	set: async (key: string, value: unknown) => {
+		idbStore.set(key, value);
+	}
+}));
+
 // $lib/db/savedCharacters wraps idb-keyval, which needs a real IndexedDB that
 // isn't available under plain Node/vitest — swap it for an in-memory map,
 // same pattern as characters-relay-resync.test.ts / savedCharacters.svelte.test.ts.
@@ -21,6 +32,9 @@ vi.mock('$lib/db/savedCharacters', () => ({
 }));
 
 const { getSavedCharacters } = await import('$lib/state/savedCharacters.svelte');
+const { __setPreferencesForTests, getPreferences, DEFAULT_PREFERENCES } = await import(
+	'$lib/state/preferences.svelte'
+);
 
 function makeCharacter(id: string): Character {
 	return {
@@ -56,6 +70,8 @@ beforeEach(() => {
 	__setChatsForTests({});
 	__setPersonasForTests({});
 	savedCharacterStore = new Map();
+	idbStore = new Map();
+	__setPreferencesForTests(DEFAULT_PREFERENCES);
 });
 
 describe('export filenames', () => {
@@ -162,6 +178,38 @@ describe('saved characters import', () => {
 		const [summary] = await importDataFile(file);
 
 		expect(summary.category).toBe('savedCharacters');
+	});
+});
+
+describe('preferences import', () => {
+	it("backfills a provider missing from an older backup instead of leaving it undefined", async () => {
+		// Simulates importing a backup taken with an older app version, before
+		// the 'openai_compatible' provider existed — its providerConfigs entry
+		// (and the active provider itself, in this case) is simply absent.
+		const { openai_compatible: _omitted, ...oldProviderConfigs } = DEFAULT_PREFERENCES.providerConfigs;
+		const oldBackup = {
+			...DEFAULT_PREFERENCES,
+			provider: DEFAULT_PREFERENCES.providerConfigs.huggingface,
+			providerConfigs: oldProviderConfigs
+		};
+		const file = fileOf('charshare-preferences-2025-01-01.json', JSON.stringify(oldBackup, null, 2));
+
+		await importDataFile(file);
+
+		expect(getPreferences().providerConfigs.openai_compatible).toEqual(
+			DEFAULT_PREFERENCES.providerConfigs.openai_compatible
+		);
+	});
+
+	it("doesn't clobber the active provider with an undefined one from a malformed import", async () => {
+		const file = fileOf(
+			'charshare-preferences-2025-01-01.json',
+			JSON.stringify({ ...DEFAULT_PREFERENCES, provider: undefined }, null, 2)
+		);
+
+		await importDataFile(file);
+
+		expect(getPreferences().provider).toEqual(DEFAULT_PREFERENCES.provider);
 	});
 });
 

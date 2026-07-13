@@ -6,7 +6,7 @@ import { getMyCharacters, restoreCharacter } from '$lib/state/characters.svelte'
 import { getSavedCharacters, restoreSavedCharacter } from '$lib/state/savedCharacters.svelte';
 import { getPersonas, restorePersona } from '$lib/state/personas.svelte';
 import { getChats, restoreChat } from '$lib/state/chats.svelte';
-import { getPreferences, updatePreferences } from '$lib/state/preferences.svelte';
+import { DEFAULT_PREFERENCES, getPreferences, updatePreferences } from '$lib/state/preferences.svelte';
 import { getMyProfile } from '$lib/state/profile.svelte';
 import { isWailsDesktop, saveFile } from '$lib/wails';
 import type { Character, Chat, Persona, Preferences } from '$lib/types';
@@ -277,10 +277,24 @@ async function importChatsFile(json: string): Promise<ImportSummary> {
 	return summarizeRestoreResults('chats', results);
 }
 
+/** `updatePreferences` shallow-merges its patch onto current preferences, so a
+ *  `providerConfigs` key present in the patch replaces the whole map wholesale
+ *  rather than merging per-provider. A backup taken with an older app version
+ *  — before a given provider existed — would then wipe that provider's config
+ *  entirely on import (leaving it, and the active `provider` itself if it was
+ *  the missing one, undefined). Backfill any providers absent from the
+ *  imported file with today's defaults before merging. */
 async function importPreferencesFile(json: string): Promise<void> {
 	const parsed: unknown = JSON.parse(json);
 	if (typeof parsed !== 'object' || parsed === null) throw new Error(m.data_export_error_not_valid_preferences());
-	await updatePreferences(parsed as Partial<Preferences>);
+	const patch = parsed as Partial<Preferences>;
+	if (patch.providerConfigs) {
+		patch.providerConfigs = { ...DEFAULT_PREFERENCES.providerConfigs, ...patch.providerConfigs };
+	}
+	if (!patch.provider?.provider) {
+		delete patch.provider;
+	}
+	await updatePreferences(patch);
 }
 
 async function importOne(filename: string, json: string): Promise<ImportSummary> {
