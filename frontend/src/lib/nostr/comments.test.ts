@@ -1,8 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { __setKeyringForTests } from '$lib/state/auth.svelte';
+import { __setPreferencesForTests } from '$lib/state/preferences.svelte';
 import { generateKeyring } from './keys';
 import { __setPoolForTests } from './pool';
 import { createFakePool } from './testUtils';
+import { DEFAULT_NOSTR_RELAYS } from './relays';
+import { publishRelayList } from './relayList';
 import { publishCharacter } from './characters';
 import { postComment, deleteComment, getComment, getCommentsForCharacter, getCommentsAuthoredBy } from './comments';
 import { MAX_COMMENT_LENGTH } from '$lib/types';
@@ -26,6 +29,7 @@ beforeEach(() => {
 	__setPoolForTests(createFakePool().pool);
 	mainKeyring = generateKeyring();
 	__setKeyringForTests(mainKeyring);
+	__setPreferencesForTests({ nostrRelays: DEFAULT_NOSTR_RELAYS });
 	deleteRequests = {};
 });
 
@@ -130,6 +134,28 @@ describe('postComment / getCommentsForCharacter', () => {
 		const characterId = await realCharacterId();
 		const comment = await postComment(characterId, 'a'.repeat(MAX_COMMENT_LENGTH));
 		expect(comment.content).toHaveLength(MAX_COMMENT_LENGTH);
+	});
+});
+
+describe('cross-relay-configuration visibility', () => {
+	it("finds a comment via the character author's own declared relay, even when the commenter's and reader's own configured relays don't overlap at all", async () => {
+		// The character author declaring a NIP-65 write relay is the only thing
+		// that can bridge two otherwise fully disjoint relay configurations —
+		// see comments.ts's module doc comment on why both postComment and
+		// getCommentsForCharacter include readRelaysFor(characterAuthor).
+		const authorKeyring = mainKeyring;
+		await publishRelayList([{ url: 'wss://author-hub.example', read: true, write: true }], authorKeyring);
+		const characterId = await realCharacterId();
+
+		__setPreferencesForTests({ nostrRelays: ['wss://commenter-only.example'] });
+		__setKeyringForTests(generateKeyring());
+		const comment = await postComment(characterId, 'From a differently-configured browser');
+
+		__setPreferencesForTests({ nostrRelays: ['wss://reader-only.example'] });
+		__setKeyringForTests(authorKeyring);
+
+		const comments = await getCommentsForCharacter(characterId);
+		expect(comments.map((c) => c.id)).toContain(comment.id);
 	});
 });
 

@@ -32,10 +32,25 @@ export function isLoadingComments(characterId: CharacterId): boolean {
 	return loading[characterId] ?? false;
 }
 
+// A cold relay pool can have its WebSocket connected but still not have
+// synced this character's comment events yet — the very first load of a
+// session can come back empty even though comments actually exist (same
+// cold-start gap search.svelte.ts's network feed retries around; comments
+// never got the same treatment since this is a one-shot queryEvents call
+// with no live subscription to eventually catch up on its own). Retrying a
+// couple times with a growing delay picks up the data once it arrives,
+// without the user having to notice and reload the page themselves.
+const COMMENTS_RETRY_DELAYS_MS = [1500, 3000];
+
 export async function loadComments(characterId: CharacterId): Promise<void> {
 	loading = { ...loading, [characterId]: true };
 	try {
 		comments = { ...comments, [characterId]: await getCommentsForCharacter(characterId) };
+		for (const delay of COMMENTS_RETRY_DELAYS_MS) {
+			if ((comments[characterId]?.length ?? 0) > 0) return;
+			await new Promise((resolve) => setTimeout(resolve, delay));
+			comments = { ...comments, [characterId]: await getCommentsForCharacter(characterId) };
+		}
 	} finally {
 		loading = { ...loading, [characterId]: false };
 	}

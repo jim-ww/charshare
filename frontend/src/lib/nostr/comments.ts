@@ -9,10 +9,14 @@ import { readRelaysFor, writeRelaysFor } from './relayList';
 import { getActiveRelays } from '$lib/state/preferences.svelte';
 
 // Comments on a character aren't scoped to a single author (anyone can
-// comment), so "browse everything for this character" stays on the user's
-// configured relay set (see getActiveRelays) — only single-author lookups
-// (getCommentsAuthoredBy) and publishes resolve NIP-65 outbox relays (see
-// relayList.ts).
+// comment), so there's no single commenter to resolve outbox relays for —
+// but every comment does have one fixed anchor: the character itself. Both
+// posting and reading a character's comments include the character author's
+// own declared write relays (readRelaysFor) alongside the user's configured
+// set (getActiveRelays), the same "publish a reply where the thread's root
+// is likely to be read" convention NIP-65 recommends — otherwise a comment
+// posted from a commenter's own relay-only setup can be invisible to anyone
+// reading the character from a different (non-overlapping) relay set.
 
 function tagValue(tags: string[][], name: string): string | undefined {
 	return tags.find((t) => t[0] === name)?.[1];
@@ -56,9 +60,20 @@ export async function getComment(id: CommentId): Promise<Verified<Comment>> {
  *  the UI, not hidden — a relay that actually honored the NIP-09 request
  *  simply won't have returned it here at all). Drops anything that fails
  *  schema/signature verification or doesn't actually belong to
- *  `characterId` (see spec: never partially trust). */
+ *  `characterId` (see spec: never partially trust).
+ *
+ *  Filters on the lowercase `a` tag, not NIP-22's own uppercase `A` (root
+ *  scope) — every comment event carries both (see postComment), but several
+ *  minimal/local relay implementations only maintain query indexes for the
+ *  common lowercase single-letter tags and don't index uncommon uppercase
+ *  ones like NIP-22's, silently returning nothing for an `#A` filter even
+ *  though the events are actually stored there. `eventToComment` below still
+ *  reads the real root back off the (uppercase) `A` tag on whatever's
+ *  returned — this only changes what the relay is asked to filter by. */
 export async function getCommentsForCharacter(characterId: CharacterId): Promise<Comment[]> {
-	const events = await queryEvents({ kinds: [COMMENT_KIND], '#A': [characterCoordinate(characterId)] }, getActiveRelays());
+	const { author } = parseCharacterId(characterId);
+	const relays = Array.from(new Set([...getActiveRelays(), ...(await readRelaysFor(author))]));
+	const events = await queryEvents({ kinds: [COMMENT_KIND], '#a': [characterCoordinate(characterId)] }, relays);
 	const deletedMap = await loadDeleteRequestedMap();
 	return events
 		.map((e) => eventToComment(e, deletedMap))
@@ -130,7 +145,12 @@ export async function postComment(
 		created_at: Math.floor(Date.now() / 1000)
 	};
 
-	const relays = await writeRelaysFor(keyring);
+	// Published to the commenter's own outbox relays *and* the character
+	// author's — so it's discoverable from either side regardless of whose
+	// relay set a later reader happens to be querying (see module doc comment).
+	const relays = Array.from(
+		new Set([...(await writeRelaysFor(keyring)), ...(await readRelaysFor(characterAuthor))])
+	);
 	const event = await publishEvent(template, keyring, relays);
 	const deletedMap = await loadDeleteRequestedMap();
 	const comment = eventToComment(event, deletedMap);
