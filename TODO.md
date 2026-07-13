@@ -1,6 +1,6 @@
 - feat(core): sort characters/comments by like count (NIP-25 likes are implemented — see nostr/reactions.ts — but popularity sorting itself was explicitly deferred while migrating to Nostr; NIP-45 COUNT isn't universally supported, so this likely means scoping "most liked" to a bounded recent window rather than true all-time global popularity, see nostr/browse.ts's doc comments)
-- introduce keep pinned/keep published functionality? instead of manual 'republish'(unless its local, but not published) button
+- add 'Start new chat' button (with same char) in chat window somewhere (in top bar, to the left of chat settings)
 - like button, comments should only be shown on reachable entities
+- allow to specify videos in character cards
 - feat: add some characters from other platforms
 - consider: android build target
-- consider: NIP-05 support as an optional (not required) verified-username convenience layer, now that the core username system is Nostr-native — still no forced external dependency, since users without one just keep using the existing first-come-wins claim

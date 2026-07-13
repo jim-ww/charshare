@@ -20,8 +20,10 @@
 		getMyCharacters,
 		isCharacterInMyCharacters,
 		isCharacterLocalOnly,
+		isKeepPublished,
 		publishMyCharacter,
 		restoreMyCharacter,
+		setCharacterKeepPublished,
 	} from "$lib/state/characters.svelte";
 	import {
 		getSavedCharacter,
@@ -337,12 +339,15 @@
 	}
 
 	let republishing = $state(false);
+	const keepPublished = $derived(character ? isKeepPublished(character.id) : false);
 
 	/** Re-writes this already-published character's exact signed snapshot to
 	 *  whichever relay is currently configured — for when a relay switch or a
 	 *  relay that never got this document leaves it missing there, without
 	 *  waiting for the automatic resync that only runs on app startup (see
-	 *  refresh()'s resyncMissing in characters.svelte.ts). */
+	 *  refresh()'s resyncMissing in characters.svelte.ts). Superseded by
+	 *  "Keep published" (see handleToggleKeepPublished) once that's checked —
+	 *  the button is hidden then since it'd just be redundant. */
 	async function handleRepublish() {
 		if (!character) return;
 		const confirmed = await confirmDialog({
@@ -357,6 +362,16 @@
 		} finally {
 			republishing = false;
 		}
+	}
+
+	/** Toggles auto-republishing this character whenever it's missing from the
+	 *  currently-configured relays (checked on every refresh() — app start,
+	 *  and after publish/delete/fork/import elsewhere in this browser — see
+	 *  characters.svelte.ts:refresh) instead of requiring the manual
+	 *  "Republish" button to be pressed by hand each time. */
+	async function handleToggleKeepPublished(event: Event) {
+		if (!character) return;
+		await setCharacterKeepPublished(character.id, (event.currentTarget as HTMLInputElement).checked);
 	}
 
 	let restoring = $state(false);
@@ -726,16 +741,32 @@
 									: m.char_detail_republish()}
 							</button>
 						{:else}
-							<button
-								class="btn btn-sm btn-ghost"
-								type="button"
-								disabled={republishing}
-								onclick={handleRepublish}
+							{#if !keepPublished}
+								<button
+									class="btn btn-sm btn-ghost"
+									type="button"
+									disabled={republishing}
+									onclick={handleRepublish}
+								>
+									{republishing
+										? m.char_detail_republishing()
+										: m.char_detail_republish()}
+								</button>
+							{/if}
+							<label
+								class="label cursor-pointer gap-1.5 py-0"
+								title={m.char_detail_keep_published_hint()}
 							>
-								{republishing
-									? m.char_detail_republishing()
-									: m.char_detail_republish()}
-							</button>
+								<input
+									type="checkbox"
+									class="checkbox checkbox-sm"
+									checked={keepPublished}
+									onchange={handleToggleKeepPublished}
+								/>
+								<span class="label-text"
+									>{m.char_detail_keep_published_label()}</span
+								>
+							</label>
 						{/if}
 						{#if !character.deleted}
 							<button

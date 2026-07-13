@@ -21,6 +21,13 @@ export interface LocalCharacterEntry {
 	 *  the source of truth whenever it's reachable; this cache is only
 	 *  consulted when it isn't. */
 	character?: Character;
+	/** Opt-in per-character setting (this browser only, never published) —
+	 *  when true, refresh() auto-republishes this character's exact signed
+	 *  snapshot whenever it isn't found on the currently-configured relays,
+	 *  on every refresh rather than only the once-per-app-start resync (see
+	 *  characters.svelte.ts:refresh). Replaces having to notice it's missing
+	 *  and press "Republish" by hand. */
+	keepPublished?: boolean;
 }
 
 async function loadEntries(): Promise<Record<CharacterId, LocalCharacterEntry>> {
@@ -37,22 +44,42 @@ export async function loadMyCharacterEntries(): Promise<LocalCharacterEntry[]> {
 
 /** Records a character published to the network under this browser's
  *  identity, along with a local cache of the document itself (see
- *  LocalCharacterEntry). */
+ *  LocalCharacterEntry). Preserves any existing `keepPublished` setting —
+ *  a purely local preference, unrelated to the document itself. */
 export async function addPublishedCharacterId(id: CharacterId, character?: Character): Promise<void> {
 	const entries = await loadEntries();
-	entries[id] = { id, published: true, character: character ?? entries[id]?.character };
+	entries[id] = {
+		id,
+		published: true,
+		character: character ?? entries[id]?.character,
+		keepPublished: entries[id]?.keepPublished
+	};
 	await saveEntries(entries);
 }
 
 /** Saves or updates a local-only (unpublished) character's full document. */
 export async function saveLocalOnlyCharacter(character: Character): Promise<void> {
 	const entries = await loadEntries();
-	entries[character.id] = { id: character.id, published: false, character };
+	entries[character.id] = {
+		id: character.id,
+		published: false,
+		character,
+		keepPublished: entries[character.id]?.keepPublished
+	};
 	await saveEntries(entries);
 }
 
 export async function removeMyCharacterEntry(id: CharacterId): Promise<void> {
 	const entries = await loadEntries();
 	delete entries[id];
+	await saveEntries(entries);
+}
+
+/** Toggles the "keep published" opt-in for `id` — a no-op if the entry
+ *  doesn't exist (e.g. someone else's character, never in this index). */
+export async function setKeepPublished(id: CharacterId, keepPublished: boolean): Promise<void> {
+	const entries = await loadEntries();
+	if (!entries[id]) return;
+	entries[id] = { ...entries[id], keepPublished };
 	await saveEntries(entries);
 }

@@ -16,7 +16,12 @@ vi.mock('$lib/db/characters', () => ({
 	loadMyCharacterEntries: async () => Array.from(entryStore.values()),
 	addPublishedCharacterId: async (id: string, character?: unknown) => {
 		const existing = entryStore.get(id);
-		entryStore.set(id, { id, published: true, character: (character ?? existing?.character) as never });
+		entryStore.set(id, {
+			id,
+			published: true,
+			character: (character ?? existing?.character) as never,
+			keepPublished: existing?.keepPublished
+		});
 	},
 	saveLocalOnlyCharacter: async (character: { id: string }) => {
 		entryStore.set(character.id, { id: character.id, published: false, character: character as never });
@@ -90,5 +95,50 @@ describe('startup resync across a relay switch', () => {
 
 		// The local index entry itself should still be intact too.
 		expect(entryStore.get(created.id)?.published).toBe(true);
+	});
+});
+
+describe('"keep published" opt-in', () => {
+	it('republishes a missing character on a normal (non-resync) refresh when keepPublished is set', async () => {
+		const keyring = generateKeyring();
+		const { pool } = createFakePool();
+		__setPoolForTests(pool);
+		__setKeyringForTests(keyring);
+
+		const created = await publishCharacter(baseFields);
+		entryStore.set(created.id, { id: created.id, published: true, character: created, keepPublished: true });
+
+		// Simulate switching to relays that have never seen this character.
+		const { pool: freshPool } = createFakePool();
+		__setPoolForTests(freshPool);
+		expect((await getCharacter(created.id)).ok).toBe(false);
+
+		// A plain refresh — not a startup resyncMissing call — should still
+		// notice and republish it, since keepPublished opts into that on every
+		// refresh rather than only once per app start.
+		await __refreshCharactersForTests();
+
+		const afterRefresh = await getCharacter(created.id);
+		expect(afterRefresh.ok).toBe(true);
+		expect(getMyCharacters().map((c) => c.id)).toContain(created.id);
+	});
+
+	it("doesn't republish a missing character on a normal refresh without keepPublished set", async () => {
+		const keyring = generateKeyring();
+		const { pool } = createFakePool();
+		__setPoolForTests(pool);
+		__setKeyringForTests(keyring);
+
+		const created = await publishCharacter(baseFields);
+		entryStore.set(created.id, { id: created.id, published: true, character: created });
+
+		const { pool: freshPool } = createFakePool();
+		__setPoolForTests(freshPool);
+
+		await __refreshCharactersForTests();
+
+		expect((await getCharacter(created.id)).ok).toBe(false);
+		// Still shown locally (from cache), just not republished.
+		expect(getMyCharacters().map((c) => c.id)).toContain(created.id);
 	});
 });

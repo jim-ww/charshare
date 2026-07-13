@@ -4,7 +4,8 @@ import {
 	addPublishedCharacterId,
 	loadMyCharacterEntries,
 	removeMyCharacterEntry,
-	saveLocalOnlyCharacter
+	saveLocalOnlyCharacter,
+	setKeepPublished as dbSetKeepPublished
 } from '$lib/db/characters';
 import { poolConnected } from '$lib/nostr/pool';
 import { confirmDialog } from '$lib/state/confirmDialog.svelte';
@@ -26,6 +27,7 @@ type CharacterFormFields = Parameters<typeof nostrPublishCharacter>[0];
 
 let myCharacters = $state<Character[]>([]);
 let publishedMap = $state<Record<CharacterId, boolean>>({});
+let keepPublishedMap = $state<Record<CharacterId, boolean>>({});
 let ready = $state(false);
 let initPromise: Promise<void> | null = null;
 
@@ -62,6 +64,21 @@ export function isCharacterLocalOnly(id: CharacterId): boolean {
 	return publishedMap[id] === false;
 }
 
+/** Whether `id` has opted into "keep published" (see refresh()) — this
+ *  browser's own local preference, never published. `false` for anything not
+ *  in the local index at all (someone else's character). */
+export function isKeepPublished(id: CharacterId): boolean {
+	return keepPublishedMap[id] === true;
+}
+
+/** Toggles "keep published" for `id`, then refreshes immediately so an
+ *  enable takes effect right away instead of waiting for the next unrelated
+ *  refresh() call. */
+export async function setCharacterKeepPublished(id: CharacterId, keepPublished: boolean): Promise<void> {
+	await dbSetKeepPublished(id, keepPublished);
+	await refresh();
+}
+
 export function isCharactersReady(): boolean {
 	return ready;
 }
@@ -85,9 +102,10 @@ function normalizeLocalCharacter(character: Character): Character {
 async function refresh(options?: { resyncMissing?: boolean }): Promise<void> {
 	const callSeq = ++refreshCallSeq;
 	const resyncMissing = options?.resyncMissing ?? false;
-	if (resyncMissing) await poolConnected();
-	const keyring = getKeyring();
 	const entries = await loadMyCharacterEntries();
+	const anyKeepPublished = entries.some((e) => e.keepPublished);
+	if (resyncMissing || anyKeepPublished) await poolConnected();
+	const keyring = getKeyring();
 	const resolved = await Promise.all(
 		entries.map(async (entry) => {
 			if (!entry.published) {
@@ -103,36 +121,44 @@ async function refresh(options?: { resyncMissing?: boolean }): Promise<void> {
 					const onNetwork = await getCharacter(entry.id);
 					if (onNetwork.ok) {
 						await addPublishedCharacterId(entry.id, onNetwork.doc);
-						return { character: onNetwork.doc, published: true };
+						return { character: onNetwork.doc, published: true, keepPublished: entry.keepPublished };
 					}
 				}
-				return { character, published: false };
+				return { character, published: false, keepPublished: entry.keepPublished };
 			}
 			const result = await getCharacter(entry.id);
 			if (result.ok) {
 				// Keep the local cache in sync with whatever the relay just returned, so
 				// it stays a good fallback for the next time no relay is reachable.
 				await addPublishedCharacterId(entry.id, result.doc);
-				return { character: result.doc, published: true };
+				return { character: result.doc, published: true, keepPublished: entry.keepPublished };
 			}
-			// Not found on this relay. If we're doing a startup resync and this
-			// is our own cached, already-signed copy, the connected relay simply
-			// never got this document (new relay / relay switch) — republish the
-			// exact signed snapshot as-is rather than dropping it. Otherwise (no
-			// cache, or not our own character) this is just an unreachable relay
-			// or someone else's doc — fall back to the cache without writing.
-			if (resyncMissing && entry.character && keyring && entry.character.author === keyring.publicKey) {
+			// Not found on this relay. If we're doing a startup resync — or this
+			// entry has opted into "keep published" (see setCharacterKeepPublished),
+			// which extends the same healing to every refresh(), not just the
+			// once-per-app-start resync — and this is our own cached, already-signed
+			// copy, the connected relay simply never got this document (new relay /
+			// relay switch / it just hasn't seen it yet) — republish the exact
+			// signed snapshot as-is rather than dropping it. Otherwise (no cache, or
+			// not our own character) this is just an unreachable relay or someone
+			// else's doc — fall back to the cache without writing.
+			if (
+				(resyncMissing || entry.keepPublished) &&
+				entry.character &&
+				keyring &&
+				entry.character.author === keyring.publicKey
+			) {
 				try {
 					const republished = await nostrPublishLocalCharacter(normalizeLocalCharacter(entry.character));
 					await addPublishedCharacterId(entry.id, republished);
-					return { character: republished, published: true };
+					return { character: republished, published: true, keepPublished: entry.keepPublished };
 				} catch {
 					// Relay write failed (e.g. still not connected) — fall through to
 					// the cached-copy fallback below instead of losing the character.
 				}
 			}
 			return entry.character
-				? { character: normalizeLocalCharacter(entry.character), published: true }
+				? { character: normalizeLocalCharacter(entry.character), published: true, keepPublished: entry.keepPublished }
 				: null;
 		})
 	);
@@ -143,9 +169,12 @@ async function refresh(options?: { resyncMissing?: boolean }): Promise<void> {
 	// older call's results now would clobber them with stale data.
 	if (callSeq !== refreshCallSeq) return;
 
-	const valid = resolved.filter((r): r is { character: Character; published: boolean } => r !== null);
+	const valid: { character: Character; published: boolean; keepPublished?: boolean }[] = resolved.filter(
+		(r) => r !== null
+	);
 	myCharacters = valid.map((r) => r.character);
 	publishedMap = Object.fromEntries(valid.map((r) => [r.character.id, r.published]));
+	keepPublishedMap = Object.fromEntries(valid.map((r) => [r.character.id, r.keepPublished === true]));
 }
 
 /** Test-only escape hatch: runs the same load/resync logic initCharacters()

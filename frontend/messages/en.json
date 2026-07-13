@@ -150,6 +150,8 @@
 	"char_detail_republish_confirm_title": "Republish this character?",
 	"char_detail_republish_confirm_message": "Re-sends this character's current signed snapshot to your configured relay(s).",
 	"char_detail_republish_restore_confirm_message": "Brings this character back from \"deleted on remote\" — it becomes visible and discoverable on the network again, under the same id.",
+	"char_detail_keep_published_label": "Keep published",
+	"char_detail_keep_published_hint": "Automatically republishes this character whenever it's missing from your configured relay(s) — checked on app start and after other character changes in this browser, so you don't have to notice and press Republish yourself.",
 	"char_detail_delete": "Delete",
 	"char_detail_delete_confirm_title": "Delete this character?",
 	"char_detail_delete_confirm_message_local": "This character was never published — this removes it from this device for good.",
