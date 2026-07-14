@@ -21,6 +21,7 @@
 		onsubmit: (draft: CharacterDraft) => Promise<void>;
 		localOnly?: boolean;
 		showLocalOnlyToggle?: boolean;
+		cancelHref: string;
 	}
 
 	let {
@@ -30,6 +31,7 @@
 		onsubmit,
 		localOnly = $bindable(true),
 		showLocalOnlyToggle = false,
+		cancelHref,
 	}: Props = $props();
 	const registered = $derived(isAccountRegistered());
 
@@ -257,6 +259,10 @@
 			pendingNavigationUrl = navigation.to.url;
 		}
 	});
+
+	function cancel() {
+		goto(cancelHref);
+	}
 
 	function confirmNavigation() {
 		const url = pendingNavigationUrl;
@@ -891,6 +897,9 @@
 	<div class="flex items-center gap-4">
 		<button class="btn btn-primary" type="submit" disabled={saving}>
 			{saving ? m.char_form_saving() : submitLabel}
+		</button>
+		<button class="btn btn-ghost" type="button" disabled={saving} onclick={cancel}>
+			{m.char_form_cancel()}
 		</button>
 		<span class="text-sm opacity-70">{m.char_form_total_tokens({ count: String(tokens.total) })}</span>
 		{#if error}

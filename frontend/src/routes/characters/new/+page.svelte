@@ -100,6 +100,7 @@
 			onsubmit={handleSubmit}
 			bind:localOnly
 			showLocalOnlyToggle
+			cancelHref={resolve('/characters')}
 		/>
 	{/key}
 </div>

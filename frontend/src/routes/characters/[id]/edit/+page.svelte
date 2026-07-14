@@ -136,7 +136,12 @@
 		<p>{m.char_list_loading()}</p>
 	{:else}
 		{#key formKey}
-			<CharacterForm initial={character} submitLabel={m.char_submit_save()} onsubmit={handleSubmit} />
+			<CharacterForm
+				initial={character}
+				submitLabel={m.char_submit_save()}
+				onsubmit={handleSubmit}
+				cancelHref={resolve('/characters/[id]', { id })}
+			/>
 		{/key}
 	{/if}
 </div>

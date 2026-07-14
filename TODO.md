@@ -1,4 +1,3 @@
-- in character new/edit add cancel button beside 'save changes' button
 - allow to specify videos in character cards.
 - add option to 'follow' authors? and then add filter 'global/subscribed'
 - implement multi-tag search? in character definitions, always store tags sorted to allow search like tag-subtag-subsubtag?
