@@ -114,6 +114,29 @@ describe('initProfile resync', () => {
 
 		expect(publishProfileMock).not.toHaveBeenCalled();
 	});
+
+	it('a genuine username conflict hit during resync republish is swallowed here, then caught and resolved by the follow-up checkUsernameConflict() (see +layout.svelte)', async () => {
+		cachedProfile = { id: 'my-pubkey', username: 'alice', description: 'hi', deleted: false };
+		getProfileResolver = () => ({ ok: false });
+		// Someone else already holds "alice" — the resync's own republish
+		// attempt (calls publishProfile, which re-claims the username) fails.
+		claimResolver = (username) =>
+			username === 'alice' ? { ok: true, doc: { authorPub: 'someone-else', deleted: false } } : { ok: false };
+		publishProfileMock.mockRejectedValueOnce(new Error('Username is already taken.'));
+
+		const { initProfile, checkUsernameConflict, getMyProfile, isProfileSynced } = await freshProfileModule();
+		await initProfile();
+		// The failed republish must not have been mistaken for success.
+		expect(isProfileSynced()).toBe(false);
+
+		await checkUsernameConflict();
+
+		expect(publishProfileMock).toHaveBeenCalledTimes(2);
+		const renamedUsername = publishProfileMock.mock.calls[1][0].username;
+		expect(renamedUsername).toMatch(/^alice\d{4}$/);
+		expect(getMyProfile()?.username).toBe(renamedUsername);
+		expect(notifyMock).toHaveBeenCalledTimes(1);
+	});
 });
 
 describe('checkUsernameConflict', () => {

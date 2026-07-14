@@ -104,9 +104,15 @@ export function initProfile(): Promise<void> {
 							synced = true;
 							void saveCachedProfile(republished);
 						} catch {
-							// Relay write failed too (e.g. still not connected) — keep
-							// showing the cached copy; subscribeToOwnProfile below will
-							// keep retrying.
+							// Either the relay write itself failed (e.g. still not
+							// connected), or publishProfile's own reclaim of our username
+							// hit a genuine conflict (someone else already holds it) —
+							// either way, swallow it here rather than throwing out of
+							// init. A real conflict is still caught and resolved right
+							// after, by checkUsernameConflict() (see +layout.svelte),
+							// which re-reads our cached username against the network's
+							// current claim independently of whether this republish
+							// attempt succeeded.
 						}
 					}
 					subscribeToOwnProfile();

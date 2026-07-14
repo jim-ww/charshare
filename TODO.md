@@ -1,5 +1,7 @@
 - profile doesnt get republished on init
 - set keep_published to true, on publish action
+- set default relays / relay discoverability
+- add alternative login nostr methods?
 - wails error: on message sent in chat: Something went wrong: Load failed
 - implement multi-tag search? in character definitions, always store tags sorted to allow search like tag-subtag-subsubtag?
 - feat: add some characters from other platforms
