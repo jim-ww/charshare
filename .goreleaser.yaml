@@ -28,6 +28,7 @@ builds:
     tags:
       - desktop
       - production
+      - devtools
       - gtk3
 
   - id: windows
@@ -40,6 +41,7 @@ builds:
     tags:
       - desktop
       - production
+      - devtools
 
   - id: darwin
     main: .
@@ -51,3 +53,4 @@ builds:
     tags:
       - desktop
       - production
+      - devtools
