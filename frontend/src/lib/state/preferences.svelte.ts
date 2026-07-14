@@ -47,7 +47,7 @@ export const DEFAULT_OLLAMA_CONFIG: OllamaProviderConfig = {
 	disable_thinking: true,
 	// Ollama talks to a server the user runs themselves — no third-party ToS to agree to.
 	tosAgreed: true,
-	keep_alive_minutes: 15,
+	keep_alive_minutes: 10,
 };
 
 export const DEFAULT_HUGGINGFACE_CONFIG: HuggingFaceProviderConfig = {
@@ -144,7 +144,7 @@ function withTosAgreed<T extends ProviderConfig>(config: T): T {
 	if (withDefaults.provider === "ollama") {
 		return {
 			...withDefaults,
-			keep_alive_minutes: withDefaults.keep_alive_minutes ?? 15,
+			keep_alive_minutes: withDefaults.keep_alive_minutes ?? 10,
 		};
 	}
 	return withDefaults;

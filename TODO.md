@@ -1,6 +1,4 @@
-- 'generate for me' sometimes speaks for {{char}}
-- set ollama 10m default keep_alive
-- chats can cache last unwritten response, and on next chat enter always show Replying... with animation. Should show some generic message generation error
+- chats can cache last unwritten response, and on next chat enter always show Replying... with animation. Should show some generic message generation error on empty message + stopped generation
 - treat no relays as offline mode
 - set default relays / relay discoverability
 - add alternative login nostr methods?
