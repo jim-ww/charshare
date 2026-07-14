@@ -16,6 +16,7 @@
 	import {
 		getPreferences,
 		isCharacterHidden,
+		isOfflineMode,
 		updatePreferences,
 	} from "$lib/state/preferences.svelte";
 	import {
@@ -355,7 +356,9 @@
 		<p>{m.char_list_loading()}</p>
 	{:else if results.length === 0}
 		<p class="opacity-70">
-			{#if listFilter === "mine" && !getSearchQuery().trim()}
+			{#if (listFilter === "all" || listFilter === "network") && isOfflineMode()}
+				{m.char_list_offline()}
+			{:else if listFilter === "mine" && !getSearchQuery().trim()}
 				{m.char_list_empty_mine()}
 			{:else}
 				{m.char_list_empty_all()}

@@ -155,14 +155,23 @@ export function getPreferences(): Preferences {
 }
 
 /** The relay set the app actually talks to right now — the user's own
- *  configured `nostrRelays` (see NetworkTab.svelte), falling back to the
- *  built-in defaults only if the user has cleared the list entirely. Read
+ *  configured `nostrRelays` (see NetworkTab.svelte). A fresh install starts
+ *  from `DEFAULT_NOSTR_RELAYS` (set as the initial preference value), but if
+ *  the user deliberately clears the list down to nothing, that's treated as
+ *  offline mode (see isOfflineMode) rather than silently falling back to the
+ *  defaults — otherwise there would be no way to actually go offline. Read
  *  fresh (not cached) by every nostr/*.ts network call so an in-session
  *  relay-list change takes effect immediately. */
 export function getActiveRelays(): string[] {
-	return preferences.nostrRelays.length > 0
-		? preferences.nostrRelays
-		: DEFAULT_NOSTR_RELAYS;
+	return preferences.nostrRelays;
+}
+
+/** True once the user has cleared their relay list down to nothing — every
+ *  nostr/*.ts network call becomes a no-op against an empty relay set, so the
+ *  UI should treat this as "offline" rather than "the network legitimately
+ *  has zero results." */
+export function isOfflineMode(): boolean {
+	return getActiveRelays().length === 0;
 }
 
 export function isPreferencesReady(): boolean {

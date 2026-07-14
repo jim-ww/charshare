@@ -118,6 +118,7 @@
 	"char_list_loading": "Loading…",
 	"char_list_empty_mine": "You haven't created any characters yet.",
 	"char_list_empty_all": "No characters found.",
+	"char_list_offline": "You're offline — no Nostr relays are configured. Add some in Settings > Network to browse the network.",
 	"char_list_load_more": "Load more",
 	"char_list_sort_label": "Sort",
 	"char_list_sort_newest": "Newest first",
@@ -672,7 +673,7 @@
 	"network_tab_own_relays_label": "Your published relay list (NIP-65)",
 	"network_tab_own_relays_hint": "Published to the network so other clients following the outbox model know where to find your characters, comments, and profile.",
 	"network_tab_own_relays_signin_required": "Create an account to publish your own relay list.",
-	"network_tab_hint": "Takes effect the next time the app loads.",
+	"network_tab_hint": "Takes effect the next time the app loads. Clearing the list entirely puts the app in offline mode — no network browsing, publishing, or syncing.",
 	"network_tab_save": "Save",
 	"network_tab_saved": "Saved!",
 
