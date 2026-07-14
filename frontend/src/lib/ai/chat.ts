@@ -70,7 +70,7 @@ export function fitToContext(
 	return result;
 }
 
-interface CompleteOptions {
+export interface CompleteOptions {
 	signal?: AbortSignal;
 	/** Called with the accumulated reply so far, across all continuation rounds. */
 	onChunk?: (contentSoFar: string) => void;
@@ -425,11 +425,12 @@ function userDraftSystemPrompt(character: Character, chat: Chat): string {
 export async function generateUserDraft(
 	chat: Chat,
 	character: Character,
+	options: CompleteOptions = {},
 ): Promise<string> {
 	await ensurePreferencesReady();
 	const messages: CompletionMessage[] = [
 		{ role: "system", content: userDraftSystemPrompt(character, chat) },
 		...historyToMessages(getActivePath(chat)),
 	];
-	return completeWithContinuation(getPreferences().provider, messages);
+	return completeWithContinuation(getPreferences().provider, messages, options);
 }

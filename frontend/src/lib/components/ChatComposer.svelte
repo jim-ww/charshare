@@ -32,7 +32,12 @@
 
 	let content = $state("");
 	const sending = $derived(isChatGenerating(chat.id));
-	let generating = $state(false);
+	// "Generate for me" shares the same per-chat generation slot as
+	// send/continue/regenerate (see chatGeneration.svelte.ts) — only one can
+	// run at a time, and this tracks specifically whether *this* button is the
+	// one that started it, so clicking it again while it's running stops it
+	// instead of the composer's own send/continue path.
+	let generatingDraft = $state(false);
 	let error = $state<string | null>(null);
 	let loadedDraftFor: string | null = null;
 
@@ -300,21 +305,34 @@
 	}
 
 	async function handleGenerateForMe() {
-		generating = true;
+		if (sending) {
+			stopChatGeneration(chat.id);
+			return;
+		}
+		const controller = startChatGeneration(chat.id);
+		generatingDraft = true;
 		setChatGenerationError(chat.id, null);
 		try {
-			content = await generateUserDraft(chat, character);
+			content = await generateUserDraft(chat, character, { signal: controller.signal });
 			historyIndex = -1;
 			draftBackup = "";
 		} catch (err) {
-			setChatGenerationError(
-				chat.id,
-				m.error_generic({
-					message: err instanceof Error ? err.message : String(err),
-				}),
-			);
+			if (
+				!(
+					err instanceof DOMException &&
+					err.name === "AbortError"
+				)
+			) {
+				setChatGenerationError(
+					chat.id,
+					m.error_generic({
+						message: err instanceof Error ? err.message : String(err),
+					}),
+				);
+			}
 		} finally {
-			generating = false;
+			generatingDraft = false;
+			endChatGeneration(chat.id);
 		}
 	}
 </script>
@@ -335,16 +353,17 @@
 		<button
 			class="btn btn-sm btn-circle btn-ghost absolute bottom-2 left-2"
 			type="button"
-			disabled={generating}
-			aria-label={generating
-				? m.chat_composer_generating()
+			disabled={sending && !generatingDraft}
+			aria-label={generatingDraft
+				? m.chat_composer_stop()
 				: m.chat_composer_generate_for_me()}
-			title={generating ? m.chat_composer_generating() : m.chat_composer_generate_for_me()}
+			title={generatingDraft ? m.chat_composer_stop() : m.chat_composer_generate_for_me()}
 			onclick={handleGenerateForMe}
 		>
-			{#if generating}
-				<span class="loading loading-spinner loading-xs"
-				></span>
+			{#if generatingDraft}
+				<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+					<rect x="6" y="6" width="12" height="12" rx="1.5" />
+				</svg>
 			{:else}
 				<svg
 					viewBox="0 0 24 24"
