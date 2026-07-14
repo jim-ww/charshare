@@ -17,7 +17,8 @@ export function inferMediaType(url: string): MediaType {
 
 /** First image-type entry, skipping any leading videos — used wherever a
  *  single still image is needed (avatars, chat thumbnails) rather than the
- *  full ordered media carousel. */
-export function firstImageUrl(media: MediaItem[]): string | undefined {
-	return media.find((m) => m.type === "image")?.url;
+ *  full ordered media carousel. Tolerates a missing `media` array — some
+ *  locally cached characters predate the field being required. */
+export function firstImageUrl(media: MediaItem[] | undefined): string | undefined {
+	return media?.find((m) => m.type === "image")?.url;
 }
