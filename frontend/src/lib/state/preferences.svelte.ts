@@ -47,6 +47,7 @@ export const DEFAULT_OLLAMA_CONFIG: OllamaProviderConfig = {
 	disable_thinking: true,
 	// Ollama talks to a server the user runs themselves — no third-party ToS to agree to.
 	tosAgreed: true,
+	keep_alive_minutes: 15,
 };
 
 export const DEFAULT_HUGGINGFACE_CONFIG: HuggingFaceProviderConfig = {
@@ -131,13 +132,22 @@ let ready = $state(false);
 let initPromise: Promise<void> | null = null;
 
 /** Backfills `tosAgreed` on configs saved before the field existed. Ollama
- *  talks to a server the user runs themselves, so it never needed agreement. */
+ *  talks to a server the user runs themselves, so it never needed agreement.
+ *  Also backfills fields added later that only apply to one provider
+ *  (min_p to every provider, keep_alive_minutes to Ollama only). */
 function withTosAgreed<T extends ProviderConfig>(config: T): T {
-	return {
+	const withDefaults: T = {
 		...config,
 		tosAgreed: config.tosAgreed ?? config.provider === "ollama",
 		min_p: config.min_p ?? 0,
 	};
+	if (withDefaults.provider === "ollama") {
+		return {
+			...withDefaults,
+			keep_alive_minutes: withDefaults.keep_alive_minutes ?? 15,
+		};
+	}
+	return withDefaults;
 }
 
 export function getPreferences(): Preferences {

@@ -89,6 +89,20 @@
 				{m.ai_tab_ollama_hint()}
 			</span>
 		</label>
+		<label class="form-control">
+			<span class="label-text">{m.ai_tab_ollama_keep_alive_label()}</span>
+			<input
+				class="input input-bordered w-full"
+				type="number"
+				min="0"
+				step="1"
+				value={provider.keep_alive_minutes}
+				oninput={(e) => update('keep_alive_minutes', Number(e.currentTarget.value))}
+			/>
+			<span class="text-sm opacity-70">
+				{m.ai_tab_ollama_keep_alive_hint()}
+			</span>
+		</label>
 	{:else if provider.provider === 'huggingface'}
 		<label class="form-control">
 			<span class="label-text">{m.ai_tab_huggingface_key_label()}</span>

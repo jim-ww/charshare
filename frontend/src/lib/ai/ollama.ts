@@ -18,6 +18,7 @@ export async function requestCompletion(
 			model: config.model,
 			messages,
 			stream: true,
+			keep_alive: `${config.keep_alive_minutes}m`,
 			...(config.disable_thinking ? { think: false } : {}),
 			options: {
 				temperature: config.temperature,

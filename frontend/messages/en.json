@@ -591,6 +591,8 @@
 	"ai_tab_stored_locally": "Stored locally only, never published.",
 	"ai_tab_ollama_url_label": "Ollama server URL",
 	"ai_tab_ollama_hint": "Local or self-hosted Ollama instance. No API key needed.",
+	"ai_tab_ollama_keep_alive_label": "Keep model loaded (minutes)",
+	"ai_tab_ollama_keep_alive_hint": "How long Ollama keeps the model in memory after a reply, so the next message doesn't have to reload it. 0 unloads it immediately.",
 	"ai_tab_huggingface_key_label": "Hugging Face API key",
 	"ai_tab_openai_compatible_url_label": "API base URL",
 	"ai_tab_openai_compatible_url_hint": "Any server exposing an OpenAI-compatible /chat/completions endpoint — a self-hosted proxy, a third-party API, a local inference server.",

@@ -66,6 +66,7 @@ export interface OllamaProviderConfig extends CommonProviderConfig {
   provider: 'ollama';
   baseUrl: string; // e.g. "http://localhost:11434", no key needed
   // Ollama model tag, e.g. "llama3.1:8b"
+  keep_alive_minutes: number; // how long Ollama keeps the model loaded in memory after a request, 0 = unload immediately
 }
 
 export interface HuggingFaceProviderConfig extends CommonProviderConfig {
