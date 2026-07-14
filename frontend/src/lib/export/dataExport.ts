@@ -2,7 +2,7 @@ import { zipSync, unzipSync, strToU8, strFromU8 } from 'fflate';
 import { getKeyring, setKeyring } from '$lib/state/auth.svelte';
 import { exportAccountBackup, parseAccountBackup } from '$lib/identity/backup';
 import { loadProfileForSwitchedAccount } from '$lib/state/profile.svelte';
-import { getMyCharacters, restoreCharacter } from '$lib/state/characters.svelte';
+import { getMyCharacters, isKeepPublished, restoreCharacter, setCharacterKeepPublished } from '$lib/state/characters.svelte';
 import { getSavedCharacters, restoreSavedCharacter } from '$lib/state/savedCharacters.svelte';
 import { getPersonas, restorePersona } from '$lib/state/personas.svelte';
 import { getChats, restoreChat } from '$lib/state/chats.svelte';
@@ -90,7 +90,15 @@ function buildCategory(category: DataCategory): { filename: string; json: string
 		case 'characters':
 			return {
 				filename: categoryFilename(category),
-				json: JSON.stringify(getMyCharacters(), null, 2)
+				// keep_published is a local-only preference (never part of the
+				// published document itself, see LocalCharacterEntry) — stow it
+				// alongside each character here so a full backup restore doesn't
+				// silently lose it (see importCharactersFile).
+				json: JSON.stringify(
+					getMyCharacters().map((c) => ({ ...c, keep_published: isKeepPublished(c.id) })),
+					null,
+					2
+				)
 			};
 		case 'savedCharacters':
 			return {
@@ -235,12 +243,16 @@ async function importCharactersFile(json: string, conflict: ImportConflictState)
 	if (!Array.isArray(parsed)) throw new Error(m.data_export_error_not_valid_characters());
 	const myPubkey = getKeyring()?.publicKey;
 	const results: ('added' | 'updated' | 'skipped')[] = [];
-	for (const item of parsed as Character[]) {
-		results.push(
-			item.author === myPubkey
-				? await restoreCharacter(item, { conflict })
-				: await restoreSavedCharacter(item)
-		);
+	for (const item of parsed as (Character & { keep_published?: boolean })[]) {
+		if (item.author !== myPubkey) {
+			results.push(await restoreSavedCharacter(item));
+			continue;
+		}
+		const result = await restoreCharacter(item, { conflict });
+		results.push(result);
+		if (result !== 'skipped' && item.keep_published) {
+			await setCharacterKeepPublished(item.id, true);
+		}
 	}
 	return summarizeRestoreResults('characters', results);
 }

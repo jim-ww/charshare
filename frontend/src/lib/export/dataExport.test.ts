@@ -2,8 +2,50 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { categoryFilename, bundleFilename, importDataFile, CATEGORY_IDS } from './dataExport';
 import { __setChatsForTests, createChat, getChats } from '$lib/state/chats.svelte';
 import { __setPersonasForTests, createPersona, getPersonas } from '$lib/state/personas.svelte';
+import { __setKeyringForTests } from '$lib/state/auth.svelte';
+import { generateKeyring } from '$lib/nostr/keys';
+import { __setPoolForTests } from '$lib/nostr/pool';
+import { createFakePool } from '$lib/nostr/testUtils';
 import type { Character } from '$lib/types';
 import type { SavedCharacterEntry } from '$lib/db/savedCharacters';
+import type { LocalCharacterEntry } from '$lib/db/characters';
+
+// $lib/db/characters wraps idb-keyval, which needs a real IndexedDB that
+// isn't available under plain Node/vitest — same in-memory swap as
+// characters-relay-resync.test.ts, so the "characters" category's own
+// restoreCharacter/keepPublished path can be exercised here.
+let characterEntryStore = new Map<string, LocalCharacterEntry>();
+vi.mock('$lib/db/characters', () => ({
+	loadMyCharacterEntries: async () => Array.from(characterEntryStore.values()),
+	addPublishedCharacterId: async (id: string, character?: unknown) => {
+		const existing = characterEntryStore.get(id);
+		characterEntryStore.set(id, {
+			id,
+			published: true,
+			character: (character ?? existing?.character) as never,
+			keepPublished: existing?.keepPublished
+		});
+	},
+	saveLocalOnlyCharacter: async (character: { id: string }) => {
+		const existing = characterEntryStore.get(character.id);
+		characterEntryStore.set(character.id, {
+			id: character.id,
+			published: false,
+			character: character as never,
+			keepPublished: existing?.keepPublished
+		});
+	},
+	removeMyCharacterEntry: async (id: string) => {
+		characterEntryStore.delete(id);
+	},
+	setKeepPublished: async (id: string, keepPublished: boolean) => {
+		const existing = characterEntryStore.get(id);
+		if (!existing) return;
+		characterEntryStore.set(id, { ...existing, keepPublished });
+	}
+}));
+
+const { __refreshCharactersForTests } = await import('$lib/state/characters.svelte');
 
 // idb-keyval needs a real IndexedDB that isn't available under plain
 // Node/vitest — swap it for an in-memory map so updatePreferences (used by
@@ -81,6 +123,7 @@ beforeEach(() => {
 	__setPersonasForTests({});
 	savedCharacterStore = new Map();
 	idbStore = new Map();
+	characterEntryStore = new Map();
 	__setPreferencesForTests(DEFAULT_PREFERENCES);
 	confirmDialogWithExtra.mockReset();
 	confirmDialogWithExtra.mockResolvedValue('confirm');
@@ -186,6 +229,57 @@ describe('personas import', () => {
 		const imported = getPersonas();
 		expect(imported.find((p) => p.id === alice.id)?.description).toBe('original');
 		expect(imported.find((p) => p.id === bob.id)?.description).toBe('original');
+	});
+});
+
+describe('characters import', () => {
+	it("round-trips a local-only character's \"keep published\" setting through export and re-import", async () => {
+		const { pool } = createFakePool();
+		__setPoolForTests(pool);
+		const keyring = generateKeyring();
+		__setKeyringForTests(keyring);
+
+		const { createOrEditCharacter, getMyCharacters, isKeepPublished, setCharacterKeepPublished } = await import(
+			'$lib/state/characters.svelte'
+		);
+		const draft = makeCharacter('char-1');
+		const character = await createOrEditCharacter(
+			{
+				name: draft.name,
+				media: draft.media,
+				description: draft.description,
+				personality: draft.personality,
+				scenario: draft.scenario,
+				tags: draft.tags,
+				nsfw: draft.nsfw,
+				language: draft.language,
+				system_prompt: draft.system_prompt,
+				first_message: draft.first_message,
+				alternate_greetings: draft.alternate_greetings,
+				example_dialogues: draft.example_dialogues,
+				comments_enabled: draft.comments_enabled,
+				slideshow_enabled: draft.slideshow_enabled
+			},
+			{ localOnly: true }
+		);
+		await setCharacterKeepPublished(character.id, true);
+		expect(isKeepPublished(character.id)).toBe(true);
+
+		const file = fileOf(
+			'charshare-characters-2026-01-01.json',
+			JSON.stringify(getMyCharacters().map((c) => ({ ...c, keep_published: isKeepPublished(c.id) })), null, 2)
+		);
+
+		// Simulate restoring onto a fresh browser with no local index yet.
+		characterEntryStore = new Map();
+		await __refreshCharactersForTests();
+
+		const summaries = await importDataFile(file);
+
+		expect(summaries).toEqual([
+			{ category: 'characters', count: 1, added: 1, updated: 0, skipped: 0 }
+		]);
+		expect(isKeepPublished(character.id)).toBe(true);
 	});
 });
 
