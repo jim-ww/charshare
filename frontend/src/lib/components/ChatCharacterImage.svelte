@@ -14,7 +14,7 @@
 	// Clamp the persisted index against the current image count — the
 	// character's images can change (or be down to zero) since it was saved.
 	function clampedIndex(): number {
-		const count = character.media.length;
+		const count = (character.media ?? []).length;
 		if (count === 0) return 0;
 		return Math.min(Math.max(chat.image_index, 0), count - 1);
 	}
@@ -32,7 +32,7 @@
 
 <div class="aspect-square w-full shrink-0">
 	<CharacterImageViewer
-		media={character.media}
+		media={character.media ?? []}
 		name={character.name}
 		class="rounded-xl shadow-lg ring-2 ring-base-100"
 		aspectSquare

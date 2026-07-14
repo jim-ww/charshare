@@ -1,5 +1,11 @@
+- add stop prompt generate option for 'generate for me' button
+- 'generate for me' sometimes speaks for {{char}}
+- set ollama 10m default keep_alive
+- chats can cache last unwritten response, and on next chat enter always show Replying... with animation. Should show some generic message generation error
+- treat no relays as offline mode
 - set default relays / relay discoverability
 - add alternative login nostr methods?
 - implement multi-tag search? in character definitions, always store tags sorted to allow search like tag-subtag-subsubtag?
 - feat: add some characters from other platforms
 - consider: android build target
+- consider: implement lorebooks

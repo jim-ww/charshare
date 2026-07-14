@@ -11,11 +11,26 @@ let entries = $state<Record<CharacterId, SavedCharacterEntry>>({});
 let ready = $state(false);
 let initPromise: Promise<void> | null = null;
 
+/** Backfills fields added after some saved characters were already cached
+ *  locally, so old entries don't crash on the newer field being undefined
+ *  (see characters.svelte.ts's normalizeLocalCharacter for the same fix on
+ *  the "my characters" index). */
+function normalizeSavedCharacter(character: Character): Character {
+	return { ...character, media: character.media ?? [] };
+}
+
+async function loadNormalizedEntries(): Promise<Record<CharacterId, SavedCharacterEntry>> {
+	const loaded = await loadSavedCharacterEntries();
+	return Object.fromEntries(
+		Object.entries(loaded).map(([id, entry]) => [id, { ...entry, character: normalizeSavedCharacter(entry.character) }])
+	);
+}
+
 export function initSavedCharacters(): Promise<void> {
 	if (!browser) return Promise.resolve();
 	if (!initPromise) {
 		initPromise = (async () => {
-			entries = await loadSavedCharacterEntries();
+			entries = await loadNormalizedEntries();
 			ready = true;
 		})();
 	}
@@ -56,7 +71,7 @@ export async function saveCharacterLocally(
 	// the Proxy that $state wraps objects in (callers often pass a reactive
 	// character straight from component state) — persist a plain snapshot.
 	await saveCharacterEntry($state.snapshot(character), auto);
-	entries = await loadSavedCharacterEntries();
+	entries = await loadNormalizedEntries();
 }
 
 /** Restores one character from a "saved characters" backup — always
@@ -70,7 +85,7 @@ export async function saveCharacterLocally(
 export async function restoreSavedCharacter(character: Character): Promise<'added' | 'updated'> {
 	const existed = character.id in entries;
 	await saveCharacterEntry(character, false);
-	entries = await loadSavedCharacterEntries();
+	entries = await loadNormalizedEntries();
 	return existed ? 'updated' : 'added';
 }
 

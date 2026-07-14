@@ -5,9 +5,30 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
+	"net"
 	"net/http"
 	"strings"
+	"time"
 )
+
+// ollamaHTTPClient has no overall request timeout (a chat reply can take
+// much longer than any fixed deadline while it streams), but does bound how
+// long connecting and waiting for the response headers can take — without
+// this, an unreachable/misconfigured Ollama server hangs FetchOllamaChat
+// (and the frontend's awaiting promise) forever with no error at all, which
+// is exactly the "infinite Replying…" symptom this was added to diagnose.
+var ollamaHTTPClient = &http.Client{
+	Transport: &http.Transport{
+		DialContext: (&net.Dialer{
+			Timeout: 5 * time.Second,
+		}).DialContext,
+		// Generous: a cold model load (first request after Ollama starts, or
+		// after it's been idle past keep_alive) can take a while before the
+		// first byte comes back.
+		ResponseHeaderTimeout: 60 * time.Second,
+	},
+}
 
 // OllamaChatChunkEvent is emitted once per NDJSON line of an in-flight
 // Ollama chat response, tagged with the requestID the frontend generated for
@@ -44,14 +65,16 @@ func (a *App) FetchOllamaChat(ctx context.Context, requestID string, url string,
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := ollamaHTTPClient.Do(req)
 	if err != nil {
+		log.Printf("[ollama] request %s: HTTP call failed: %s", requestID, err)
 		return err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
+		log.Printf("[ollama] request %s: %d %s", requestID, resp.StatusCode, string(body))
 		return fmt.Errorf("ollama request failed: %d %s", resp.StatusCode, string(body))
 	}
 
@@ -67,5 +90,9 @@ func (a *App) FetchOllamaChat(ctx context.Context, requestID string, url string,
 		}
 		a.app.Event.Emit(OllamaChatChunkEvent, ollamaChatChunkPayload{RequestID: requestID, Line: line})
 	}
-	return scanner.Err()
+	if err := scanner.Err(); err != nil {
+		log.Printf("[ollama] request %s: stream error: %s", requestID, err)
+		return err
+	}
+	return nil
 }

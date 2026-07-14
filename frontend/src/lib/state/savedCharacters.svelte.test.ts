@@ -96,4 +96,19 @@ describe('saveCharacterLocally / unsaveCharacter', () => {
 		await saveCharacterLocally({ ...character, deleted: true, deleted_at: 2 }, { auto: false });
 		expect(getSavedCharacter('char-3')?.deleted).toBe(true);
 	});
+
+	it("backfills a missing media array on entries cached before the field existed, instead of crashing render code that indexes into it", async () => {
+		const { media: _omitted, ...withoutMedia } = makeCharacter('char-4');
+		entryStore.set('char-4', { character: withoutMedia as unknown as Character, auto: false });
+
+		// initSavedCharacters() memoizes its init promise at module scope, so a
+		// fresh module instance is needed to re-run it against entryStore's
+		// pre-seeded (pre-media-field) data above.
+		vi.resetModules();
+		const fresh = await import('./savedCharacters.svelte');
+		await fresh.initSavedCharacters();
+
+		expect(fresh.getSavedCharacter('char-4')?.media).toEqual([]);
+		expect(fresh.getSavedCharacters()[0].media).toEqual([]);
+	});
 });

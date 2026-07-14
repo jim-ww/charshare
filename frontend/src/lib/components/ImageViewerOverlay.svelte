@@ -9,7 +9,7 @@
 	// character's images can change (or be down to zero) since it was saved.
 	function clampedIndex(): number {
 		if (!entry) return 0;
-		const count = entry.character.media.length;
+		const count = (entry.character.media ?? []).length;
 		if (count === 0) return 0;
 		return Math.min(Math.max(entry.chat.image_index, 0), count - 1);
 	}
@@ -36,7 +36,7 @@
 	>
 		<div role="presentation" onclick={(e) => e.stopPropagation()}>
 			<CharacterImageViewer
-				media={entry.character.media}
+				media={entry.character.media ?? []}
 				name={entry.character.name}
 				class="shadow-2xl"
 				fullSize

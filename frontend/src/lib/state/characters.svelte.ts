@@ -91,7 +91,8 @@ export function isCharactersReady(): boolean {
 function normalizeLocalCharacter(character: Character): Character {
 	return {
 		...character,
-		example_dialogues: character.example_dialogues ?? []
+		example_dialogues: character.example_dialogues ?? [],
+		media: character.media ?? []
 	};
 }
 

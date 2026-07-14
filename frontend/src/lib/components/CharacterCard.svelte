@@ -33,7 +33,7 @@
 
 	let { character }: Props = $props();
 	const localOnly = $derived(isCharacterLocalOnly(character.id));
-	const slideshowMedia = $derived(character.media.filter((m) => m.url.trim()));
+	const slideshowMedia = $derived((character.media ?? []).filter((m) => m.url.trim()));
 	const slideshowActive = $derived(
 		character.slideshow_enabled &&
 			!getPreferences().disableSlideshows &&
@@ -57,8 +57,8 @@
 
 	const coverMedia = $derived(
 		slideshowActive && hovering
-			? (slideshowMedia[slideIndex] ?? character.media[0])
-			: character.media[0],
+			? (slideshowMedia[slideIndex] ?? character.media?.[0])
+			: character.media?.[0],
 	);
 	const isMine = $derived(character.author === getCurrentUser());
 	const hidden = $derived(isCharacterHidden(character.id));
