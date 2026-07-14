@@ -2,7 +2,10 @@
 	import { page } from "$app/state";
 	import { goto } from "$app/navigation";
 	import { asset, resolve } from "$app/paths";
-	import { getCurrentUser, isAccountRegistered } from "$lib/state/auth.svelte";
+	import {
+		getCurrentUser,
+		isAccountRegistered,
+	} from "$lib/state/auth.svelte";
 	import { getMyProfile } from "$lib/state/profile.svelte";
 	import { openSettings } from "$lib/state/settingsModal.svelte";
 	import {
@@ -12,7 +15,7 @@
 		runSearch,
 		setSearchQuery,
 	} from "$lib/state/search.svelte";
-	import { m } from '$lib/paraglide/messages.js';
+	import { m } from "$lib/paraglide/messages.js";
 
 	const user = $derived(getCurrentUser());
 	const profile = $derived(getMyProfile());
@@ -20,12 +23,17 @@
 	const displayName = $derived(
 		registered
 			? profile?.username ||
-					(user ? `${user.slice(0, 6)}…${user.slice(-4)}` : "")
+					(user
+						? `${user.slice(0, 6)}…${user.slice(-4)}`
+						: "")
 			: m.navbar_guest_sign_in(),
 	);
 
 	const navLinks = [
-		{ href: resolve("/characters"), label: m.navbar_nav_characters() },
+		{
+			href: resolve("/characters"),
+			label: m.navbar_nav_characters(),
+		},
 		{ href: resolve("/chats"), label: m.navbar_nav_chats() },
 	];
 	const isActive = (href: string) => page.url.pathname.startsWith(href);
@@ -38,7 +46,11 @@
 		if (q) params.set("q", q);
 		if (tags.length > 0) params.set("tags", tags.join(","));
 		const target = `${resolve("/characters")}${params.toString() ? `?${params}` : ""}`;
-		if (page.url.pathname === resolve("/characters") && page.url.search === (params.toString() ? `?${params}` : "")) {
+		if (
+			page.url.pathname === resolve("/characters") &&
+			page.url.search ===
+				(params.toString() ? `?${params}` : "")
+		) {
 			// Already on this exact search URL — goto() wouldn't navigate, so
 			// re-run explicitly to let "Search" also act as a reload button.
 			runSearch();
@@ -49,7 +61,7 @@
 </script>
 
 <nav
-	class="navbar sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-base-300 bg-base-100/80 px-2 backdrop-blur sm:px-4"
+	class="navbar sticky top-0 z-30 flex h-22 items-center gap-2 border-b border-base-300 bg-base-100/80 px-2 pt-[calc(env(safe-area-inset-top)+0.7rem)] backdrop-blur sm:h-16 sm:px-4 sm:pt-0"
 >
 	<div class="flex shrink-0 items-center gap-3 md:gap-6">
 		<div class="dropdown md:hidden">
@@ -72,10 +84,17 @@
 					<path d="M4 6h16M4 12h16M4 18h16" />
 				</svg>
 			</button>
-			<ul class="menu dropdown-content menu-sm z-10 mt-3 w-40 rounded-box bg-base-200 p-2 shadow">
+			<ul
+				class="menu dropdown-content menu-sm z-10 mt-3 w-40 rounded-box bg-base-200 p-2 shadow"
+			>
 				{#each navLinks as { href, label } (href)}
 					<li>
-						<a {href} class={isActive(href) ? 'text-primary' : ''}>{label}</a>
+						<a
+							{href}
+							class={isActive(href)
+								? "text-primary"
+								: ""}>{label}</a
+						>
 					</li>
 				{/each}
 			</ul>
@@ -84,7 +103,11 @@
 			href={resolve("/")}
 			class="btn btn-ghost flex h-auto min-h-0 shrink-0 items-center gap-2 rounded-none px-2 text-xl font-bold leading-none tracking-tight md:h-16 md:min-h-16"
 		>
-			<img src={asset("/icon-192.png")} alt="" class="h-6 w-6 rounded-md" />
+			<img
+				src={asset("/icon-192.png")}
+				alt=""
+				class="h-6 w-6 rounded-md"
+			/>
 			<span class="hidden sm:inline">charshare</span>
 		</a>
 		{#each navLinks as { href, label } (href)}
@@ -100,7 +123,10 @@
 			</a>
 		{/each}
 	</div>
-	<form class="flex min-w-0 flex-1 items-center gap-2 px-1 sm:mx-4" onsubmit={handleSearch}>
+	<form
+		class="flex min-w-0 flex-1 items-center gap-2 px-1 sm:mx-4"
+		onsubmit={handleSearch}
+	>
 		<input
 			class="input input-bordered input-sm w-full min-w-0"
 			placeholder={m.navbar_search_placeholder()}
@@ -116,8 +142,13 @@
 		</button>
 	</form>
 	<div class="flex shrink-0 items-center gap-2">
-		<a href={resolve("/characters/new")} class="btn btn-sm btn-primary">
-			<span class="hidden sm:inline">{m.navbar_new_character()}</span>
+		<a
+			href={resolve("/characters/new")}
+			class="btn btn-sm btn-primary"
+		>
+			<span class="hidden sm:inline"
+				>{m.navbar_new_character()}</span
+			>
 			<span class="sm:hidden">+</span>
 		</a>
 		<button
@@ -126,16 +157,31 @@
 			aria-label={m.navbar_account_settings()}
 			onclick={() => openSettings("account")}
 		>
-			<div class="avatar {profile?.image_url ? '' : 'avatar-placeholder'}">
-				<div class="w-6 rounded-full bg-neutral text-neutral-content">
+			<div
+				class="avatar {profile?.image_url
+					? ''
+					: 'avatar-placeholder'}"
+			>
+				<div
+					class="w-6 rounded-full bg-neutral text-neutral-content"
+				>
 					{#if profile?.image_url}
-						<img src={profile.image_url} alt={displayName} />
+						<img
+							src={profile.image_url}
+							alt={displayName}
+						/>
 					{:else}
-						<span class="text-xs">{displayName.slice(0, 1).toUpperCase()}</span>
+						<span class="text-xs"
+							>{displayName
+								.slice(0, 1)
+								.toUpperCase()}</span
+						>
 					{/if}
 				</div>
 			</div>
-			<span class="hidden max-w-40 truncate lg:inline">{displayName}</span>
+			<span class="hidden max-w-40 truncate lg:inline"
+				>{displayName}</span
+			>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
 				viewBox="0 0 24 24"
