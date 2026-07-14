@@ -5,6 +5,8 @@
 	import type { Character, CharacterDraft } from "$lib/types";
 	import CharacterImageViewer from "./CharacterImageViewer.svelte";
 	import TagCollapse from "./TagCollapse.svelte";
+	import GenerateFieldButton from "./GenerateFieldButton.svelte";
+	import { parseGeneratedTags, type CharacterFieldContext } from "$lib/ai/characterFieldGenerate";
 	import { isAccountRegistered } from "$lib/state/auth.svelte";
 	import { openSettings } from "$lib/state/settingsModal.svelte";
 	import { LANGUAGES } from "$lib/languages";
@@ -163,6 +165,25 @@
 
 	function removeExampleDialogue(index: number) {
 		exampleDialogues.splice(index, 1);
+	}
+
+	function fieldContext(): CharacterFieldContext {
+		return {
+			name,
+			tags: [...selectedTags],
+			description,
+			personality,
+			scenario,
+			first_message: firstMessage,
+			alternate_greetings: alternateGreetings,
+			example_dialogues: exampleDialogues,
+		};
+	}
+
+	function applyGeneratedTags(raw: string) {
+		const next = new Set(selectedTags);
+		for (const tag of parseGeneratedTags(raw)) next.add(tag);
+		selectedTags = next;
 	}
 
 	const tokens = $derived(
@@ -362,7 +383,12 @@
 				</select>
 			</label>
 			<div class="form-control">
-				<div class="mb-1 flex items-center justify-end">
+				<div class="mb-1 flex items-center justify-end gap-2">
+					<GenerateFieldButton
+						field="tags"
+						getContext={fieldContext}
+						onresult={applyGeneratedTags}
+					/>
 					<button
 						type="button"
 						class="btn btn-circle btn-ghost btn-xs"
@@ -491,6 +517,11 @@
 						{m.char_form_description_heading()}{m.char_form_tokens_suffix({ count: String(tokens.description) })}
 					</div>
 					<div class="collapse-content">
+						<GenerateFieldButton
+							field="description"
+							getContext={fieldContext}
+							onresult={(text) => (description = text)}
+						/>
 						<textarea
 							class="textarea textarea-bordered field-sizing-content min-h-24 w-full"
 							bind:value={description}
@@ -610,6 +641,11 @@
 						{m.char_form_personality_heading()}{m.char_form_tokens_suffix({ count: String(tokens.personality) })}
 					</div>
 					<div class="collapse-content">
+						<GenerateFieldButton
+							field="personality"
+							getContext={fieldContext}
+							onresult={(text) => (personality = text)}
+						/>
 						<textarea
 							class="textarea textarea-bordered field-sizing-content min-h-24 w-full"
 							bind:value={personality}
@@ -627,6 +663,11 @@
 						{m.char_form_scenario_heading()}{m.char_form_tokens_suffix({ count: String(tokens.scenario) })}
 					</div>
 					<div class="collapse-content">
+						<GenerateFieldButton
+							field="scenario"
+							getContext={fieldContext}
+							onresult={(text) => (scenario = text)}
+						/>
 						<textarea
 							class="textarea textarea-bordered field-sizing-content min-h-24 w-full"
 							bind:value={scenario}
@@ -645,6 +686,11 @@
 						{m.char_form_first_message_heading()}{m.char_form_tokens_suffix({ count: String(tokens.first_message) })}
 					</div>
 					<div class="collapse-content">
+						<GenerateFieldButton
+							field="first_message"
+							getContext={fieldContext}
+							onresult={(text) => (firstMessage = text)}
+						/>
 						<textarea
 							class="textarea textarea-bordered field-sizing-content min-h-24 w-full"
 							bind:value={
@@ -675,13 +721,20 @@
 									class="label-text"
 									>{m.char_form_alternate_greetings_heading()}</span
 								>
-								<button
-									type="button"
-									class="btn btn-ghost btn-sm"
-									onclick={addGreeting}
-								>
-									{m.char_form_add_greeting()}
-								</button>
+								<div class="flex items-center gap-2">
+									<GenerateFieldButton
+										field="alternate_greetings"
+										getContext={fieldContext}
+										onresult={(text) => alternateGreetings.push(text)}
+									/>
+									<button
+										type="button"
+										class="btn btn-ghost btn-sm"
+										onclick={addGreeting}
+									>
+										{m.char_form_add_greeting()}
+									</button>
+								</div>
 							</div>
 							{#each alternateGreetings as _, i}
 								<div
@@ -736,13 +789,20 @@
 									{"{{char}}"}
 									{m.char_form_example_dialogues_talks()}</span
 								>
-								<button
-									type="button"
-									class="btn btn-ghost btn-sm"
-									onclick={addExampleDialogue}
-								>
-									{m.char_form_add_example()}
-								</button>
+								<div class="flex items-center gap-2">
+									<GenerateFieldButton
+										field="example_dialogues"
+										getContext={fieldContext}
+										onresult={(text) => exampleDialogues.push(text)}
+									/>
+									<button
+										type="button"
+										class="btn btn-ghost btn-sm"
+										onclick={addExampleDialogue}
+									>
+										{m.char_form_add_example()}
+									</button>
+								</div>
 							</div>
 							{#each exampleDialogues as _, i}
 								<div

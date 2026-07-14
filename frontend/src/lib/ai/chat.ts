@@ -82,7 +82,7 @@ interface CompleteOptions {
  *  finish_reason: 'length'. Rather than show the user a truncated message,
  *  ask the model to keep going from where it left off and stitch the
  *  pieces together. */
-async function completeWithContinuation(
+export async function completeWithContinuation(
 	config: ProviderConfig,
 	messages: CompletionMessage[],
 	options: CompleteOptions = {},
@@ -117,7 +117,7 @@ async function completeWithContinuation(
  *  idempotent, so awaiting it here just waits for the in-flight load
  *  rather than re-fetching. Ignore failures (e.g. no IndexedDB in tests) —
  *  fall back to whatever's already in memory. */
-async function ensurePreferencesReady(): Promise<void> {
+export async function ensurePreferencesReady(): Promise<void> {
 	try {
 		await initPreferences();
 	} catch {
