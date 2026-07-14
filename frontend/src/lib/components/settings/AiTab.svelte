@@ -40,9 +40,9 @@
 			value={provider.provider}
 			onchange={(e) => switchProvider(e.currentTarget.value as ProviderConfig['provider'])}
 		>
-			<option value="openrouter">{m.ai_tab_provider_openrouter()}</option>
 			<option value="ollama">{m.ai_tab_provider_ollama()}</option>
 			<option value="huggingface">{m.ai_tab_provider_huggingface()}</option>
+			<option value="openrouter">{m.ai_tab_provider_openrouter()}</option>
 			<option value="openai_compatible">{m.ai_tab_provider_openai_compatible()}</option>
 		</select>
 	</label>
