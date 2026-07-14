@@ -2,7 +2,7 @@
 	import { untrack } from 'svelte';
 	import { getPreferences, updatePreferences } from '$lib/state/preferences.svelte';
 	import { m } from '$lib/paraglide/messages.js';
-	import TagCarousel from '$lib/components/TagCarousel.svelte';
+	import TagCollapse from '$lib/components/TagCollapse.svelte';
 
 	const preferences = $derived(getPreferences());
 	const blockedTags = $derived(new Set(preferences.blockedTags));
@@ -28,8 +28,7 @@
 </script>
 
 <div class="flex flex-col gap-2">
-	<span class="label-text">{m.content_tab_blocked_tags_label()}</span>
-	<TagCarousel selected={blockedTags} ontoggle={handleToggleTag} />
+	<TagCollapse selected={blockedTags} ontoggle={handleToggleTag} label={m.content_tab_blocked_tags_label()} />
 	<p class="text-sm opacity-70">{m.content_tab_blocked_tags_hint()}</p>
 
 	<span class="label-text mt-2">{m.content_tab_blocked_authors_label()}</span>

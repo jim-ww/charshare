@@ -1,4 +1,3 @@
-- show proper expandable tag selector in character new/edit page
 - implement multi-tag search? in character definitions, always store tags sorted to allow search like tag-subtag-subsubtag?
 - allow to specify videos in character cards
 - feat: add some characters from other platforms

@@ -4,11 +4,10 @@
 	import ConfirmDialog from "./ConfirmDialog.svelte";
 	import type { Character, CharacterDraft } from "$lib/types";
 	import CharacterImageViewer from "./CharacterImageViewer.svelte";
-	import TagSuggestionsList from "./TagSuggestionsList.svelte";
+	import TagCollapse from "./TagCollapse.svelte";
 	import { isAccountRegistered } from "$lib/state/auth.svelte";
 	import { openSettings } from "$lib/state/settingsModal.svelte";
 	import { LANGUAGES } from "$lib/languages";
-	import { PREDEFINED_TAGS } from "$lib/data/tags";
 	import { DEFAULT_SYSTEM_PROMPT } from "$lib/data/defaultSystemPrompt";
 	import { estimateCharacterTokens } from "$lib/ai/tokenEstimate";
 	import { m } from '$lib/paraglide/messages.js';
@@ -94,85 +93,18 @@
 	let scenario = $state(
 		untrack(() => initial?.scenario ?? draft?.scenario ?? ""),
 	);
-	let tagsText = $state(
-		untrack(() => (initial ?? draft)?.tags.join(", ") ?? ""),
+	let selectedTags = $state<Set<string>>(
+		untrack(() => new Set((initial ?? draft)?.tags ?? [])),
 	);
-	let tagsInputEl = $state<HTMLInputElement>();
-	let tagSuggestionsOpen = $state(false);
-	let tagSuggestionsHighlight = $state(-1);
 	let tagGuidelinesEl = $state<HTMLDialogElement>();
 
-	const tagCategories = [...new Set(PREDEFINED_TAGS.map((t) => t.type))];
-
-	const currentTagFragment = $derived(
-		tagsText
-			.slice(tagsText.lastIndexOf(",") + 1)
-			.trim()
-			.toLowerCase(),
-	);
-	const tagSuggestions = $derived.by(() => {
-		if (!currentTagFragment) return [];
-		const existing = new Set(
-			tagsText
-				.split(",")
-				.map((t) => t.trim().toLowerCase())
-				.filter(Boolean),
-		);
-		// Typing a category name (e.g. "kink") lists every tag in it, instead
-		// of only tags whose name happens to contain that string.
-		const categoryMatch = tagCategories.find((c) => c === currentTagFragment);
-		return PREDEFINED_TAGS.filter(
-			(t) =>
-				(categoryMatch
-					? t.type === categoryMatch
-					: t.name.toLowerCase().includes(currentTagFragment)) &&
-				!existing.has(t.name.toLowerCase()),
-		);
-	});
-
-	$effect(() => {
-		// Reset the highlight whenever the suggestion list itself changes,
-		// so an old index doesn't point at an unrelated tag.
-		tagSuggestions;
-		tagSuggestionsHighlight = -1;
-	});
-
-	function handleTagsKeydown(event: KeyboardEvent) {
-		if (!tagSuggestionsOpen || !tagSuggestions.length) return;
-		if (event.key === "ArrowDown") {
-			event.preventDefault();
-			tagSuggestionsHighlight =
-				(tagSuggestionsHighlight + 1) %
-				tagSuggestions.length;
-		} else if (event.key === "ArrowUp") {
-			event.preventDefault();
-			tagSuggestionsHighlight =
-				(tagSuggestionsHighlight -
-					1 +
-					tagSuggestions.length) %
-				tagSuggestions.length;
-		} else if (
-			event.key === "Enter" &&
-			tagSuggestionsHighlight >= 0
-		) {
-			event.preventDefault();
-			pickTagSuggestion(
-				tagSuggestions[tagSuggestionsHighlight].name,
-			);
-		} else if (event.key === "Escape") {
-			tagSuggestionsOpen = false;
-		}
+	function toggleTag(tag: string) {
+		const next = new Set(selectedTags);
+		if (next.has(tag)) next.delete(tag);
+		else next.add(tag);
+		selectedTags = next;
 	}
 
-	function pickTagSuggestion(name: string) {
-		const upToLastComma = tagsText.slice(
-			0,
-			tagsText.lastIndexOf(",") + 1,
-		);
-		const prefix = upToLastComma ? `${upToLastComma} ` : "";
-		tagsText = `${prefix}${name}, `;
-		tagsInputEl?.focus();
-	}
 	let nsfw = $state(untrack(() => initial?.nsfw ?? draft?.nsfw ?? false));
 	let language = $state(
 		untrack(() => initial?.language || draft?.language || "en"),
@@ -261,7 +193,7 @@
 			description,
 			personality,
 			scenario,
-			tagsText,
+			tags: [...selectedTags].sort(),
 			nsfw,
 			language,
 			systemPrompt,
@@ -335,10 +267,7 @@
 				);
 			}
 
-			const tags = tagsText
-				.split(",")
-				.map((t) => t.trim())
-				.filter(Boolean);
+			const tags = [...selectedTags];
 
 			const payload: CharacterDraft = {
 				id: initial?.id,
@@ -432,11 +361,8 @@
 					{/each}
 				</select>
 			</label>
-			<label class="form-control">
-				<span
-					class="label-text flex items-center gap-1.5"
-				>
-					{m.char_form_tags_label()}
+			<div class="form-control">
+				<div class="mb-1 flex items-center justify-end">
 					<button
 						type="button"
 						class="btn btn-circle btn-ghost btn-xs"
@@ -446,35 +372,13 @@
 					>
 						?
 					</button>
-				</span>
-				<div class="dropdown w-full">
-					<input
-						bind:this={tagsInputEl}
-						class="input input-bordered w-full"
-						bind:value={tagsText}
-						autocomplete="off"
-						placeholder={m.char_form_tags_placeholder()}
-						onfocus={() =>
-							(tagSuggestionsOpen = true)}
-						onblur={() =>
-							setTimeout(
-								() =>
-									(tagSuggestionsOpen = false),
-								150,
-							)}
-						onkeydown={handleTagsKeydown}
-					/>
-					{#if tagSuggestionsOpen && tagSuggestions.length}
-						<TagSuggestionsList
-							suggestions={tagSuggestions}
-							highlight={tagSuggestionsHighlight}
-							onhighlight={(i) => (tagSuggestionsHighlight = i)}
-							onpick={pickTagSuggestion}
-							class="w-full"
-						/>
-					{/if}
 				</div>
-			</label>
+				<TagCollapse
+					selected={selectedTags}
+					ontoggle={toggleTag}
+					label={m.char_form_tags_label()}
+				/>
+			</div>
 			<dialog bind:this={tagGuidelinesEl} class="modal">
 				<div class="modal-box">
 					<h3 class="text-lg font-bold">
