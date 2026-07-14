@@ -21,6 +21,7 @@
 		unhideCharacter,
 	} from "$lib/state/preferences.svelte";
 	import { confirmDialog } from "$lib/state/confirmDialog.svelte";
+	import { estimateCharacterTokens, formatTokenCount } from "$lib/ai/tokenEstimate";
 	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
@@ -38,6 +39,7 @@
 	// characters land in myCharacters despite not being authored by me, so a
 	// "Save" prompt for them would just duplicate what's already there.
 	const alreadyLocal = $derived(isMine || isCharacterInMyCharacters(character.id));
+	const totalTokens = $derived(estimateCharacterTokens(character).total);
 
 	async function toggleSaved(event: MouseEvent) {
 		event.preventDefault();
@@ -184,6 +186,9 @@
 					{m.char_card_nsfw_badge()}
 				</span>
 			{/if}
+			<span class="badge badge-xs badge-ghost" title={m.char_form_total_tokens({ count: String(totalTokens) })}>
+				{m.char_card_tokens_badge({ count: formatTokenCount(totalTokens) })}
+			</span>
 		</div>
 		{#if character.description}
 			<p class="line-clamp-2 text-xs opacity-80">

@@ -8,6 +8,7 @@
 		estimateChatTokens,
 	} from "$lib/ai/chat";
 	import { setChatDraft, getActivePath } from "$lib/state/chats.svelte";
+	import { formatTokenCount } from "$lib/ai/tokenEstimate";
 	import { getChatGenerationError, setChatGenerationError } from "$lib/state/chatGenerationError.svelte";
 	import { m } from '$lib/paraglide/messages.js';
 	import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
@@ -299,10 +300,6 @@
 		}
 		downloadProgress = null;
 		await startRecording();
-	}
-
-	function formatTokenCount(n: number): string {
-		return n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, "")}k` : String(n);
 	}
 
 	async function handleGenerateForMe() {

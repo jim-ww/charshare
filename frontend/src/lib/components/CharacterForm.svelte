@@ -10,6 +10,7 @@
 	import { LANGUAGES } from "$lib/languages";
 	import { PREDEFINED_TAGS } from "$lib/data/tags";
 	import { DEFAULT_SYSTEM_PROMPT } from "$lib/data/defaultSystemPrompt";
+	import { estimateCharacterTokens } from "$lib/ai/tokenEstimate";
 	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
@@ -231,6 +232,18 @@
 	function removeExampleDialogue(index: number) {
 		exampleDialogues.splice(index, 1);
 	}
+
+	const tokens = $derived(
+		estimateCharacterTokens({
+			description,
+			personality,
+			scenario,
+			system_prompt: systemPrompt,
+			first_message: firstMessage,
+			alternate_greetings: alternateGreetings,
+			example_dialogues: exampleDialogues,
+		}),
+	);
 
 	// Generous cap on the whole published character record, mainly to catch
 	// someone pasting a novel into a text field — not a fine-grained budget.
@@ -571,7 +584,7 @@
 					<div
 						class="collapse-title label-text font-medium"
 					>
-						{m.char_form_description_heading()}
+						{m.char_form_description_heading()}{m.char_form_tokens_suffix({ count: String(tokens.description) })}
 					</div>
 					<div class="collapse-content">
 						<textarea
@@ -690,7 +703,7 @@
 					<div
 						class="collapse-title label-text font-medium"
 					>
-						{m.char_form_personality_heading()}
+						{m.char_form_personality_heading()}{m.char_form_tokens_suffix({ count: String(tokens.personality) })}
 					</div>
 					<div class="collapse-content">
 						<textarea
@@ -707,7 +720,7 @@
 					<div
 						class="collapse-title label-text font-medium"
 					>
-						{m.char_form_scenario_heading()}
+						{m.char_form_scenario_heading()}{m.char_form_tokens_suffix({ count: String(tokens.scenario) })}
 					</div>
 					<div class="collapse-content">
 						<textarea
@@ -725,7 +738,7 @@
 					<div
 						class="collapse-title label-text font-medium"
 					>
-						{m.char_form_first_message_heading()}
+						{m.char_form_first_message_heading()}{m.char_form_tokens_suffix({ count: String(tokens.first_message) })}
 					</div>
 					<div class="collapse-content">
 						<textarea
@@ -747,7 +760,7 @@
 					>
 						{m.char_form_alternate_greetings_heading()}{alternateGreetings.length
 							? m.char_form_count_suffix({ count: String(alternateGreetings.length) })
-							: ""}
+							: ""}{m.char_form_tokens_suffix({ count: String(tokens.alternate_greetings) })}
 					</div>
 					<div class="collapse-content">
 						<div class="form-control gap-2">
@@ -806,7 +819,7 @@
 					>
 						{m.char_form_example_dialogues_heading()}{exampleDialogues.length
 							? m.char_form_count_suffix({ count: String(exampleDialogues.length) })
-							: ""}
+							: ""}{m.char_form_tokens_suffix({ count: String(tokens.example_dialogues) })}
 					</div>
 					<div class="collapse-content">
 						<div class="form-control gap-2">
@@ -865,7 +878,7 @@
 					<div
 						class="collapse-title label-text font-medium"
 					>
-						{m.char_form_system_prompt_heading()}
+						{m.char_form_system_prompt_heading()}{m.char_form_tokens_suffix({ count: String(tokens.system_prompt) })}
 					</div>
 					<div
 						class="collapse-content flex flex-col gap-2"
@@ -895,6 +908,7 @@
 		<button class="btn btn-primary" type="submit" disabled={saving}>
 			{saving ? m.char_form_saving() : submitLabel}
 		</button>
+		<span class="text-sm opacity-70">{m.char_form_total_tokens({ count: String(tokens.total) })}</span>
 		{#if error}
 			<p class="text-error text-sm">{error}</p>
 		{/if}

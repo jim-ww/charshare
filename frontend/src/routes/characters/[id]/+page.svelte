@@ -12,6 +12,7 @@
 	import { openSettings } from "$lib/state/settingsModal.svelte";
 	import { confirmDialog, confirmDialogWithExtra } from "$lib/state/confirmDialog.svelte";
 	import { languageName } from "$lib/languages";
+	import { estimateCharacterTokens } from "$lib/ai/tokenEstimate";
 	import {
 		deleteMyCharacter,
 		exportCharacter,
@@ -85,6 +86,7 @@
 	let replyDraft = $state("");
 	let replyError = $state<string | null>(null);
 
+	const tokens = $derived(character ? estimateCharacterTokens(character) : null);
 	const localOnly = $derived(isCharacterLocalOnly(id));
 	const liked = $derived(character ? isLiked(characterLikeTarget(character.id)) : false);
 	const likeCount = $derived(character ? getLikeCountFor(characterLikeTarget(character.id)) : null);
@@ -573,6 +575,11 @@
 								{m.char_detail_unreachable_badge()}
 							</span>
 						{/if}
+						{#if tokens}
+							<span class="badge badge-sm badge-ghost align-middle" title={m.char_form_total_tokens({ count: String(tokens.total) })}>
+								{m.char_detail_total_tokens_badge({ count: String(tokens.total) })}
+							</span>
+						{/if}
 					</h1>
 					<div
 						class="mt-1 flex items-center gap-1.5 text-sm opacity-70"
@@ -636,11 +643,18 @@
 				</div>
 
 				{#if character.description}
-					<p
-						class="whitespace-pre-wrap text-sm opacity-80"
-					>
-						{character.description}
-					</p>
+					<div>
+						<p
+							class="whitespace-pre-wrap text-sm opacity-80"
+						>
+							{character.description}
+						</p>
+						{#if tokens}
+							<p class="mt-1 text-xs opacity-50">
+								{m.char_detail_total_tokens_badge({ count: String(tokens.description) })}
+							</p>
+						{/if}
+					</div>
 				{/if}
 
 				<div class="flex flex-col gap-2">
@@ -828,7 +842,7 @@
 						<div
 							class="collapse-title font-medium"
 						>
-							{m.char_detail_scenario_heading()}
+							{m.char_detail_scenario_heading()}{tokens ? m.char_form_tokens_suffix({ count: String(tokens.scenario) }) : ""}
 						</div>
 						<div
 							class="collapse-content whitespace-pre-wrap text-sm opacity-80"
@@ -846,7 +860,7 @@
 						<div
 							class="collapse-title font-medium"
 						>
-							{m.char_detail_personality_heading()}
+							{m.char_detail_personality_heading()}{tokens ? m.char_form_tokens_suffix({ count: String(tokens.personality) }) : ""}
 						</div>
 						<div
 							class="collapse-content whitespace-pre-wrap text-sm opacity-80"
@@ -864,7 +878,7 @@
 						<div
 							class="collapse-title font-medium"
 						>
-							{m.char_detail_first_messages_heading()}
+							{m.char_detail_first_messages_heading()}{tokens ? m.char_form_tokens_suffix({ count: String(tokens.first_message + tokens.alternate_greetings) }) : ""}
 						</div>
 						<div
 							class="collapse-content flex flex-col gap-2 text-sm opacity-80"
@@ -895,7 +909,7 @@
 						<div
 							class="collapse-title font-medium"
 						>
-							{m.char_detail_example_dialogues_heading()}
+							{m.char_detail_example_dialogues_heading()}{tokens ? m.char_form_tokens_suffix({ count: String(tokens.example_dialogues) }) : ""}
 						</div>
 						<div
 							class="collapse-content flex flex-col gap-2 text-sm opacity-80"
@@ -922,7 +936,7 @@
 						<div
 							class="collapse-title font-medium"
 						>
-							{m.char_detail_system_prompt_heading()}
+							{m.char_detail_system_prompt_heading()}{tokens ? m.char_form_tokens_suffix({ count: String(tokens.system_prompt) }) : ""}
 						</div>
 						<div
 							class="collapse-content whitespace-pre-wrap text-sm opacity-80"
