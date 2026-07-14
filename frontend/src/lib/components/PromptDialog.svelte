@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { pushState } from '$app/navigation';
 	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
@@ -26,6 +27,33 @@
 		} else {
 			dialogEl?.close();
 		}
+	});
+
+	// Whether we pushed a history entry for the currently-open dialog — lets
+	// the phone/browser Back button close it instead of navigating away,
+	// without double-popping history when the user closes it some other way.
+	let ownsHistoryEntry = false;
+
+	$effect(() => {
+		function handlePopstate() {
+			if (!ownsHistoryEntry) return;
+			ownsHistoryEntry = false;
+			oncancel();
+		}
+		window.addEventListener('popstate', handlePopstate);
+		return () => window.removeEventListener('popstate', handlePopstate);
+	});
+
+	$effect(() => {
+		if (!open) return;
+		pushState('', { promptDialog: true });
+		ownsHistoryEntry = true;
+		return () => {
+			if (ownsHistoryEntry) {
+				ownsHistoryEntry = false;
+				history.back();
+			}
+		};
 	});
 
 	function handleSubmit(event: SubmitEvent) {

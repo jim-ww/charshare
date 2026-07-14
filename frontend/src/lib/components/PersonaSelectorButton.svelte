@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { untrack } from "svelte";
+	import { pushState } from "$app/navigation";
 	import type { CharacterId } from "$lib/types";
 	import {
 		createPersona,
@@ -33,6 +34,28 @@
 	let creatingName = $state("");
 	let creatingDescription = $state("");
 
+	// Whether we pushed a history entry for the currently-open dialog — lets
+	// the phone/browser Back button close it instead of navigating away,
+	// without double-popping history when the user closes it some other way.
+	let ownsHistoryEntry = false;
+
+	$effect(() => {
+		function handlePopstate() {
+			if (!ownsHistoryEntry) return;
+			ownsHistoryEntry = false;
+			dialogEl?.close();
+		}
+		window.addEventListener("popstate", handlePopstate);
+		return () => window.removeEventListener("popstate", handlePopstate);
+	});
+
+	function handleDialogClose() {
+		if (ownsHistoryEntry) {
+			ownsHistoryEntry = false;
+			history.back();
+		}
+	}
+
 	const filtered = $derived(
 		personas.filter((p) =>
 			personaDisplayName(p)
@@ -46,6 +69,8 @@
 		creatingName = "";
 		creatingDescription = "";
 		dialogEl?.showModal();
+		pushState("", { personaSelector: true });
+		ownsHistoryEntry = true;
 	}
 
 	function manage() {
@@ -92,7 +117,7 @@
 	</svg>
 </button>
 
-<dialog bind:this={dialogEl} class="modal">
+<dialog bind:this={dialogEl} class="modal" onclose={handleDialogClose}>
 	<div class="modal-box flex flex-col gap-3">
 		<div class="flex items-center justify-between gap-2">
 			<h3 class="text-lg font-semibold">

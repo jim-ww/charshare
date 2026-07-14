@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { pushState } from "$app/navigation";
 	import type { PubKey, User } from "$lib/types";
 	import { getProfile } from "$lib/nostr/profile";
 	import { getCurrentUser } from "$lib/state/auth.svelte";
@@ -36,6 +37,33 @@
 	$effect(() => {
 		if (open) dialogEl?.showModal();
 		else dialogEl?.close();
+	});
+
+	// Whether we pushed a history entry for the currently-open modal — lets
+	// the phone/browser Back button close it instead of navigating away,
+	// without double-popping history when the user closes it some other way.
+	let ownsHistoryEntry = false;
+
+	$effect(() => {
+		function handlePopstate() {
+			if (!ownsHistoryEntry) return;
+			ownsHistoryEntry = false;
+			onclose();
+		}
+		window.addEventListener("popstate", handlePopstate);
+		return () => window.removeEventListener("popstate", handlePopstate);
+	});
+
+	$effect(() => {
+		if (!open) return;
+		pushState("", { userProfile: true });
+		ownsHistoryEntry = true;
+		return () => {
+			if (ownsHistoryEntry) {
+				ownsHistoryEntry = false;
+				history.back();
+			}
+		};
 	});
 
 	$effect(() => {

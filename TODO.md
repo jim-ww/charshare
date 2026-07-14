@@ -1,10 +1,10 @@
-- mobile: cant close preferences modal on 'back'
 - mobile: set icon to our logo
 - mobile: fill in APP metadata
 - mobile(characters page): add refresh page motion, that refreshes the page
 - ui: design better navbar, chat page bars
 - pressing your own name/avatar in chat should open your profile?
 - improve auth flow: allow to enter private key, maybe add alternative login nostr methods (split Account and Profile?)
+- characters page: add loading indicator on search
 - add licensing for logo
 - consider: implement multi-tag search? in character definitions, always store tags sorted to allow search like tag-subtag-subsubtag?
 - consider: add some characters from other platforms
