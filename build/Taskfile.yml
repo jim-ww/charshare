@@ -1,0 +1,68 @@
+# Common tasks needed by build/android/Taskfile.yml (it includes this file as
+# "common:"). Trimmed from wails3's generated build/Taskfile.yml to just what
+# the Android build path calls — this repo uses pnpm only, no npm/yarn/bun,
+# and has its own desktop build path in the root Taskfile.yml so the rest of
+# the generated common tasks (build:server, build:docker, ios:*, ...) aren't
+# needed here.
+version: '3'
+
+tasks:
+  go:mod:tidy:
+    summary: Runs `go mod tidy`
+    internal: true
+    run: once
+    cmds:
+      - go mod tidy
+
+  install:frontend:deps:
+    summary: Install frontend dependencies
+    dir: frontend
+    sources:
+      - package.json
+      - pnpm-lock.yaml
+    generates:
+      - node_modules
+    run: once
+    cmds:
+      - pnpm install
+    env:
+      CI: "true"
+
+  generate:bindings:
+    summary: Generates bindings for the frontend
+    run: once
+    deps:
+      - task: go:mod:tidy
+    sources:
+      - "**/*.[jt]s"
+      - exclude: frontend/**/*
+      - frontend/bindings/**/*
+      - "**/*.go"
+      - go.mod
+      - go.sum
+    generates:
+      - frontend/bindings/**/*
+    cmds:
+      # -ts -b matches the project convention (Makefile's `bindings` target):
+      # TypeScript output importing the bundled runtime module rather than
+      # the "@wailsio/runtime" npm package charshare doesn't depend on.
+      - wails3 generate bindings -ts -b -f '{{.BUILD_FLAGS}}' -clean=true -time-type=Date
+
+  build:frontend:
+    label: 'build:frontend (PRODUCTION={{.PRODUCTION}})'
+    summary: Build the frontend project
+    run: once
+    dir: frontend
+    sources:
+      - "**/*"
+      - exclude: node_modules/**/*
+    generates:
+      - dist/**/*
+    deps:
+      - task: install:frontend:deps
+      - task: generate:bindings
+        vars:
+          BUILD_FLAGS:
+            ref: .BUILD_FLAGS
+    cmds:
+      - pnpm run build

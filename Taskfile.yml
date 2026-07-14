@@ -9,6 +9,14 @@ vars:
   # `wails3 dev` sat retrying/timed out against an empty 9245 while Vite was
   # actually listening on 5173.
   VITE_PORT: '{{.WAILS_VITE_PORT | default 9245}}'
+  # Consumed by build/android/Taskfile.yml (via its "common:" include of
+  # build/Taskfile.yml) for APK/AAB output naming and paths.
+  APP_NAME: charshare
+  BIN_DIR: bin
+  APP_ID: com.wails.charshare
+
+includes:
+  android: ./build/android/Taskfile.yml
 
 tasks:
   common:dev:frontend:

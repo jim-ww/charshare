@@ -1,4 +1,5 @@
-- consider: add alternative login nostr methods?
+- add licensing for logo
+- improve auth flow: allow to enter private key, maybe add alternative login nostr methods (split Account and Profile?)
 - consider: implement multi-tag search? in character definitions, always store tags sorted to allow search like tag-subtag-subsubtag?
 - consider: add some characters from other platforms
 - consider: android build target

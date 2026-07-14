@@ -12,7 +12,13 @@
     flake-utils,
   }:
     flake-utils.lib.eachDefaultSystem (system: let
-      pkgs = import nixpkgs {inherit system;};
+      # allowUnfree: the Android SDK/build-tools packages (androidComposition
+      # below) are under Google's unfree SDK license, which nixpkgs refuses
+      # to evaluate by default.
+      pkgs = import nixpkgs {
+        inherit system;
+        config.allowUnfree = true;
+      };
 
       # Wails v3's Linux backend defaults to GTK4 + webkitgtk-6.0; this
       # nixpkgs only ships the older GTK3 + webkitgtk-4.1 ABI, so both the
@@ -57,6 +63,34 @@
       wails3 = pkgs.writeShellScriptBin "wails3" ''
         exec env GOFLAGS=-tags=gtk3 ${pkgs.go}/bin/go run github.com/wailsapp/wails/v3/cmd/wails3@${wails3Version} "$@"
       '';
+
+      # Self-contained Android SDK/NDK for `wails3 task android:*` — no manual
+      # `sdkmanager` install needed. androidenv fetches the SDK components as
+      # fixed-output derivations (accepting Google's licenses via
+      # licenseAccepted below) and composes them into one Nix store path that
+      # ANDROID_HOME/ANDROID_NDK_HOME point at.
+      androidComposition = (pkgs.androidenv.override {licenseAccepted = true;}).composeAndroidPackages {
+        platformVersions = ["35"];
+        # 34.0.0 is pulled in too: AGP's lintVitalReportRelease task wants it
+        # even though app/build.gradle's compileSdk/targetSdk are 35 — with
+        # the SDK living in the (read-only) Nix store, Gradle can't
+        # auto-install a missing component at build time like it normally
+        # would, so it has to be provisioned upfront here.
+        buildToolsVersions = ["34.0.0" "35.0.0"];
+        includeNDK = true;
+        ndkVersions = ["26.3.11579264"];
+        includeEmulator = true;
+        systemImageTypes = ["google_apis"];
+        abiVersions = [
+          (
+            if pkgs.stdenv.hostPlatform.isAarch64
+            then "arm64-v8a"
+            else "x86_64"
+          )
+        ];
+        includeSystemImages = true;
+        cmdLineToolsVersion = "13.0";
+      };
 
       # Lets Linux desktop environments (GNOME/KDE/etc.) show a launcher entry
       # with an icon for `nix profile install`/systemPackages users — without
@@ -179,6 +213,33 @@
           description = "charshare desktop app";
           mainProgram = "charshare";
         };
+      };
+
+      devShells.android = pkgs.mkShell {
+        buildInputs =
+          [
+            pkgs.go
+            wails3
+            pkgs.nodejs
+            pkgs.pnpm
+            pkgs.jdk21
+            pkgs.pkg-config
+            androidComposition.androidsdk
+          ]
+          # `wails3`'s wrapper always sets GOFLAGS=-tags=gtk3 (needed for
+          # desktop builds), so bindings generation's `go build` analysis
+          # pass pkg-configs the desktop GTK/WebKit libs even when the
+          # actual target is android — same webkitDeps as the default shell.
+          ++ webkitDeps;
+
+        ANDROID_HOME = "${androidComposition.androidsdk}/libexec/android-sdk";
+        ANDROID_SDK_ROOT = "${androidComposition.androidsdk}/libexec/android-sdk";
+        ANDROID_NDK_HOME = "${androidComposition.androidsdk}/libexec/android-sdk/ndk/26.3.11579264";
+        JAVA_HOME = pkgs.jdk21.home;
+
+        shellHook = ''
+          export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
+        '';
       };
 
       devShells.default = pkgs.mkShell {

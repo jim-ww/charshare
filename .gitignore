@@ -2,6 +2,18 @@ build/bin
 frontend/dist
 bin
 
+# Android build outputs: Gradle work/cache dirs, the compiled Go shared lib
+# (regenerated per-arch by `wails3 task android:build`), and the APK/AAB.
+build/android/.gradle
+build/android/build
+build/android/app/build
+build/android/app/src/main/jniLibs
+build/android/overlay.json
+build/android/gen
+
+# go-task's incremental-build checksum cache
+.task
+
 # OS
 .DS_Store
 Thumbs.db
