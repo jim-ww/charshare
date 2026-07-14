@@ -1,5 +1,4 @@
 - change personality placeholder to also suggest writing char appearance there, if relevant
-- character edit/new: 'compress' feature? for scenario, personality, etc (long fields)
 - implement multi-tag search? in character definitions, always store tags sorted to allow search like tag-subtag-subsubtag?
 - allow to specify videos in character cards.
 - add enable slideshow button as editable character setting (for owner), if enabled, in characters page, it would switch CharacterCard would switch shown image every X milliseconds (if hovered on) (if there are more than 1 image). add option in settings to disable those

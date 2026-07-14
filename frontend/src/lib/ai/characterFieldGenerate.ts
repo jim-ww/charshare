@@ -57,7 +57,10 @@ const FIELD_GUIDELINES: Record<GeneratableField, FieldGuideline> = {
 	},
 	personality: {
 		label: 'Personality',
-		about: 'How they act, speak, and think.',
+		about:
+			'How they act, speak, and think. Also include physical appearance here, even though that overlaps ' +
+			"with the description field — description is never actually sent to the model during chat, so " +
+			'appearance details need to live here to actually reach the model in a conversation.',
 		format: 'Plain prose, third person, a short paragraph. No headers, no bullet lists.'
 	},
 	scenario: {
