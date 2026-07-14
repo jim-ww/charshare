@@ -1,7 +1,4 @@
-- show failed generation message in history
-- stop generation button
 - allow to specify video urls in character cards. they should be shown before images.
-- add option to 'follow' authors? and then add filter 'global/subscribed'
 - implement multi-tag search? in character definitions, always store tags sorted to allow search like tag-subtag-subsubtag?
 - feat: add some characters from other platforms
 - consider: android build target

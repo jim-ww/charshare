@@ -98,6 +98,10 @@
 
 	"chats_empty_state": "Select a conversation, or start one from a character's page.",
 
+	"char_list_scope_global": "Global",
+	"char_list_scope_global_tooltip": "Browse everything, from any author.",
+	"char_list_scope_subscribed": "Subscribed",
+	"char_list_scope_subscribed_tooltip": "Only your own characters and characters from authors you follow.",
 	"char_list_filter_all": "All",
 	"char_list_filter_all_tooltip": "Show everything: your own characters, ones you've saved, and results from the network.",
 	"char_list_mine_only": "Owned",
@@ -134,6 +138,8 @@
 	"char_detail_unreachable_badge": "Unreachable",
 	"char_detail_from_network": "Network",
 	"char_detail_by": "By:",
+	"char_detail_follow_author": "Follow",
+	"char_detail_unfollow_author": "Following",
 	"char_detail_created": "Created {time}",
 	"char_detail_updated": "Updated {time}",
 	"char_detail_continue_latest_chat": "Continue latest chat",
@@ -467,6 +473,8 @@
 	"user_profile_not_found": "Profile not found.",
 	"user_profile_unnamed": "Unnamed user",
 	"user_profile_joined": "Joined",
+	"user_profile_follow": "Follow",
+	"user_profile_unfollow": "Following",
 	"user_profile_description_heading": "Description",
 	"user_profile_no_description": "No description.",
 	"user_profile_id_heading": "ID (public key)",

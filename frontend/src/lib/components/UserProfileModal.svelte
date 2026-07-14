@@ -1,6 +1,13 @@
 <script lang="ts">
 	import type { PubKey, User } from "$lib/types";
 	import { getProfile } from "$lib/nostr/profile";
+	import { getCurrentUser } from "$lib/state/auth.svelte";
+	import {
+		followAuthor,
+		isAuthorFollowed,
+		loadFollowedAuthors,
+		unfollowAuthor,
+	} from "$lib/state/contacts.svelte";
 	import Avatar from "./Avatar.svelte";
 	import { m } from '$lib/paraglide/messages.js';
 
@@ -17,9 +24,22 @@
 	let loading = $state(false);
 	let notFound = $state(false);
 
+	const isSelf = $derived(pubkey !== null && pubkey === getCurrentUser());
+	const following = $derived(pubkey !== null && isAuthorFollowed(pubkey));
+
+	function toggleFollow() {
+		if (!pubkey) return;
+		if (following) unfollowAuthor(pubkey);
+		else followAuthor(pubkey);
+	}
+
 	$effect(() => {
 		if (open) dialogEl?.showModal();
 		else dialogEl?.close();
+	});
+
+	$effect(() => {
+		if (open) loadFollowedAuthors();
 	});
 
 	$effect(() => {
@@ -65,6 +85,17 @@
 						).toLocaleDateString()}
 					</p>
 				</div>
+				{#if !isSelf}
+					<button
+						class="btn btn-sm ml-auto"
+						class:btn-primary={!following}
+						class:btn-outline={following}
+						type="button"
+						onclick={toggleFollow}
+					>
+						{following ? m.user_profile_unfollow() : m.user_profile_follow()}
+					</button>
+				{/if}
 			</div>
 
 			<div class="divider my-3"></div>

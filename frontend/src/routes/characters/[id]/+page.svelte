@@ -53,6 +53,12 @@
 		unhideComment,
 	} from "$lib/state/preferences.svelte";
 	import {
+		followAuthor,
+		isAuthorFollowed,
+		loadFollowedAuthors,
+		unfollowAuthor,
+	} from "$lib/state/contacts.svelte";
+	import {
 		characterLikeTarget,
 		getLikeCountFor,
 		isLiked,
@@ -164,6 +170,7 @@
 			void initChats();
 			void loadComments(currentId);
 			void loadLikeState(characterLikeTarget(currentId));
+			void loadFollowedAuthors();
 		});
 		return unsubscribe;
 	});
@@ -173,6 +180,15 @@
 	const isMine = $derived(
 		character !== null && getCurrentUser() === character.author,
 	);
+	const authorFollowed = $derived(
+		character !== null && isAuthorFollowed(character.author),
+	);
+
+	function toggleFollowAuthor() {
+		if (!character) return;
+		if (authorFollowed) unfollowAuthor(character.author);
+		else followAuthor(character.author);
+	}
 	// Already accounted for locally either way — imported-from-another-identity
 	// characters land in myCharacters despite not being authored by me, so
 	// offering to "save a copy" of them, or auto-saving one on chat start, is
@@ -597,6 +613,19 @@
 								character.author,
 							)}
 						</button>
+						{#if !isMine}
+							<button
+								class="btn btn-xs rounded-full"
+								class:btn-primary={!authorFollowed}
+								class:btn-outline={authorFollowed}
+								type="button"
+								onclick={toggleFollowAuthor}
+							>
+								{authorFollowed
+									? m.char_detail_unfollow_author()
+									: m.char_detail_follow_author()}
+							</button>
+						{/if}
 					</div>
 					<div class="mt-1 flex flex-wrap gap-x-2 text-xs opacity-60">
 						<span>{m.char_detail_created({ time: formatCommentTime(character.created_at) })}</span>

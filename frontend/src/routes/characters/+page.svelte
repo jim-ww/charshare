@@ -19,6 +19,10 @@
 		updatePreferences,
 	} from "$lib/state/preferences.svelte";
 	import {
+		isAuthorFollowed,
+		loadFollowedAuthors,
+	} from "$lib/state/contacts.svelte";
+	import {
 		effectiveQuery,
 		getNetworkResults,
 		getNetworkSortOrder,
@@ -40,7 +44,9 @@
 	import { m } from "$lib/paraglide/messages.js";
 
 	type ListFilter = "all" | "mine" | "saved" | "published" | "network";
+	type BrowseScope = "global" | "subscribed";
 	let listFilter = $state<ListFilter>("all");
+	let browseScope = $state<BrowseScope>("global");
 	let showHidden = $state(false);
 	let hideForks = $state(false);
 	const showNsfw = $derived(getPreferences().showNsfw);
@@ -65,6 +71,7 @@
 
 	onMount(() => {
 		refreshNetwork();
+		loadFollowedAuthors();
 	});
 
 	$effect(() => {
@@ -158,6 +165,9 @@
 		if (hideForks) {
 			list = list.filter((c) => c.forked_from === null);
 		}
+		if (browseScope === "subscribed") {
+			list = list.filter((c) => isAuthorFollowed(c.author));
+		}
 		return list;
 	});
 </script>
@@ -171,6 +181,37 @@
 		<div
 			class="flex flex-wrap items-center justify-center gap-x-5 gap-y-1"
 		>
+			<label
+				class="label cursor-pointer gap-2 py-0"
+				title={m.char_list_scope_global_tooltip()}
+			>
+				<input
+					type="radio"
+					name="browseScope"
+					class="radio radio-sm"
+					value="global"
+					bind:group={browseScope}
+				/>
+				<span class="label-text"
+					>{m.char_list_scope_global()}</span
+				>
+			</label>
+			<label
+				class="label cursor-pointer gap-2 py-0"
+				title={m.char_list_scope_subscribed_tooltip()}
+			>
+				<input
+					type="radio"
+					name="browseScope"
+					class="radio radio-sm"
+					value="subscribed"
+					bind:group={browseScope}
+				/>
+				<span class="label-text"
+					>{m.char_list_scope_subscribed()}</span
+				>
+			</label>
+			<div class="divider divider-horizontal mx-0 my-0 h-4 self-center"></div>
 			<label
 				class="label cursor-pointer gap-2 py-0"
 				title={m.char_list_filter_all_tooltip()}
