@@ -37,7 +37,7 @@ function makeCharacter(overrides: Partial<Character> = {}): Character {
 		id: 'char-1',
 		version: 1,
 		name: 'Aria',
-		image_urls: ['https://example.com/a.png'],
+		media: [{ url: 'https://example.com/a.png', type: 'image' }],
 		description: '',
 		personality: '',
 		scenario: '',

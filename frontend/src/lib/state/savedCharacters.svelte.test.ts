@@ -32,7 +32,7 @@ function makeCharacter(id: string, overrides: Partial<Character> = {}): Characte
 		id,
 		version: 1,
 		name: `Character ${id}`,
-		image_urls: [],
+		media: [],
 		description: '',
 		personality: '',
 		scenario: '',

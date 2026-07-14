@@ -93,7 +93,7 @@ export function mapProxyChatRequestToDraft(
 
 	return {
 		name,
-		image_urls: [],
+		media: [],
 		description: "",
 		personality: substitute(personality),
 		scenario: substitute(extractTag(systemContent, "Scenario")),

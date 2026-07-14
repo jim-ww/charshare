@@ -45,7 +45,7 @@ function makeCharacter(id: string): Character {
 		id,
 		version: 1,
 		name: 'Race Imported',
-		image_urls: [],
+		media: [],
 		description: '',
 		personality: '',
 		scenario: '',

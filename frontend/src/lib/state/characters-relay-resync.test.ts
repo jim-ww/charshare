@@ -44,7 +44,7 @@ const { __refreshCharactersForTests, getMyCharacters } = await import('./charact
 
 const baseFields = {
 	name: 'Aria',
-	image_urls: [],
+	media: [],
 	description: 'A test character',
 	personality: '',
 	scenario: '',

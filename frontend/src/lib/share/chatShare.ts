@@ -1,4 +1,5 @@
 import type { Chat, Character, CharacterId, MessageRole } from '$lib/types';
+import { firstImageUrl } from '$lib/types/media';
 import { getActivePath } from '$lib/state/chats.svelte';
 import { isWailsDesktop } from '$lib/wails';
 
@@ -44,7 +45,7 @@ export function buildSharedChatData(chat: Chat, character: Character, userName: 
 		chatName: chat.name,
 		characterId: character.id,
 		characterName: character.name,
-		characterImageUrl: character.image_urls[0] ?? null,
+		characterImageUrl: firstImageUrl(character.media) ?? null,
 		userName,
 		messages: getActivePath(chat).map((m) => ({
 			role: m.role,

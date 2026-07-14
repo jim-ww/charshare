@@ -1,4 +1,3 @@
-- allow to specify video urls in character cards. they should be shown before images.
 - implement multi-tag search? in character definitions, always store tags sorted to allow search like tag-subtag-subsubtag?
 - feat: add some characters from other platforms
 - consider: android build target

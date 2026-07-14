@@ -2,7 +2,8 @@
 	import { onMount, untrack } from "svelte";
 	import { beforeNavigate, goto } from "$app/navigation";
 	import ConfirmDialog from "./ConfirmDialog.svelte";
-	import type { Character, CharacterDraft } from "$lib/types";
+	import type { Character, CharacterDraft, MediaItem } from "$lib/types";
+	import { inferMediaType } from "$lib/types/media";
 	import CharacterImageViewer from "./CharacterImageViewer.svelte";
 	import TagCollapse from "./TagCollapse.svelte";
 	import GenerateFieldButton from "./GenerateFieldButton.svelte";
@@ -36,28 +37,32 @@
 	const registered = $derived(isAccountRegistered());
 
 	let name = $state(untrack(() => initial?.name ?? draft?.name ?? ""));
-	let imageUrls = $state<string[]>(
-		untrack(() => [...((initial ?? draft)?.image_urls ?? [])]),
+	let mediaRows = $state<MediaItem[]>(
+		untrack(() => [...((initial ?? draft)?.media ?? [])]),
 	);
 	let viewerIndex = $state(0);
 
 	function addImageUrl() {
-		imageUrls.push("");
+		mediaRows.push({ url: "", type: "image" });
 	}
 
 	function removeImageUrl(index: number) {
-		imageUrls.splice(index, 1);
+		mediaRows.splice(index, 1);
+	}
+
+	function setMediaUrl(index: number, url: string) {
+		mediaRows[index] = { url, type: inferMediaType(url) };
 	}
 
 	// The viewer only shows non-empty, trimmed urls, so a row's position in
-	// `imageUrls` doesn't line up with its position there if blank entries
+	// `mediaRows` doesn't line up with its position there if blank entries
 	// sit before it — count how many non-empty urls precede it instead.
 	function showInViewer(index: number) {
-		const url = imageUrls[index]?.trim();
+		const url = mediaRows[index]?.url.trim();
 		if (!url) return;
-		viewerIndex = imageUrls
+		viewerIndex = mediaRows
 			.slice(0, index)
-			.filter((u) => u.trim()).length;
+			.filter((m) => m.url.trim()).length;
 	}
 
 	let draggedImageIndex = $state<number | null>(null);
@@ -78,8 +83,8 @@
 			dragOverImageIndex = null;
 			return;
 		}
-		const [moved] = imageUrls.splice(draggedImageIndex, 1);
-		imageUrls.splice(index, 0, moved);
+		const [moved] = mediaRows.splice(draggedImageIndex, 1);
+		mediaRows.splice(index, 0, moved);
 		draggedImageIndex = null;
 		dragOverImageIndex = null;
 	}
@@ -220,7 +225,7 @@
 	function snapshot(): string {
 		return JSON.stringify({
 			name,
-			imageUrls,
+			mediaRows,
 			description,
 			personality,
 			scenario,
@@ -291,12 +296,12 @@
 		error = null;
 		const previousSnapshot = savedSnapshot;
 		try {
-			const trimmedImageUrls = imageUrls
-				.map((u) => u.trim())
-				.filter(Boolean);
-			const invalidImageUrl = trimmedImageUrls.find(
-				(u) => !/^https?:\/\//i.test(u),
-			);
+			const trimmedMedia = mediaRows
+				.map((m) => ({ url: m.url.trim(), type: m.type }))
+				.filter((m) => m.url);
+			const invalidImageUrl = trimmedMedia
+				.map((m) => m.url)
+				.find((u) => !/^https?:\/\//i.test(u));
 			if (invalidImageUrl) {
 				throw new Error(
 					m.char_form_error_image_url({ url: invalidImageUrl.slice(0, 60) }),
@@ -308,7 +313,7 @@
 			const payload: CharacterDraft = {
 				id: initial?.id,
 				name,
-				image_urls: trimmedImageUrls,
+				media: trimmedMedia,
 				description,
 				personality,
 				scenario,
@@ -363,9 +368,9 @@
 			<div class="form-control">
 				<span class="label-text">{m.char_form_image_label()}</span>
 				<CharacterImageViewer
-					images={imageUrls
-						.map((u) => u.trim())
-						.filter(Boolean)}
+					media={mediaRows
+						.map((m) => ({ url: m.url.trim(), type: m.type }))
+						.filter((m) => m.url)}
 					name={name || "?"}
 					bind:index={viewerIndex}
 				/>
@@ -483,7 +488,7 @@
 				/>
 				<span class="label-text">{m.char_form_comments_enabled_label()}</span>
 			</label>
-			{#if imageUrls.filter((u) => u.trim()).length > 1}
+			{#if mediaRows.filter((m) => m.url.trim()).length > 1}
 				<label class="flex items-center gap-2">
 					<input
 						type="checkbox"
@@ -562,8 +567,8 @@
 					<div
 						class="collapse-title label-text font-medium"
 					>
-						{m.char_form_image_urls_heading()}{imageUrls.length
-							? m.char_form_count_suffix({ count: String(imageUrls.length) })
+						{m.char_form_image_urls_heading()}{mediaRows.length
+							? m.char_form_count_suffix({ count: String(mediaRows.length) })
 							: ""}
 					</div>
 					<div class="collapse-content">
@@ -584,7 +589,7 @@
 									{m.char_form_add_image()}
 								</button>
 							</div>
-							{#each imageUrls as _, i}
+							{#each mediaRows as row, i}
 								<div
 									role="listitem"
 									class="flex items-center gap-2 {dragOverImageIndex ===
@@ -634,13 +639,26 @@
 									</button>
 									<input
 										class="input input-bordered w-full"
-										bind:value={
-											imageUrls[
-												i
-											]
-										}
+										value={row.url}
+										oninput={(e) =>
+											setMediaUrl(
+												i,
+												(e.currentTarget as HTMLInputElement)
+													.value,
+											)}
 										placeholder={m.char_form_image_url_placeholder()}
 									/>
+									<select
+										class="select select-bordered select-sm w-28"
+										bind:value={mediaRows[i].type}
+									>
+										<option value="image"
+											>{m.char_form_media_type_image()}</option
+										>
+										<option value="video"
+											>{m.char_form_media_type_video()}</option
+										>
+									</select>
 									<button
 										type="button"
 										class="btn btn-ghost btn-sm"

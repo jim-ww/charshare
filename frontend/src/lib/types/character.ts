@@ -1,4 +1,5 @@
 import type { Signed, Tombstonable } from "./signed";
+import type { MediaItem } from "./media";
 
 /** `"{authorPubkey}:{uuid}"` — encodes the author so any holder of an id can
  *  locate the character via a relay-native authors+d-tag filter (see
@@ -11,7 +12,7 @@ export interface CharacterFields {
 	id: CharacterId;
 	version: number; // increments on every edit snapshot
 	name: string;
-	image_urls: string[]; // [] if none; first is shown by default
+	media: MediaItem[]; // [] if none; first is shown by default; ordered images/videos, author-controlled
 	description: string;
 	personality: string;
 	scenario: string;
@@ -23,7 +24,7 @@ export interface CharacterFields {
 	alternate_greetings: string[];
 	example_dialogues: string[];
 	comments_enabled: boolean;
-	slideshow_enabled: boolean; // owner opt-in — cycle through image_urls on hover, see CharacterCard.svelte
+	slideshow_enabled: boolean; // owner opt-in — cycle through media on hover, see CharacterCard.svelte
 	forked_from: CharacterId | null;
 }
 

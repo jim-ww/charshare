@@ -66,7 +66,9 @@
 			id: shared.characterId,
 			version: 1,
 			name: shared.characterName,
-			image_urls: shared.characterImageUrl ? [shared.characterImageUrl] : [],
+			media: shared.characterImageUrl
+				? [{ url: shared.characterImageUrl, type: "image" }]
+				: [],
 			description: '',
 			personality: '',
 			scenario: '',

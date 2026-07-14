@@ -9,7 +9,7 @@ import { readTextChunk, writeTextChunk } from './png';
 
 const CARD_PNG_KEYWORD = 'chara';
 
-type CharacterCardDraft = Omit<CharacterFields, 'id' | 'version' | 'forked_from' | 'image_urls'>;
+type CharacterCardDraft = Omit<CharacterFields, 'id' | 'version' | 'forked_from' | 'media'>;
 
 interface TavernCardV1 {
 	name?: string;

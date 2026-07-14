@@ -33,11 +33,11 @@
 
 	let { character }: Props = $props();
 	const localOnly = $derived(isCharacterLocalOnly(character.id));
-	const slideshowImages = $derived(character.image_urls.filter((u) => u.trim()));
+	const slideshowMedia = $derived(character.media.filter((m) => m.url.trim()));
 	const slideshowActive = $derived(
 		character.slideshow_enabled &&
 			!getPreferences().disableSlideshows &&
-			slideshowImages.length > 1,
+			slideshowMedia.length > 1,
 	);
 
 	let hovering = $state(false);
@@ -48,17 +48,17 @@
 			slideIndex = 0;
 			return;
 		}
-		const images = slideshowImages;
+		const media = slideshowMedia;
 		const interval = setInterval(() => {
-			slideIndex = (slideIndex + 1) % images.length;
+			slideIndex = (slideIndex + 1) % media.length;
 		}, SLIDESHOW_INTERVAL_MS);
 		return () => clearInterval(interval);
 	});
 
-	const imageUrl = $derived(
+	const coverMedia = $derived(
 		slideshowActive && hovering
-			? (slideshowImages[slideIndex] ?? character.image_urls[0])
-			: character.image_urls[0],
+			? (slideshowMedia[slideIndex] ?? character.media[0])
+			: character.media[0],
 	);
 	const isMine = $derived(character.author === getCurrentUser());
 	const hidden = $derived(isCharacterHidden(character.id));
@@ -173,9 +173,19 @@
 		<figure
 			class="h-44 w-44 overflow-hidden rounded-lg bg-base-300"
 		>
-			{#if imageUrl}
+			{#if coverMedia?.type === "video"}
+				<!-- svelte-ignore a11y_media_has_caption -->
+				<video
+					src={coverMedia.url}
+					class="h-full w-full object-cover object-top"
+					autoplay
+					muted
+					loop
+					playsinline
+				></video>
+			{:else if coverMedia}
 				<img
-					src={imageUrl}
+					src={coverMedia.url}
 					alt={character.name}
 					loading="lazy"
 					decoding="async"

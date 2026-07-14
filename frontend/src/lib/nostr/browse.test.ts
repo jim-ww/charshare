@@ -13,7 +13,7 @@ async function browseNetwork() {
 }
 
 const baseFields = {
-	image_urls: [],
+	media: [],
 	description: '',
 	personality: '',
 	scenario: '',

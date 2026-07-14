@@ -2,6 +2,7 @@
 	import { untrack } from 'svelte';
 	import { resolve } from '$app/paths';
 	import type { Chat, Character, Message } from '$lib/types';
+	import { firstImageUrl } from '$lib/types/media';
 	import {
 		deleteMessage,
 		getSiblings,
@@ -360,7 +361,7 @@
 	<div class="chat-image">
 		{#if message.role === 'character'}
 			<a href={resolve('/characters/[id]', { id: character.id })}>
-				<Avatar name={character.name} imageUrl={character.image_urls[0]} />
+				<Avatar name={character.name} imageUrl={firstImageUrl(character.media)} />
 			</a>
 		{:else}
 			<Avatar name={displayName} imageUrl={getMyProfile()?.image_url} />

@@ -18,7 +18,7 @@ function makeCharacter(overrides: Partial<Character> = {}): Character {
 		id: 'author-1:char-1',
 		version: 1,
 		name: 'Aria',
-		image_urls: [],
+		media: [],
 		description: 'A test character',
 		personality: 'Bubbly',
 		scenario: 'A cafe',

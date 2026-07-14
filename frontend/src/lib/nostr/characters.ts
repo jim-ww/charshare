@@ -1,5 +1,6 @@
 import type { Event as NostrEvent, EventTemplate } from 'nostr-tools';
-import type { Character, CharacterDraft, CharacterId, Keyring, PubKey, Verified } from '$lib/types';
+import type { Character, CharacterDraft, CharacterId, Keyring, MediaItem, PubKey, Verified } from '$lib/types';
+import { legacyImageUrlsToMedia } from '$lib/types/media';
 import { getKeyring, requireAccount } from '$lib/state/auth.svelte';
 import { publishEvent, queryEvents, subscribeEvents, subscribeEventsWithRetry } from './event';
 import { signEvent } from './sign';
@@ -21,7 +22,7 @@ interface CharacterContent {
 	first_message: string;
 	alternate_greetings: string[];
 	example_dialogues: string[];
-	image_urls: string[];
+	media: MediaItem[];
 	comments_enabled: boolean;
 	slideshow_enabled?: boolean; // optional: absent on events published before this field existed
 	version: number;
@@ -30,9 +31,23 @@ interface CharacterContent {
 	deleted_at: number | null;
 }
 
-function isCharacterContent(data: unknown): data is CharacterContent {
+function isMediaItem(data: unknown): data is MediaItem {
 	if (!data || typeof data !== 'object') return false;
 	const d = data as Record<string, unknown>;
+	return typeof d.url === 'string' && (d.type === 'image' || d.type === 'video');
+}
+
+/** Accepts either the current `media` shape or the pre-media `image_urls`
+ *  shape (see legacyImageUrlsToMedia) — everything published/stored before
+ *  `media` existed only has the latter. Delete the `image_urls` branch once
+ *  no such data remains. */
+function isRawCharacterContent(
+	data: unknown
+): data is Record<string, unknown> & (Pick<CharacterContent, 'media'> | { image_urls: string[] }) {
+	if (!data || typeof data !== 'object') return false;
+	const d = data as Record<string, unknown>;
+	const hasMedia = Array.isArray(d.media) && d.media.every(isMediaItem);
+	const hasLegacyImageUrls = Array.isArray(d.image_urls) && d.image_urls.every((u) => typeof u === 'string');
 	return (
 		typeof d.name === 'string' &&
 		typeof d.description === 'string' &&
@@ -44,8 +59,7 @@ function isCharacterContent(data: unknown): data is CharacterContent {
 		d.alternate_greetings.every((g) => typeof g === 'string') &&
 		Array.isArray(d.example_dialogues) &&
 		d.example_dialogues.every((g) => typeof g === 'string') &&
-		Array.isArray(d.image_urls) &&
-		d.image_urls.every((u) => typeof u === 'string') &&
+		(hasMedia || hasLegacyImageUrls) &&
 		typeof d.comments_enabled === 'boolean' &&
 		(d.slideshow_enabled === undefined || typeof d.slideshow_enabled === 'boolean') &&
 		typeof d.version === 'number' &&
@@ -92,7 +106,7 @@ function characterToTemplate(doc: Omit<Character, 'author' | 'updated_at'>): Eve
 		first_message: doc.first_message,
 		alternate_greetings: doc.alternate_greetings,
 		example_dialogues: doc.example_dialogues,
-		image_urls: doc.image_urls,
+		media: doc.media,
 		comments_enabled: doc.comments_enabled,
 		slideshow_enabled: doc.slideshow_enabled,
 		version: doc.version,
@@ -125,7 +139,12 @@ export function eventToCharacter(event: NostrEvent): Character | null {
 	} catch {
 		return null;
 	}
-	if (!isCharacterContent(content)) return null;
+	if (!isRawCharacterContent(content)) return null;
+	const { image_urls, ...rest } = content as unknown as CharacterContent & { image_urls?: string[] };
+	const normalizedContent: CharacterContent = {
+		...rest,
+		media: rest.media ?? legacyImageUrlsToMedia(image_urls ?? [])
+	};
 
 	const forkTag = tagValue(event.tags, 'a');
 
@@ -137,8 +156,8 @@ export function eventToCharacter(event: NostrEvent): Character | null {
 		forked_from: forkTag ? parseCharacterCoordinate(forkTag) : null,
 		created_at: Number(publishedAt) * 1000,
 		updated_at: event.created_at * 1000,
-		...content,
-		slideshow_enabled: content.slideshow_enabled ?? false
+		...normalizedContent,
+		slideshow_enabled: normalizedContent.slideshow_enabled ?? false
 	};
 }
 

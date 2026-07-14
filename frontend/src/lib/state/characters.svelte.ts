@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
 import type { Character, CharacterId } from '$lib/types';
+import { firstImageUrl, legacyImageUrlsToMedia } from '$lib/types/media';
 import {
 	addPublishedCharacterId,
 	loadMyCharacterEntries,
@@ -384,7 +385,7 @@ export function exportCharacter(character: Character): string {
  *  — stretching it to a fixed square would visibly distort anything that
  *  isn't already 1:1. */
 export async function exportCharacterAsPng(character: Character): Promise<Blob> {
-	const sourceUrl = character.image_urls[0];
+	const sourceUrl = firstImageUrl(character.media);
 	const image = sourceUrl ? await loadImage(sourceUrl).catch(() => null) : null;
 
 	const canvas = document.createElement('canvas');
@@ -426,14 +427,14 @@ function loadImage(url: string): Promise<HTMLImageElement> {
  *  image support here (see the PNG variant below) — images stay externally
  *  hosted only, per the "no upload" rule the character form enforces. */
 export function importCharacterCardJson(json: string): CharacterFormFields {
-	return { ...parseTavernCardJson(json), image_urls: [] };
+	return { ...parseTavernCardJson(json), media: [] };
 }
 
 /** Same as importCharacterCardJson, but for a card embedded in a PNG image
  *  (the common TavernAI/SillyTavern distribution format — see
  *  import/characterCard.ts). */
 export function importCharacterCardPng(bytes: Uint8Array): CharacterFormFields {
-	return { ...parseTavernCardPng(bytes), image_urls: [] };
+	return { ...parseTavernCardPng(bytes), media: [] };
 }
 
 /** Parses a previously-exported character JSON into a fresh draft — strips
@@ -449,10 +450,14 @@ export function importCharacterDraft(json: string): CharacterFormFields {
 	if (typeof parsed !== 'object' || parsed === null || typeof (parsed as Character).name !== 'string') {
 		throw new Error('Not a valid character export.');
 	}
-	const source = parsed as Character;
+	// `image_urls` is the pre-media shape of an old export (see
+	// legacyImageUrlsToMedia) — delete this branch once no such exports remain.
+	const source = parsed as Character & { image_urls?: string[] };
 	return {
 		name: source.name,
-		image_urls: Array.isArray(source.image_urls) ? source.image_urls : [],
+		media: Array.isArray(source.media)
+			? source.media
+			: legacyImageUrlsToMedia(Array.isArray(source.image_urls) ? source.image_urls : []),
 		description: source.description ?? '',
 		personality: source.personality ?? '',
 		scenario: source.scenario ?? '',

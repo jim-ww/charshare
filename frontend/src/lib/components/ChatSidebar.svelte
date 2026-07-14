@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import type { Chat, CharacterId } from '$lib/types';
+	import { firstImageUrl } from '$lib/types/media';
 	import { getChats, deleteChat, renameChat, exportChat, chatLastMessageAt } from '$lib/state/chats.svelte';
 	import { resolveCharacter, ensureCharacterLoaded } from '$lib/state/characterCache.svelte';
 	import { isCharactersReady } from '$lib/state/characters.svelte';
@@ -167,7 +168,7 @@
 				<a href={resolve('/chats/[id]', { id: latest.id })} class="shrink-0">
 					<Avatar
 						name={character?.name ?? '?'}
-						imageUrl={character?.image_urls[0]}
+						imageUrl={character && firstImageUrl(character.media)}
 						class="w-9"
 					/>
 				</a>

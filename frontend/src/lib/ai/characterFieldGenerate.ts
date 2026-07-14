@@ -4,7 +4,7 @@ import { completeWithContinuation, ensurePreferencesReady } from './chat';
 
 /** Every character field the "Generate" button can fill in — deliberately
  *  excludes identity/technical fields (id, version, timestamps, author,
- *  forked_from), display-only fields (image_urls, language), and
+ *  forked_from), display-only fields (media, language), and
  *  system_prompt (already has its own default-prompt reference shown in the
  *  form). */
 export type GeneratableField =

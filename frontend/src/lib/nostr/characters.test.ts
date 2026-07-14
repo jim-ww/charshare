@@ -26,7 +26,7 @@ beforeEach(() => {
 
 const baseFields = {
 	name: 'Aria',
-	image_urls: [],
+	media: [],
 	description: 'A test character',
 	personality: '',
 	scenario: '',
@@ -68,7 +68,7 @@ describe('publishCharacter', () => {
 	});
 
 	it('round-trips slideshow_enabled through publish and fetch', async () => {
-		const created = await publishCharacter({ ...baseFields, image_urls: ['a.png', 'b.png'], slideshow_enabled: true });
+		const created = await publishCharacter({ ...baseFields, media: [{ url: 'a.png', type: 'image' }, { url: 'b.png', type: 'image' }], slideshow_enabled: true });
 		expect(created.slideshow_enabled).toBe(true);
 
 		const fetched = await getCharacter(created.id);

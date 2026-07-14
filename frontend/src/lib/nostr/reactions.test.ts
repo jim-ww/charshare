@@ -22,7 +22,7 @@ beforeEach(() => {
 
 const characterFields = {
 	name: 'Aria',
-	image_urls: [],
+	media: [],
 	description: '',
 	personality: '',
 	scenario: '',

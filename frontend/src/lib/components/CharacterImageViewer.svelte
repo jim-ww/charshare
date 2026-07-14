@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages.js';
+	import type { MediaItem } from '$lib/types';
 
 	interface Props {
-		images: string[];
+		media: MediaItem[];
 		name: string;
 		class?: string;
 		aspectSquare?: boolean;
@@ -10,16 +11,16 @@
 		contain?: boolean;
 		/** Uncropped and shrink-wrapped to the image's own aspect ratio instead of a fixed box (used by the full-size modal view). */
 		fullSize?: boolean;
-		/** If provided, the image itself becomes clickable (used by chat's expand/collapse toggle). */
+		/** If provided, an image slide itself becomes clickable (used by chat's expand/collapse toggle) — video slides have native controls instead, so this is ignored for them. */
 		onImageClick?: () => void;
 		/** Listen for arrow key presses to switch images (used by the expanded/modal view). */
 		keyboardNav?: boolean;
-		/** Bindable current image index, so multiple viewers of the same images can stay in sync. */
+		/** Bindable current slide index, so multiple viewers of the same media can stay in sync. */
 		index?: number;
 	}
 
 	let {
-		images,
+		media,
 		name,
 		class: className = '',
 		aspectSquare = false,
@@ -37,31 +38,32 @@
 	// instead means there's no ordering to race.
 	let loadedSrc = $state<string | null>(null);
 	let failedSrc = $state<string | null>(null);
-	const currentSrc = $derived(images[index] as string | undefined);
+	const current = $derived(media[index] as MediaItem | undefined);
+	const currentSrc = $derived(current?.url);
 	const loaded = $derived(loadedSrc === currentSrc);
 	const failed = $derived(failedSrc === currentSrc);
 
 	$effect(() => {
-		if (index >= images.length) index = 0;
+		if (index >= media.length) index = 0;
 	});
 
 	function prev(event: MouseEvent) {
 		event.stopPropagation();
-		index = (index - 1 + images.length) % images.length;
+		index = (index - 1 + media.length) % media.length;
 	}
 
 	function next(event: MouseEvent) {
 		event.stopPropagation();
-		index = (index + 1) % images.length;
+		index = (index + 1) % media.length;
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
-		if (images.length < 2) return;
+		if (media.length < 2) return;
 		if (event.altKey || event.ctrlKey || event.metaKey) return;
 		if (event.key === 'ArrowLeft') {
-			index = (index - 1 + images.length) % images.length;
+			index = (index - 1 + media.length) % media.length;
 		} else if (event.key === 'ArrowRight') {
-			index = (index + 1) % images.length;
+			index = (index + 1) % media.length;
 		}
 	}
 </script>
@@ -73,8 +75,20 @@
 		? 'inline-flex min-h-32 min-w-32 max-h-[calc(100vh-1.5rem)] max-w-[calc(100vw-1.5rem)] items-center justify-center sm:max-h-[calc(100vh-3rem)] sm:max-w-[calc(100vw-3rem)]'
 		: `${aspectSquare ? 'aspect-square' : 'aspect-[3/4]'} w-full overflow-hidden bg-base-300`} rounded-box {className}"
 >
-	{#if images.length}
-		{#if onImageClick}
+	{#if current}
+		{@const mediaClass = fullSize
+			? 'max-h-[calc(100vh-1.5rem)] max-w-[calc(100vw-1.5rem)] rounded-box object-contain sm:max-h-[calc(100vh-3rem)] sm:max-w-[calc(100vw-3rem)]'
+			: `h-full w-full ${contain ? 'object-contain' : 'object-cover'}`}
+		{#if current.type === 'video'}
+			<!-- svelte-ignore a11y_media_has_caption -->
+			<video
+				src={current.url}
+				controls
+				class={mediaClass}
+				onloadeddata={() => (loadedSrc = current.url)}
+				onerror={() => (failedSrc = current.url)}
+			></video>
+		{:else if onImageClick}
 			<button
 				type="button"
 				class="{fullSize ? 'contents' : 'h-full w-full'} cursor-pointer"
@@ -82,22 +96,20 @@
 				aria-label={m.char_image_viewer_toggle_size({ name })}
 			>
 				<img
-					src={images[index]}
+					src={current.url}
 					alt={name}
-					class={fullSize
-						? 'max-h-[calc(100vh-1.5rem)] max-w-[calc(100vw-1.5rem)] rounded-box object-contain sm:max-h-[calc(100vh-3rem)] sm:max-w-[calc(100vw-3rem)]'
-						: `h-full w-full ${contain ? 'object-contain' : 'object-cover'}`}
-					onload={() => (loadedSrc = images[index])}
-					onerror={() => (failedSrc = images[index])}
+					class={mediaClass}
+					onload={() => (loadedSrc = current.url)}
+					onerror={() => (failedSrc = current.url)}
 				/>
 			</button>
 		{:else}
 			<img
-				src={images[index]}
+				src={current.url}
 				alt={name}
-				class="h-full w-full {contain ? 'object-contain' : 'object-cover'}"
-				onload={() => (loadedSrc = images[index])}
-				onerror={() => (failedSrc = images[index])}
+				class={mediaClass}
+				onload={() => (loadedSrc = current.url)}
+				onerror={() => (failedSrc = current.url)}
 			/>
 		{/if}
 		{#if failed}
@@ -110,7 +122,7 @@
 				<span class="loading loading-spinner loading-lg"></span>
 			</div>
 		{/if}
-		{#if images.length > 1}
+		{#if media.length > 1}
 			<span
 				class="badge badge-neutral absolute left-2 top-2 opacity-80"
 			>
@@ -126,7 +138,7 @@
 					‹
 				</button>
 			{/if}
-			{#if index < images.length - 1}
+			{#if index < media.length - 1}
 				<button
 					type="button"
 					class="btn btn-circle btn-sm absolute right-2 top-1/2 -translate-y-1/2"

@@ -85,7 +85,7 @@ describe("mapProxyChatRequestToDraft", () => {
 		expect(draft.nsfw).toBe(false);
 		expect(draft.language).toBe("");
 		expect(draft.system_prompt).toBe("");
-		expect(draft.image_urls).toEqual([]);
+		expect(draft.media).toEqual([]);
 	});
 
 	it("returns null for bodies that don't look like a chat completion request", () => {

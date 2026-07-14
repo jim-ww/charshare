@@ -541,7 +541,7 @@
 		<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 			<div class="flex flex-col gap-4">
 				<CharacterImageViewer
-					images={character.image_urls}
+					media={character.media}
 					name={character.name}
 					contain
 					onImageClick={() => (imageExpanded = true)}
@@ -558,7 +558,7 @@
 					>
 						<div role="presentation" onclick={(e) => e.stopPropagation()}>
 							<CharacterImageViewer
-								images={character.image_urls}
+								media={character.media}
 								name={character.name}
 								class="shadow-2xl"
 								fullSize
