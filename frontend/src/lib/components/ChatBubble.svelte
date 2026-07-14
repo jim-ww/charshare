@@ -26,6 +26,7 @@
 	import { synthesize as synthesizeVoicevox } from '$lib/tts/voicevoxClient';
 	import { playWithPitch, type PitchedPlayback } from '$lib/tts/playback';
 	import { isMessageStreaming } from '$lib/state/messageStreaming.svelte';
+	import { endChatGeneration, isChatGenerating, startChatGeneration, stopChatGeneration } from '$lib/state/chatGeneration.svelte';
 	import { isWailsDesktop } from '$lib/wails';
 	import Avatar from './Avatar.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
@@ -108,7 +109,21 @@
 
 	const editing = $derived(getEditingMessageId() === message.id);
 	let draft = $state('');
-	let regenerating = $state(false);
+	// Regenerate/continue/edit-and-resend, and a direct send/continue from
+	// ChatComposer, all share one per-chat generation slot (see
+	// chatGeneration.svelte.ts) — only one can run at a time, so every
+	// bubble's regenerate/continue actions are disabled while any of them is
+	// running. `streamingHere` (whether *this* message is the one actually
+	// streaming — see messageStreaming.svelte.ts, set by the same
+	// send/regenerate/continue/edit code paths) narrows the "Stop" button
+	// itself to just that one bubble, instead of every character bubble in
+	// the chat showing a Stop control at once.
+	const regenerating = $derived(isChatGenerating(chatId));
+	const streamingHere = $derived(isMessageStreaming(message.id));
+
+	function handleStop() {
+		stopChatGeneration(chatId);
+	}
 
 	// The edit lock lives in a module-level singleton, not component state —
 	// release it on unmount so navigating away mid-edit (e.g. switching
@@ -200,27 +215,31 @@
 	async function saveAndResend() {
 		stopEditing(message.id);
 		void setChatEditingMessage(chatId, null);
-		regenerating = true;
+		const controller = startChatGeneration(chatId);
 		setChatGenerationError(chat.id, null);
 		try {
-			await editUserMessage(chat, character, message.id, draft);
+			await editUserMessage(chat, character, message.id, draft, { signal: controller.signal });
 		} catch (err) {
-			setChatGenerationError(chat.id, m.error_generic({ message: err instanceof Error ? err.message : String(err) }));
+			if (!(err instanceof DOMException && err.name === 'AbortError')) {
+				setChatGenerationError(chat.id, m.error_generic({ message: err instanceof Error ? err.message : String(err) }));
+			}
 		} finally {
-			regenerating = false;
+			endChatGeneration(chatId);
 		}
 	}
 
 	async function handleRegenerate() {
 		if (regenerating) return;
-		regenerating = true;
+		const controller = startChatGeneration(chatId);
 		setChatGenerationError(chat.id, null);
 		try {
-			await regenerateMessage(chat, character, message.id);
+			await regenerateMessage(chat, character, message.id, { signal: controller.signal });
 		} catch (err) {
-			setChatGenerationError(chat.id, m.error_generic({ message: err instanceof Error ? err.message : String(err) }));
+			if (!(err instanceof DOMException && err.name === 'AbortError')) {
+				setChatGenerationError(chat.id, m.error_generic({ message: err instanceof Error ? err.message : String(err) }));
+			}
 		} finally {
-			regenerating = false;
+			endChatGeneration(chatId);
 		}
 	}
 
@@ -228,14 +247,16 @@
 	 *  reply was good but cut off short, rather than rerolling it entirely. */
 	async function handleContinue() {
 		if (regenerating) return;
-		regenerating = true;
+		const controller = startChatGeneration(chatId);
 		setChatGenerationError(chat.id, null);
 		try {
-			await continueMessage(chat, character, message.id);
+			await continueMessage(chat, character, message.id, { signal: controller.signal });
 		} catch (err) {
-			setChatGenerationError(chat.id, m.error_generic({ message: err instanceof Error ? err.message : String(err) }));
+			if (!(err instanceof DOMException && err.name === 'AbortError')) {
+				setChatGenerationError(chat.id, m.error_generic({ message: err instanceof Error ? err.message : String(err) }));
+			}
 		} finally {
-			regenerating = false;
+			endChatGeneration(chatId);
 		}
 	}
 
@@ -489,39 +510,53 @@
 			</button>
 		{/if}
 		{#if !editing && !readonly && message.role === 'character'}
-			<button
-				class="btn btn-xs btn-ghost"
-				type="button"
-				disabled={regenerating}
-				aria-label={m.chat_bubble_regenerate_response()}
-				title={m.chat_bubble_regenerate_response()}
-				onclick={handleRegenerate}
-			>
-				<svg
-					viewBox="0 0 24 24"
-					width="14"
-					height="14"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					aria-hidden="true"
+			{#if streamingHere}
+				<button
+					class="btn btn-xs btn-ghost"
+					type="button"
+					aria-label={m.chat_bubble_stop_generating()}
+					title={m.chat_bubble_stop_generating()}
+					onclick={handleStop}
 				>
-					<path d="M21 12a9 9 0 11-3-6.7" />
-					<path d="M21 3v6h-6" />
-				</svg>
-			</button>
-			<button
-				class="btn btn-xs btn-ghost"
-				type="button"
-				disabled={regenerating || message.content === ''}
-				aria-label={m.chat_bubble_continue_message()}
-				title={m.chat_bubble_continue_message()}
-				onclick={handleContinue}
-			>
-				»
-			</button>
+					<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+						<rect x="6" y="6" width="12" height="12" rx="1.5" />
+					</svg>
+				</button>
+			{:else}
+				<button
+					class="btn btn-xs btn-ghost"
+					type="button"
+					disabled={regenerating}
+					aria-label={m.chat_bubble_regenerate_response()}
+					title={m.chat_bubble_regenerate_response()}
+					onclick={handleRegenerate}
+				>
+					<svg
+						viewBox="0 0 24 24"
+						width="14"
+						height="14"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<path d="M21 12a9 9 0 11-3-6.7" />
+						<path d="M21 3v6h-6" />
+					</svg>
+				</button>
+				<button
+					class="btn btn-xs btn-ghost"
+					type="button"
+					disabled={regenerating || message.content === ''}
+					aria-label={m.chat_bubble_continue_message()}
+					title={m.chat_bubble_continue_message()}
+					onclick={handleContinue}
+				>
+					»
+				</button>
+			{/if}
 			{#if ttsAvailable}
 				<button
 					class="btn btn-xs btn-ghost"

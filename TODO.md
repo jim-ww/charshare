@@ -1,4 +1,3 @@
-- fix 'stop generation' logic. only accessible, when direct message sent, but not after msg edit/continue
 - on data import, add button 'replace all', that answers yes to all replacements
 - implement multi-tag search? in character definitions, always store tags sorted to allow search like tag-subtag-subsubtag?
 - feat: add some characters from other platforms

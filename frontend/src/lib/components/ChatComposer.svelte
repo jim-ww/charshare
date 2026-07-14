@@ -10,6 +10,7 @@
 	import { setChatDraft, getActivePath } from "$lib/state/chats.svelte";
 	import { formatTokenCount } from "$lib/ai/tokenEstimate";
 	import { getChatGenerationError, setChatGenerationError } from "$lib/state/chatGenerationError.svelte";
+	import { endChatGeneration, isChatGenerating, startChatGeneration, stopChatGeneration } from "$lib/state/chatGeneration.svelte";
 	import { m } from '$lib/paraglide/messages.js';
 	import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
 	import { startMicRecording, type MicRecording } from "$lib/audio/recordMic";
@@ -30,10 +31,9 @@
 	let { chat, character }: Props = $props();
 
 	let content = $state("");
-	let sending = $state(false);
+	const sending = $derived(isChatGenerating(chat.id));
 	let generating = $state(false);
 	let error = $state<string | null>(null);
-	let abortController: AbortController | null = null;
 	let loadedDraftFor: string | null = null;
 
 	// Mic transcription is disabled in the Wails desktop app for now — it
@@ -105,7 +105,7 @@
 	async function handleSend(event: SubmitEvent) {
 		event.preventDefault();
 		if (sending) {
-			abortController?.abort();
+			stopChatGeneration(chat.id);
 			return;
 		}
 		const trimmed = content.trim();
@@ -113,9 +113,7 @@
 		// while the AI replies — restored below if the send doesn't pan out.
 		const backup = content;
 		if (trimmed) content = "";
-		const controller = new AbortController();
-		abortController = controller;
-		sending = true;
+		const controller = startChatGeneration(chat.id);
 		setChatGenerationError(chat.id, null);
 		try {
 			if (trimmed) {
@@ -145,8 +143,7 @@
 				);
 			}
 		} finally {
-			sending = false;
-			abortController = null;
+			endChatGeneration(chat.id);
 		}
 	}
 
