@@ -408,8 +408,11 @@ export async function editUserMessage(
 function userDraftSystemPrompt(character: Character, chat: Chat): string {
 	return [
 		`<Instructions>\nWrite the next message from {{user}}'s perspective in this fictional chat ` +
-			`with {{char}}, considering the conversation so far. Write only {{user}}'s dialogue/actions — ` +
-			`never speak, act, or narrate for {{char}}.\n</Instructions>`,
+			`with {{char}}, considering the conversation so far. Only control {{user}}: write their ` +
+			`dialogue, actions, and thoughts, and nothing else. This is a separate, absolute rule: never ` +
+			`write {{char}}'s dialogue, actions, reactions, or narration, even briefly or in passing — not ` +
+			`even a short reaction line. Stop the moment {{user}}'s turn is done; do not continue into ` +
+			`what {{char}} says or does next, and do not write both sides of the exchange.\n</Instructions>`,
 		character.scenario && `<Scenario>\n${character.scenario}\n</Scenario>`,
 		personaPrompt(chat),
 		PARENTHETICAL_INSTRUCTION,

@@ -134,7 +134,7 @@ describe('generateUserDraft', () => {
 		expect(systemMessage).not.toContain(character.example_dialogues[0]);
 		expect(systemMessage).toContain(character.scenario);
 		expect(systemMessage).toContain('{{user}}');
-		expect(systemMessage).toContain('never speak, act, or narrate for {{char}}');
+		expect(systemMessage).toContain('never write {{char}}\'s dialogue, actions, reactions, or narration');
 	});
 });
 
