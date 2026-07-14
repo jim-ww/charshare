@@ -180,6 +180,34 @@ describe('saved characters import', () => {
 
 		expect(summary.category).toBe('savedCharacters');
 	});
+
+	it('upgrades every item in a pre-media (image_urls) backup, not just the first', async () => {
+		// Regression test: a bulk backup taken before `media` existed carries
+		// `image_urls` instead — every item needs the same legacy-shape
+		// upgrade importCharacterDraft applies to a single-character import,
+		// or downstream code assuming `media` exists (e.g. CharacterCard's
+		// slideshow filter) breaks on the very first old-shape item and the
+		// import loop never reaches the rest.
+		const { media: _media, ...withoutMedia } = makeCharacter('char-3');
+		const legacyCharacters = [
+			{ ...withoutMedia, id: 'char-3', image_urls: ['https://example.com/a.png'] },
+			{ ...withoutMedia, id: 'char-4', image_urls: [] }
+		];
+		const file = fileOf(
+			'charshare-savedCharacters-2026-01-01.json',
+			JSON.stringify(legacyCharacters, null, 2)
+		);
+
+		const [summary] = await importDataFile(file);
+
+		expect(summary).toEqual({ category: 'savedCharacters', count: 2, added: 2, updated: 0, skipped: 0 });
+		const saved = getSavedCharacters();
+		expect(saved).toHaveLength(2);
+		expect(saved.find((c) => c.id === 'char-3')?.media).toEqual([
+			{ url: 'https://example.com/a.png', type: 'image' }
+		]);
+		expect(saved.find((c) => c.id === 'char-4')?.media).toEqual([]);
+	});
 });
 
 describe('preferences import', () => {

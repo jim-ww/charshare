@@ -10,6 +10,7 @@ import { DEFAULT_PREFERENCES, getPreferences, updatePreferences } from '$lib/sta
 import { getMyProfile } from '$lib/state/profile.svelte';
 import { isWailsDesktop, saveFile } from '$lib/wails';
 import type { Character, Chat, Persona, Preferences } from '$lib/types';
+import { legacyImageUrlsToMedia } from '$lib/types/media';
 import { m } from '$lib/paraglide/messages.js';
 
 export type DataCategory = 'account' | 'characters' | 'savedCharacters' | 'personas' | 'chats' | 'preferences';
@@ -213,6 +214,17 @@ function detectCategory(filename: string, parsed: unknown): DataCategory | null 
 	return null;
 }
 
+/** Upgrades a character parsed from an old backup/export (pre-`media`, still
+ *  carrying `image_urls`) to the current shape — a bulk backup can be years
+ *  old, unlike a live network event, so this is the one import path that
+ *  actually needs it. Delete once no such backups remain (see
+ *  legacyImageUrlsToMedia). */
+function normalizeImportedCharacter(item: Character & { image_urls?: string[] }): Character {
+	if (Array.isArray(item.media)) return item;
+	const { image_urls, ...rest } = item;
+	return { ...rest, media: legacyImageUrlsToMedia(image_urls ?? []) };
+}
+
 async function importAccountFile(json: string): Promise<void> {
 	const backup = parseAccountBackup(json);
 	await setKeyring(backup.keyring);
@@ -234,7 +246,8 @@ async function importCharactersFile(json: string): Promise<ImportSummary> {
 	if (!Array.isArray(parsed)) throw new Error(m.data_export_error_not_valid_characters());
 	const myPubkey = getKeyring()?.publicKey;
 	const results: ('added' | 'updated' | 'skipped')[] = [];
-	for (const item of parsed as Character[]) {
+	for (const raw of parsed as Character[]) {
+		const item = normalizeImportedCharacter(raw);
 		results.push(
 			item.author === myPubkey
 				? await restoreCharacter(item)
@@ -251,8 +264,8 @@ async function importSavedCharactersFile(json: string): Promise<ImportSummary> {
 	const parsed: unknown = JSON.parse(json);
 	if (!Array.isArray(parsed)) throw new Error(m.data_export_error_not_valid_saved_characters());
 	const results: ('added' | 'updated' | 'skipped')[] = [];
-	for (const item of parsed as Character[]) {
-		results.push(await restoreSavedCharacter(item));
+	for (const raw of parsed as Character[]) {
+		results.push(await restoreSavedCharacter(normalizeImportedCharacter(raw)));
 	}
 	return summarizeRestoreResults('savedCharacters', results);
 }
