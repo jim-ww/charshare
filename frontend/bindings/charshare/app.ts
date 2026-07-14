@@ -11,10 +11,27 @@
 import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Create } from "/wails/runtime.js";
 
 /**
- * Greet returns a greeting for the given name
+ * FetchOllamaChat proxies a chat-completion request to a local/self-hosted
+ * Ollama server from the Go backend rather than the webview's own fetch().
+ * The webview's origin (e.g. wails://wails.localhost) isn't in Ollama's
+ * default CORS allowlist, so a direct browser-side fetch to it gets a flat
+ * 403 on the CORS preflight — a plain outgoing Go HTTP client has no
+ * browser-side CORS to enforce, sidestepping the problem entirely.
+ * 
+ * Blocks for the whole request/response, emitting each NDJSON line as an
+ * OllamaChatChunkEvent as it arrives so the existing live-token rendering
+ * (see ai/ollama.ts) keeps working. The returned error becomes the JS-side
+ * promise's rejection reason directly — no separate "done"/"error" event
+ * needed, since the call itself only resolves once streaming is complete.
+ * 
+ * `ctx` is Wails' own per-call context (first-parameter convention — see
+ * pkg/application/bindings.go's needsContext handling): calling `.cancel()`
+ * on the CancellablePromise this returns to the frontend cancels `ctx`,
+ * which aborts the underlying HTTP request via NewRequestWithContext. No
+ * hand-rolled cancellation registry needed.
  */
-export function Greet(name: string): $CancellablePromise<string> {
-    return $Call.ByID(2659711170, name);
+export function FetchOllamaChat(requestID: string, url: string, bodyJSON: string): $CancellablePromise<void> {
+    return $Call.ByID(3375761947, requestID, url, bodyJSON);
 }
 
 /**

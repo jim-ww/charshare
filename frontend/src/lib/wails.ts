@@ -127,3 +127,50 @@ export function onProxyImportReceived(handler: (raw: string) => void): () => voi
 		unsubscribe?.();
 	};
 }
+
+/** Runs a chat-completion request against a local Ollama server through the
+ *  Go backend (see ollama.go) instead of the webview's own fetch() — Ollama's
+ *  default CORS allowlist doesn't include the packaged app's webview origin
+ *  (e.g. wails://wails.localhost), so a direct fetch from here gets a flat
+ *  403 on the CORS preflight and every chat send fails. A plain outgoing Go
+ *  HTTP client has no browser-side CORS to enforce.
+ *
+ *  Streams each NDJSON line of the response to `onLine` as it arrives (same
+ *  shape ai/ollama.ts's fetch-based reader loop already parses). Cancellation
+ *  rides on Wails' own per-call mechanism (`CancellablePromise.cancelOn`,
+ *  see pkg/application/bindings.go's `needsContext` handling) rather than a
+ *  hand-rolled registry: FetchOllamaChat's first Go parameter is a
+ *  `context.Context` that Wails supplies and cancels automatically when the
+ *  call is cancelled, which is what actually aborts the underlying HTTP
+ *  request — no separate "cancel" RPC call needed. */
+export async function streamOllamaChat(
+	url: string,
+	bodyJson: string,
+	onLine: (line: string) => void,
+	signal?: AbortSignal
+): Promise<void> {
+	const requestId = crypto.randomUUID();
+	const [App, { Events }] = await Promise.all([loadApp(), loadRuntime()]);
+	const unsubscribe = Events.On("ollama-chat:chunk", (event) => {
+		const payload = event.data as { requestId: string; line: string };
+		if (payload.requestId === requestId) onLine(payload.line);
+	});
+
+	const call = App.FetchOllamaChat(requestId, url, bodyJson);
+	if (signal) call.cancelOn(signal);
+
+	try {
+		await call;
+	} catch (err) {
+		// Wails' CancellablePromise rejects with its own CancelError on
+		// cancelOn(signal) — translate that back into the DOMException
+		// AbortError shape callers already check for (ChatComposer/ChatBubble's
+		// "was this just the user hitting Stop" checks), so cancelling via this
+		// Go bridge looks the same to them as the plain-fetch path's
+		// AbortController-driven abort.
+		if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+		throw err;
+	} finally {
+		unsubscribe();
+	}
+}

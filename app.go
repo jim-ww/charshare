@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -50,11 +49,6 @@ func (a *App) ServiceStartup(ctx context.Context, options application.ServiceOpt
 		}
 	})
 	return nil
-}
-
-// Greet returns a greeting for the given name
-func (a *App) Greet(name string) string {
-	return fmt.Sprintf("Hello %s, It's show time!", name)
 }
 
 // OpenDevTools opens the webview's devtools window. Only meaningful in the

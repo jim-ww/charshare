@@ -62,3 +62,39 @@ describe('requestCompletion (Ollama)', () => {
 		vi.unstubAllGlobals();
 	});
 });
+
+describe('requestCompletion (Ollama) inside the Wails desktop build', () => {
+	it('routes through the Go-backend bridge instead of fetch, since a direct fetch gets a CORS 403 there', async () => {
+		vi.resetModules();
+		const streamOllamaChat = vi.fn(
+			async (
+				_url: string,
+				bodyJson: string,
+				onLine: (line: string) => void,
+				_signal?: AbortSignal
+			): Promise<void> => {
+				const body = JSON.parse(bodyJson);
+				expect(body.keep_alive).toBe('15m');
+				onLine(JSON.stringify({ message: { content: 'hi' } }));
+				onLine(JSON.stringify({ done: true, done_reason: 'stop' }));
+			}
+		);
+		vi.doMock('$lib/wails', () => ({
+			isWailsDesktop: () => true,
+			streamOllamaChat
+		}));
+		const fetchMock = vi.fn();
+		vi.stubGlobal('fetch', fetchMock);
+
+		const { requestCompletion: requestCompletionWails } = await import('./ollama');
+		const result = await requestCompletionWails(config, [{ role: 'user', content: 'hello' }]);
+
+		expect(streamOllamaChat).toHaveBeenCalledTimes(1);
+		expect(fetchMock).not.toHaveBeenCalled();
+		expect(result).toEqual({ content: 'hi', finishReason: 'stop' });
+
+		vi.unstubAllGlobals();
+		vi.doUnmock('$lib/wails');
+		vi.resetModules();
+	});
+});
