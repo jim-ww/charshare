@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { Character, Chat } from '$lib/types';
 import { __setChatsForTests, addMessage, createChat, getActivePath, getChat, switchBranch } from '$lib/state/chats.svelte';
+import { __setPreferencesForTests, DEFAULT_OPENROUTER_CONFIG } from '$lib/state/preferences.svelte';
 import { sendMessage, generateUserDraft, regenerateMessage, fitToContext } from './chat';
 import type { CompletionMessage } from './index';
 
@@ -50,6 +51,10 @@ function sseResponse(deltas: string[], finishReason: string): Response {
 
 beforeEach(() => {
 	__setChatsForTests({});
+	// sendMessage/regenerateMessage read the active provider off preferences
+	// (default is Ollama's NDJSON format) — pin it to OpenRouter so it
+	// matches sseResponse()'s SSE `data:` framing below.
+	__setPreferencesForTests({ provider: DEFAULT_OPENROUTER_CONFIG });
 	vi.stubGlobal(
 		'fetch',
 		vi.fn(async () => sseResponse(['a reply'], 'stop'))
