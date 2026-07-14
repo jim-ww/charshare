@@ -17,7 +17,7 @@ const STORAGE_KEY = "charshare:preferences";
 export const DEFAULT_OPENROUTER_CONFIG: OpenRouterProviderConfig = {
 	provider: "openrouter",
 	apiKey: "",
-	model: "tencent/hy3:free",
+	model: "openrouter/free", //"tencent/hy3:free",
 	temperature: 1,
 	max_tokens: 512,
 	context_size: 8192,
@@ -63,22 +63,23 @@ export const DEFAULT_HUGGINGFACE_CONFIG: HuggingFaceProviderConfig = {
 	tosAgreed: false,
 };
 
-export const DEFAULT_OPENAI_COMPATIBLE_CONFIG: OpenAiCompatibleProviderConfig = {
-	provider: "openai_compatible",
-	baseUrl: "",
-	apiKey: "",
-	model: "",
-	temperature: 1,
-	max_tokens: 512,
-	context_size: 8192,
-	top_k: 0,
-	top_p: 1,
-	repetition_penalty: 1,
-	frequency_penalty: 0,
-	forbidden_words: [],
-	disable_thinking: true,
-	tosAgreed: false,
-};
+export const DEFAULT_OPENAI_COMPATIBLE_CONFIG: OpenAiCompatibleProviderConfig =
+	{
+		provider: "openai_compatible",
+		baseUrl: "",
+		apiKey: "",
+		model: "",
+		temperature: 1,
+		max_tokens: 512,
+		context_size: 8192,
+		top_k: 0,
+		top_p: 1,
+		repetition_penalty: 1,
+		frequency_penalty: 0,
+		forbidden_words: [],
+		disable_thinking: true,
+		tosAgreed: false,
+	};
 
 export const DEFAULT_PREFERENCES: Preferences = {
 	nostrRelays: DEFAULT_NOSTR_RELAYS,
@@ -126,7 +127,10 @@ let initPromise: Promise<void> | null = null;
 /** Backfills `tosAgreed` on configs saved before the field existed. Ollama
  *  talks to a server the user runs themselves, so it never needed agreement. */
 function withTosAgreed<T extends ProviderConfig>(config: T): T {
-	return { ...config, tosAgreed: config.tosAgreed ?? config.provider === "ollama" };
+	return {
+		...config,
+		tosAgreed: config.tosAgreed ?? config.provider === "ollama",
+	};
 }
 
 export function getPreferences(): Preferences {
@@ -139,7 +143,9 @@ export function getPreferences(): Preferences {
  *  fresh (not cached) by every nostr/*.ts network call so an in-session
  *  relay-list change takes effect immediately. */
 export function getActiveRelays(): string[] {
-	return preferences.nostrRelays.length > 0 ? preferences.nostrRelays : DEFAULT_NOSTR_RELAYS;
+	return preferences.nostrRelays.length > 0
+		? preferences.nostrRelays
+		: DEFAULT_NOSTR_RELAYS;
 }
 
 export function isPreferencesReady(): boolean {
@@ -170,15 +176,19 @@ export function initPreferences(): Promise<void> {
 					whisperModelSize: preferences.whisperModelSize ?? "tiny",
 					micSilenceTimeoutMs: preferences.micSilenceTimeoutMs ?? 1500,
 					ttsConsentGiven: preferences.ttsConsentGiven ?? false,
-				voicevoxBaseUrl: preferences.voicevoxBaseUrl ?? "http://localhost:50021",
-				autoReadAloud: preferences.autoReadAloud ?? false,
+					voicevoxBaseUrl:
+						preferences.voicevoxBaseUrl ?? "http://localhost:50021",
+					autoReadAloud: preferences.autoReadAloud ?? false,
 					provider: withTosAgreed(preferences.provider),
 					providerConfigs: Object.fromEntries(
 						Object.entries({
 							...DEFAULT_PREFERENCES.providerConfigs,
 							...preferences.providerConfigs,
 							[preferences.provider.provider]: preferences.provider,
-						}).map(([key, config]) => [key, withTosAgreed(config as ProviderConfig)]),
+						}).map(([key, config]) => [
+							key,
+							withTosAgreed(config as ProviderConfig),
+						]),
 					) as typeof preferences.providerConfigs,
 				};
 			}

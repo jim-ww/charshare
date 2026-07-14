@@ -1,7 +1,6 @@
-- change personality placeholder to also suggest writing char appearance there, if relevant
 - implement multi-tag search? in character definitions, always store tags sorted to allow search like tag-subtag-subsubtag?
 - allow to specify videos in character cards.
-- add enable slideshow button as editable character setting (for owner), if enabled, in characters page, it would switch CharacterCard would switch shown image every X milliseconds (if hovered on) (if there are more than 1 image). add option in settings to disable those
-- feat: add some characters from other platforms
+- add enable slideshow button as editable character setting (for owner), if enabled, in characters page, it would switch CharacterCard would switch shown image every X milliseconds (if hovered on) (if there are more than 1 image). and add client side option in settings to disable those
 - add option to 'follow' authors? and then add filter 'global/subscribed'
+- feat: add some characters from other platforms
 - consider: android build target
