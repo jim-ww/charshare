@@ -249,6 +249,7 @@
 	"chat_bubble_save": "Save",
 	"chat_bubble_cancel": "Cancel",
 	"chat_bubble_replying": "Replying",
+	"chat_bubble_generation_interrupted": "Generation was interrupted before a reply came through. Try regenerating.",
 	"chat_bubble_stop_generating": "Stop generating",
 	"chat_bubble_regenerate_response": "Regenerate response",
 	"chat_bubble_continue_message": "Continue this message",

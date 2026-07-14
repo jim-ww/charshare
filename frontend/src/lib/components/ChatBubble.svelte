@@ -486,10 +486,12 @@
 					{m.chat_bubble_cancel()}
 				</button>
 			</div>
-		{:else if message.role === 'character' && message.content === ''}
+		{:else if message.role === 'character' && message.content === '' && streamingHere}
 			<p class="flex items-center gap-2 italic opacity-60">
 				{m.chat_bubble_replying()}<span class="loading loading-dots loading-xs"></span>
 			</p>
+		{:else if message.role === 'character' && message.content === ''}
+			<p class="italic opacity-60">{m.chat_bubble_generation_interrupted()}</p>
 		{:else}
 			<p class="whitespace-pre-wrap">{@html formattedContent}</p>
 		{/if}

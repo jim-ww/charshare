@@ -1,8 +1,7 @@
-- chats can cache last unwritten response, and on next chat enter always show Replying... with animation. Should show some generic message generation error on empty message + stopped generation
 - treat no relays as offline mode
 - set default relays / relay discoverability
-- add alternative login nostr methods?
-- implement multi-tag search? in character definitions, always store tags sorted to allow search like tag-subtag-subsubtag?
-- feat: add some characters from other platforms
+- consider: add alternative login nostr methods?
+- consider: implement multi-tag search? in character definitions, always store tags sorted to allow search like tag-subtag-subsubtag?
+- consider: add some characters from other platforms
 - consider: android build target
 - consider: implement lorebooks
