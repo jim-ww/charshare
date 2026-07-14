@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import type { SimplePool } from 'nostr-tools/pool';
 import type { Event as NostrEvent } from 'nostr-tools';
 import { generateKeyring } from './keys';
@@ -66,6 +66,50 @@ describe('publishEvent / queryEvents', () => {
 
 		const found = await queryEvents({ kinds: [1] }, ['wss://fake']);
 		expect(found).toHaveLength(0);
+	});
+
+	it('resolves once at least one relay acks, even if others reject', async () => {
+		const keyring = generateKeyring();
+		__setPoolForTests({
+			ensureRelay: async () => ({}),
+			publish: () => [Promise.reject(new Error('relay A down')), Promise.resolve('ok')],
+			querySync: async () => [],
+			subscribeMany: () => ({ close: () => {} })
+		} as unknown as SimplePool);
+
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+		const published = await publishEvent({ kind: 1, tags: [], content: 'hi', created_at: 0 }, keyring, [
+			'wss://a',
+			'wss://b'
+		]);
+
+		expect(published.pubkey).toBe(keyring.publicKey);
+		expect(warn).toHaveBeenCalledTimes(1);
+		expect(error).not.toHaveBeenCalled();
+		warn.mockRestore();
+		error.mockRestore();
+	});
+
+	it('logs a distinct error (not just per-relay warnings) when every relay rejects the publish', async () => {
+		const keyring = generateKeyring();
+		__setPoolForTests({
+			ensureRelay: async () => ({}),
+			publish: () => [Promise.reject(new Error('relay A down')), Promise.reject(new Error('relay B down'))],
+			querySync: async () => [],
+			subscribeMany: () => ({ close: () => {} })
+		} as unknown as SimplePool);
+
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+		// Still resolves (optimistic, non-blocking) — the signed event is
+		// returned regardless, but the failure is now surfaced distinctly.
+		await publishEvent({ kind: 1, tags: [], content: 'hi', created_at: 0 }, keyring, ['wss://a', 'wss://b']);
+
+		expect(warn).toHaveBeenCalledTimes(2);
+		expect(error).toHaveBeenCalledTimes(1);
+		warn.mockRestore();
+		error.mockRestore();
 	});
 });
 

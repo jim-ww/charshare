@@ -25,13 +25,22 @@ const QUERY_TIMEOUT_MS = 5000;
 export async function publishEvent(template: EventTemplate, keyring: Keyring, relays: string[]): Promise<NostrEvent> {
 	const event = signEvent(template, keyring);
 	const pool = getPool();
+	// Re-throwing after logging (rather than swallowing into a resolved
+	// `undefined`) matters here — Promise.any below only rejects if every
+	// relay's promise rejects, so a per-relay `.catch` that resolves instead
+	// would make Promise.any resolve on the very first *settled* promise
+	// regardless of whether it actually succeeded, silently treating a
+	// publish that failed on every single relay as a success.
 	const publishPromises = pool.publish(relays, event).map((p) =>
 		p.catch((err) => {
 			console.warn('[nostr] publish rejected by a relay (ignored, other relays may still accept it)', err);
+			throw err;
 		})
 	);
 	await Promise.race([
-		Promise.any(publishPromises).catch(() => undefined),
+		Promise.any(publishPromises).catch((err) => {
+			console.error('[nostr] publish failed on every relay', err);
+		}),
 		new Promise<void>((resolve) => setTimeout(resolve, PUBLISH_TIMEOUT_MS))
 	]);
 	return event;
