@@ -1,3 +1,5 @@
+- devtools dont open in production wails builds
+- on data import, add button 'replace all', that answers yes to all replacements
 - implement multi-tag search? in character definitions, always store tags sorted to allow search like tag-subtag-subsubtag?
 - feat: add some characters from other platforms
 - consider: android build target

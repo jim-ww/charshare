@@ -21,12 +21,3 @@ export function inferMediaType(url: string): MediaType {
 export function firstImageUrl(media: MediaItem[]): string | undefined {
 	return media.find((m) => m.type === "image")?.url;
 }
-
-/** Converts the pre-media `image_urls: string[]` shape (every character
- *  published/stored before `media` existed) into the new shape, treating
- *  every entry as an image. Only needed for reading old data — delete once
- *  no such data remains (see nostr/characters.ts:eventToCharacter and
- *  state/characters.svelte.ts's local-storage migration). */
-export function legacyImageUrlsToMedia(imageUrls: string[]): MediaItem[] {
-	return imageUrls.filter((u) => u.trim()).map((url) => ({ url, type: "image" as const }));
-}

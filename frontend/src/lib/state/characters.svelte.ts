@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import type { Character, CharacterId } from '$lib/types';
-import { firstImageUrl, legacyImageUrlsToMedia } from '$lib/types/media';
+import { firstImageUrl } from '$lib/types/media';
 import {
 	addPublishedCharacterId,
 	loadMyCharacterEntries,
@@ -450,14 +450,10 @@ export function importCharacterDraft(json: string): CharacterFormFields {
 	if (typeof parsed !== 'object' || parsed === null || typeof (parsed as Character).name !== 'string') {
 		throw new Error('Not a valid character export.');
 	}
-	// `image_urls` is the pre-media shape of an old export (see
-	// legacyImageUrlsToMedia) — delete this branch once no such exports remain.
-	const source = parsed as Character & { image_urls?: string[] };
+	const source = parsed as Character;
 	return {
 		name: source.name,
-		media: Array.isArray(source.media)
-			? source.media
-			: legacyImageUrlsToMedia(Array.isArray(source.image_urls) ? source.image_urls : []),
+		media: Array.isArray(source.media) ? source.media : [],
 		description: source.description ?? '',
 		personality: source.personality ?? '',
 		scenario: source.scenario ?? '',
