@@ -29,14 +29,22 @@ const publishProfileMock = vi.fn(async (fields: { username: string; description:
 	deleted: false,
 	deleted_at: null
 }));
+interface GetProfileResult {
+	ok: boolean;
+	doc?: { id: string; username: string; description: string; image_url?: string; deleted: boolean };
+}
+let getProfileResolver: (pubkey: string) => GetProfileResult = () => ({ ok: false });
 vi.mock('$lib/nostr/profile', () => ({
 	publishProfile: (fields: { username: string; description: string; image_url?: string }) =>
 		publishProfileMock(fields),
+	getProfile: async (pubkey: string) => getProfileResolver(pubkey),
 	subscribeProfileWithRetry: () => () => {}
 }));
 
+let cachedProfile: { id: string; username: string; description: string; image_url?: string; deleted: boolean } | null =
+	null;
 vi.mock('$lib/db/profile', () => ({
-	loadCachedProfile: async () => null,
+	loadCachedProfile: async () => cachedProfile,
 	saveCachedProfile: async () => {},
 	clearCachedProfile: async () => {}
 }));
@@ -62,9 +70,50 @@ async function freshProfileModule() {
 beforeEach(() => {
 	registered = true;
 	claimResolver = () => ({ ok: false });
+	getProfileResolver = () => ({ ok: false });
+	cachedProfile = null;
 	publishProfileMock.mockClear();
 	notifyMock.mockClear();
 	openSettingsMock.mockClear();
+});
+
+describe('initProfile resync', () => {
+	it("republishes our own cached profile when the connected relay has never seen it", async () => {
+		cachedProfile = { id: 'my-pubkey', username: 'alice', description: 'hi', deleted: false };
+		getProfileResolver = () => ({ ok: false });
+
+		const { initProfile, getMyProfile, isProfileSynced } = await freshProfileModule();
+		await initProfile();
+
+		expect(publishProfileMock).toHaveBeenCalledTimes(1);
+		expect(publishProfileMock.mock.calls[0][0]).toEqual({ username: 'alice', description: 'hi' });
+		expect(getMyProfile()?.username).toBe('alice');
+		expect(isProfileSynced()).toBe(true);
+	});
+
+	it("doesn't republish when the relay already has our profile", async () => {
+		cachedProfile = { id: 'my-pubkey', username: 'alice', description: 'hi', deleted: false };
+		getProfileResolver = (pubkey) => ({
+			ok: true,
+			doc: { id: pubkey, username: 'alice', description: 'hi', deleted: false }
+		});
+
+		const { initProfile, isProfileSynced } = await freshProfileModule();
+		await initProfile();
+
+		expect(publishProfileMock).not.toHaveBeenCalled();
+		expect(isProfileSynced()).toBe(true);
+	});
+
+	it("doesn't republish a tombstoned cached profile", async () => {
+		cachedProfile = { id: 'my-pubkey', username: 'alice', description: 'hi', deleted: true };
+		getProfileResolver = () => ({ ok: false });
+
+		const { initProfile } = await freshProfileModule();
+		await initProfile();
+
+		expect(publishProfileMock).not.toHaveBeenCalled();
+	});
 });
 
 describe('checkUsernameConflict', () => {

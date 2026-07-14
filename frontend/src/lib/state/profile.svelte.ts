@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 import type { User } from '$lib/types';
 import { getCurrentUser, initAuth, isAccountRegistered, markRegistered } from './auth.svelte';
-import { publishProfile, subscribeProfileWithRetry } from '$lib/nostr/profile';
+import { getProfile, publishProfile, subscribeProfileWithRetry } from '$lib/nostr/profile';
 import { getUsernameClaim } from '$lib/nostr/usernames';
 import { clearCachedProfile, loadCachedProfile, saveCachedProfile } from '$lib/db/profile';
 import { notify } from './notifications.svelte';
@@ -78,27 +78,38 @@ export function initProfile(): Promise<void> {
 						// runs and keeps `profile` current in the background.
 						ready = true;
 					}
-					await new Promise<void>((resolve) => {
-						let settled = false;
-						unsubscribe = subscribeProfileWithRetry(
-							pubkey,
-							(result) => {
-								if (result.ok) {
-									profile = result.doc;
-									synced = true;
-									void saveCachedProfile(result.doc);
-								}
-								if (!settled) {
-									settled = true;
-									resolve();
-								}
-							},
-							// Not `profile !== null` — a cached copy already makes that
-							// true, which would stop the retry-poke before a relay ever
-							// actually answers, leaving `synced` stuck false forever.
-							() => synced
-						);
-					});
+					// Bounded lookup (see nostr/event.ts:queryEvents's own timeout) —
+					// deliberately not subscribeProfileWithRetry here, since its
+					// resolution only fires from an actually-received event and would
+					// hang this await forever if the connected relay has simply never
+					// seen this profile at all (new relay / relay switch between
+					// sessions — same scenario characters.svelte.ts's resyncMissing
+					// covers for characters).
+					const result = await getProfile(pubkey);
+					if (result.ok) {
+						profile = result.doc;
+						synced = true;
+						void saveCachedProfile(result.doc);
+					} else if (cached && cached.id === pubkey && !cached.deleted) {
+						// The relay has no copy of our own profile, but we have our own
+						// last-known fields — republish rather than silently vanishing
+						// from the network under everyone else's eyes.
+						try {
+							const republished = await publishProfile({
+								username: cached.username,
+								description: cached.description,
+								...(cached.image_url ? { image_url: cached.image_url } : {})
+							});
+							profile = republished;
+							synced = true;
+							void saveCachedProfile(republished);
+						} catch {
+							// Relay write failed too (e.g. still not connected) — keep
+							// showing the cached copy; subscribeToOwnProfile below will
+							// keep retrying.
+						}
+					}
+					subscribeToOwnProfile();
 				}
 			}
 			ready = true;
