@@ -34,14 +34,14 @@ export const DEFAULT_OPENROUTER_CONFIG: OpenRouterProviderConfig = {
 export const DEFAULT_OLLAMA_CONFIG: OllamaProviderConfig = {
 	provider: "ollama",
 	baseUrl: "http://localhost:11434",
-	model: "llama3.1:8b",
-	temperature: 0.8,
+	model: "hf.co/bartowski/L3-8B-Stheno-v3.2-GGUF:Q4_K_M",
+	temperature: 1.15, // 0.8
 	max_tokens: 512,
-	context_size: 8192, // 4096
-	top_k: 40,
+	context_size: 4096, // 8192,
+	top_k: 50, // 40
 	top_p: 0.9,
-	min_p: 0,
-	repetition_penalty: 1,
+	min_p: 0.075, // 0
+	repetition_penalty: 1.1, // 1
 	frequency_penalty: 0,
 	forbidden_words: [],
 	disable_thinking: true,
