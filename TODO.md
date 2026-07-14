@@ -1,6 +1,6 @@
-- implement multi-tag search? in character definitions, always store tags sorted to allow search like tag-subtag-subsubtag?
+- in character new/edit add cancel button beside 'save changes' button
 - allow to specify videos in character cards.
-- add enable slideshow button as editable character setting (for owner), if enabled, in characters page, it would switch CharacterCard would switch shown image every X milliseconds (if hovered on) (if there are more than 1 image). and add client side option in settings to disable those
 - add option to 'follow' authors? and then add filter 'global/subscribed'
+- implement multi-tag search? in character definitions, always store tags sorted to allow search like tag-subtag-subsubtag?
 - feat: add some characters from other platforms
 - consider: android build target

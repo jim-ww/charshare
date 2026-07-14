@@ -23,6 +23,7 @@ interface CharacterContent {
 	example_dialogues: string[];
 	image_urls: string[];
 	comments_enabled: boolean;
+	slideshow_enabled?: boolean; // optional: absent on events published before this field existed
 	version: number;
 	language: string;
 	deleted: boolean;
@@ -46,6 +47,7 @@ function isCharacterContent(data: unknown): data is CharacterContent {
 		Array.isArray(d.image_urls) &&
 		d.image_urls.every((u) => typeof u === 'string') &&
 		typeof d.comments_enabled === 'boolean' &&
+		(d.slideshow_enabled === undefined || typeof d.slideshow_enabled === 'boolean') &&
 		typeof d.version === 'number' &&
 		typeof d.language === 'string' &&
 		typeof d.deleted === 'boolean' &&
@@ -92,6 +94,7 @@ function characterToTemplate(doc: Omit<Character, 'author' | 'updated_at'>): Eve
 		example_dialogues: doc.example_dialogues,
 		image_urls: doc.image_urls,
 		comments_enabled: doc.comments_enabled,
+		slideshow_enabled: doc.slideshow_enabled,
 		version: doc.version,
 		language: doc.language,
 		deleted: doc.deleted,
@@ -134,7 +137,8 @@ export function eventToCharacter(event: NostrEvent): Character | null {
 		forked_from: forkTag ? parseCharacterCoordinate(forkTag) : null,
 		created_at: Number(publishedAt) * 1000,
 		updated_at: event.created_at * 1000,
-		...content
+		...content,
+		slideshow_enabled: content.slideshow_enabled ?? false
 	};
 }
 

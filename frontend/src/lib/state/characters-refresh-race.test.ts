@@ -57,6 +57,7 @@ function makeCharacter(id: string): Character {
 		alternate_greetings: [],
 		example_dialogues: [],
 		comments_enabled: true,
+		slideshow_enabled: false,
 		forked_from: null,
 		author: 'author-pub',
 		created_at: 1,

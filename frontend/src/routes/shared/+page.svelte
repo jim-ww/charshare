@@ -78,6 +78,7 @@
 			alternate_greetings: [],
 			example_dialogues: [],
 			comments_enabled: false,
+			slideshow_enabled: false,
 			forked_from: null,
 			author: '',
 			created_at: 0,

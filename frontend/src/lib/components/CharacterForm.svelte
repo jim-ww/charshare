@@ -142,6 +142,14 @@
 				true,
 		),
 	);
+	let slideshowEnabled = $state(
+		untrack(
+			() =>
+				initial?.slideshow_enabled ??
+				draft?.slideshow_enabled ??
+				false,
+		),
+	);
 
 	function addGreeting() {
 		alternateGreetings.push("");
@@ -222,6 +230,7 @@
 			alternateGreetings,
 			exampleDialogues,
 			commentsEnabled,
+			slideshowEnabled,
 		});
 	}
 
@@ -309,6 +318,7 @@
 					.map((g) => g.trim())
 					.filter(Boolean),
 				comments_enabled: commentsEnabled,
+				slideshow_enabled: slideshowEnabled,
 			};
 
 			const payloadBytes = new TextEncoder().encode(
@@ -467,6 +477,16 @@
 				/>
 				<span class="label-text">{m.char_form_comments_enabled_label()}</span>
 			</label>
+			{#if imageUrls.filter((u) => u.trim()).length > 1}
+				<label class="flex items-center gap-2">
+					<input
+						type="checkbox"
+						class="checkbox"
+						bind:checked={slideshowEnabled}
+					/>
+					<span class="label-text">{m.char_form_slideshow_enabled_label()}</span>
+				</label>
+			{/if}
 			{#if showLocalOnlyToggle}
 				<label
 					class="flex cursor-pointer items-start gap-2"

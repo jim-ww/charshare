@@ -22,15 +22,44 @@
 	} from "$lib/state/preferences.svelte";
 	import { confirmDialog } from "$lib/state/confirmDialog.svelte";
 	import { estimateCharacterTokens, formatTokenCount } from "$lib/ai/tokenEstimate";
+	import { getPreferences } from "$lib/state/preferences.svelte";
 	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		character: Character;
 	}
 
+	const SLIDESHOW_INTERVAL_MS = 1800;
+
 	let { character }: Props = $props();
 	const localOnly = $derived(isCharacterLocalOnly(character.id));
-	const imageUrl = $derived(character.image_urls[0]);
+	const slideshowImages = $derived(character.image_urls.filter((u) => u.trim()));
+	const slideshowActive = $derived(
+		character.slideshow_enabled &&
+			!getPreferences().disableSlideshows &&
+			slideshowImages.length > 1,
+	);
+
+	let hovering = $state(false);
+	let slideIndex = $state(0);
+
+	$effect(() => {
+		if (!hovering || !slideshowActive) {
+			slideIndex = 0;
+			return;
+		}
+		const images = slideshowImages;
+		const interval = setInterval(() => {
+			slideIndex = (slideIndex + 1) % images.length;
+		}, SLIDESHOW_INTERVAL_MS);
+		return () => clearInterval(interval);
+	});
+
+	const imageUrl = $derived(
+		slideshowActive && hovering
+			? (slideshowImages[slideIndex] ?? character.image_urls[0])
+			: character.image_urls[0],
+	);
 	const isMine = $derived(character.author === getCurrentUser());
 	const hidden = $derived(isCharacterHidden(character.id));
 	const authorBlocked = $derived(isAuthorBlocked(character.author));
@@ -100,6 +129,8 @@
 	href={resolve('/characters/[id]', { id: character.id })}
 	class="card relative bg-base-200 shadow-sm [content-visibility:auto] [contain-intrinsic-size:0_320px] hover:bg-base-300"
 	class:opacity-60={(!isMine && character.deleted) || hidden}
+	onmouseenter={() => (hovering = true)}
+	onmouseleave={() => (hovering = false)}
 >
 	<div class="absolute left-2 top-2 z-10 flex flex-col items-start gap-1">
 		{#if !alreadyLocal}

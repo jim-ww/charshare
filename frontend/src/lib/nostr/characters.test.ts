@@ -1,8 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { __setKeyringForTests } from '$lib/state/auth.svelte';
+import { getActiveRelays } from '$lib/state/preferences.svelte';
 import { generateKeyring } from './keys';
 import { __setPoolForTests } from './pool';
 import { createFakePool } from './testUtils';
+import { queryEvents } from './event';
+import { CHARACTER_KIND } from './kinds';
+import { parseCharacterId } from './characterId';
 import {
 	publishCharacter,
 	deleteCharacter,
@@ -11,7 +15,8 @@ import {
 	getCharacter,
 	createLocalCharacter,
 	editLocalCharacter,
-	publishLocalCharacter
+	publishLocalCharacter,
+	eventToCharacter
 } from './characters';
 
 beforeEach(() => {
@@ -32,7 +37,8 @@ const baseFields = {
 	first_message: '',
 	alternate_greetings: [],
 	example_dialogues: [],
-	comments_enabled: true
+	comments_enabled: true,
+	slideshow_enabled: false
 };
 
 async function neverPublished(id: string): Promise<boolean> {
@@ -59,6 +65,28 @@ describe('publishCharacter', () => {
 		const created = await publishCharacter(baseFields);
 		__setKeyringForTests(generateKeyring());
 		await expect(publishCharacter({ ...baseFields, id: created.id })).rejects.toThrow('Only the author');
+	});
+
+	it('round-trips slideshow_enabled through publish and fetch', async () => {
+		const created = await publishCharacter({ ...baseFields, image_urls: ['a.png', 'b.png'], slideshow_enabled: true });
+		expect(created.slideshow_enabled).toBe(true);
+
+		const fetched = await getCharacter(created.id);
+		expect(fetched).toEqual({ ok: true, doc: created });
+	});
+
+	it('defaults slideshow_enabled to false when parsing an event whose content JSON omits it entirely (pre-field events)', async () => {
+		const created = await publishCharacter(baseFields);
+		const { author, uuid } = parseCharacterId(created.id);
+		const [rawEvent] = await queryEvents({ kinds: [CHARACTER_KIND], authors: [author], '#d': [uuid] }, getActiveRelays());
+		expect(rawEvent).toBeTruthy();
+
+		const contentWithoutField = JSON.parse(rawEvent.content);
+		delete contentWithoutField.slideshow_enabled;
+		const legacyEvent = { ...rawEvent, content: JSON.stringify(contentWithoutField) };
+
+		const parsed = eventToCharacter(legacyEvent);
+		expect(parsed?.slideshow_enabled).toBe(false);
 	});
 });
 

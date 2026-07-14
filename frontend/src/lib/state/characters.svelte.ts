@@ -463,6 +463,7 @@ export function importCharacterDraft(json: string): CharacterFormFields {
 		first_message: source.first_message ?? '',
 		alternate_greetings: source.alternate_greetings ?? [],
 		example_dialogues: source.example_dialogues ?? [],
-		comments_enabled: source.comments_enabled ?? true
+		comments_enabled: source.comments_enabled ?? true,
+		slideshow_enabled: source.slideshow_enabled ?? false
 	};
 }

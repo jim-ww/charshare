@@ -73,6 +73,10 @@
 		updatePreferences({ showNsfw: (event.currentTarget as HTMLInputElement).checked });
 	}
 
+	function handleDisableSlideshowsChange(event: Event) {
+		updatePreferences({ disableSlideshows: (event.currentTarget as HTMLInputElement).checked });
+	}
+
 </script>
 
 <svelte:window onmousedown={handleOutsideClick} onkeydown={handleGlobalKeydown} />
@@ -220,6 +224,15 @@
 		<span class="label-text">{m.general_tab_show_nsfw_label()}</span>
 	</label>
 
+	<label class="label w-fit cursor-pointer gap-2">
+		<input
+			type="checkbox"
+			class="toggle"
+			checked={preferences.disableSlideshows}
+			onchange={handleDisableSlideshowsChange}
+		/>
+		<span class="label-text">{m.general_tab_disable_slideshows_label()}</span>
+	</label>
 
 	<label class="form-control w-full max-w-md">
 		<span class="label-text">{m.general_tab_language_label()}</span>

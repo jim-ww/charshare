@@ -107,5 +107,6 @@ export function mapProxyChatRequestToDraft(
 			extractTag(systemContent, "example_dialogs"),
 		).map(substitute),
 		comments_enabled: true,
+		slideshow_enabled: false,
 	};
 }

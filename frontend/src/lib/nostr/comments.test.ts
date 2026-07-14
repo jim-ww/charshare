@@ -46,7 +46,8 @@ const characterFields = {
 	first_message: '',
 	alternate_greetings: [],
 	example_dialogues: [],
-	comments_enabled: true
+	comments_enabled: true,
+	slideshow_enabled: false
 };
 
 async function realCharacterId(): Promise<string> {

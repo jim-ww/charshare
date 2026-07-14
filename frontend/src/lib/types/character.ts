@@ -23,6 +23,7 @@ export interface CharacterFields {
 	alternate_greetings: string[];
 	example_dialogues: string[];
 	comments_enabled: boolean;
+	slideshow_enabled: boolean; // owner opt-in — cycle through image_urls on hover, see CharacterCard.svelte
 	forked_from: CharacterId | null;
 }
 

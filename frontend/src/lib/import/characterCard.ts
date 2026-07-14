@@ -89,7 +89,8 @@ export function parseTavernCardJson(json: string): CharacterCardDraft {
 		first_message: fields.first_mes ?? '',
 		alternate_greetings: isV2(parsed) ? (parsed.data?.alternate_greetings ?? []) : [],
 		example_dialogues: splitExampleDialogues(fields.mes_example),
-		comments_enabled: true
+		comments_enabled: true,
+		slideshow_enabled: false
 	};
 }
 

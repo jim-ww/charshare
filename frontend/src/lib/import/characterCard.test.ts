@@ -30,6 +30,7 @@ function makeCharacter(overrides: Partial<Character> = {}): Character {
 		alternate_greetings: ['Hey!', 'Yo!'],
 		example_dialogues: ['{{user}}: Hi\n{{char}}: Hello!', '{{user}}: Bye\n{{char}}: See ya!'],
 		comments_enabled: true,
+		slideshow_enabled: false,
 		forked_from: null,
 		author: 'author-1',
 		created_at: 0,

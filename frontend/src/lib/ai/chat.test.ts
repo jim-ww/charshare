@@ -20,6 +20,7 @@ const character: Character = {
 	alternate_greetings: [],
 	example_dialogues: ['{{user}}: Hi.\nAria: *glances up*'],
 	comments_enabled: true,
+	slideshow_enabled: false,
 	author: 'pubkey',
 	forked_from: null,
 	deleted: false,

@@ -98,6 +98,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
 	ttsConsentGiven: false,
 	voicevoxBaseUrl: "http://localhost:50021",
 	autoReadAloud: false,
+	disableSlideshows: false,
 	provider: DEFAULT_HUGGINGFACE_CONFIG,
 	providerConfigs: {
 		openrouter: DEFAULT_OPENROUTER_CONFIG,
@@ -179,6 +180,7 @@ export function initPreferences(): Promise<void> {
 					voicevoxBaseUrl:
 						preferences.voicevoxBaseUrl ?? "http://localhost:50021",
 					autoReadAloud: preferences.autoReadAloud ?? false,
+					disableSlideshows: preferences.disableSlideshows ?? false,
 					provider: withTosAgreed(preferences.provider),
 					providerConfigs: Object.fromEntries(
 						Object.entries({
