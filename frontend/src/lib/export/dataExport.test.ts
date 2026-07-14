@@ -31,6 +31,15 @@ vi.mock('$lib/db/savedCharacters', () => ({
 	}
 }));
 
+// The conflict prompt is a singleton UI modal (GlobalConfirmDialog) that
+// state modules await external resolution of — swap it for a controllable
+// mock so "Replace All" propagation (see importConflict.ts) can be tested
+// without mounting the component tree.
+const confirmDialogWithExtra = vi.fn(async (_request: unknown) => 'confirm' as 'confirm' | 'extra' | 'cancel');
+vi.mock('$lib/state/confirmDialog.svelte', () => ({
+	confirmDialogWithExtra: (request: unknown) => confirmDialogWithExtra(request)
+}));
+
 const { getSavedCharacters } = await import('$lib/state/savedCharacters.svelte');
 const { __setPreferencesForTests, getPreferences, DEFAULT_PREFERENCES } = await import(
 	'$lib/state/preferences.svelte'
@@ -73,6 +82,8 @@ beforeEach(() => {
 	savedCharacterStore = new Map();
 	idbStore = new Map();
 	__setPreferencesForTests(DEFAULT_PREFERENCES);
+	confirmDialogWithExtra.mockReset();
+	confirmDialogWithExtra.mockResolvedValue('confirm');
 });
 
 describe('export filenames', () => {
@@ -148,6 +159,33 @@ describe('personas import', () => {
 			{ category: 'personas', count: 0, added: 0, updated: 0, skipped: 1 }
 		]);
 		expect(getPersonas()).toHaveLength(1);
+	});
+
+	it('"Replace All" on the first conflict resolves every later conflict without re-prompting', async () => {
+		const alice = await createPersona({ name: 'Alice', description: 'original' });
+		const bob = await createPersona({ name: 'Bob', description: 'original' });
+		const file = fileOf(
+			'charshare-personas-2026-01-01.json',
+			JSON.stringify(getPersonas(), null, 2)
+		);
+
+		// Diverge both personas locally (same id, different content) so
+		// re-importing the backup below conflicts for both.
+		__setPersonasForTests({
+			[alice.id]: { ...alice, description: 'local edit' },
+			[bob.id]: { ...bob, description: 'local edit' }
+		});
+		confirmDialogWithExtra.mockResolvedValueOnce('extra');
+
+		const summaries = await importDataFile(file);
+
+		expect(confirmDialogWithExtra).toHaveBeenCalledTimes(1);
+		expect(summaries).toEqual([
+			{ category: 'personas', count: 2, added: 0, updated: 2, skipped: 0 }
+		]);
+		const imported = getPersonas();
+		expect(imported.find((p) => p.id === alice.id)?.description).toBe('original');
+		expect(imported.find((p) => p.id === bob.id)?.description).toBe('original');
 	});
 });
 

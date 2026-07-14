@@ -10,6 +10,7 @@ import { DEFAULT_PREFERENCES, getPreferences, updatePreferences } from '$lib/sta
 import { getMyProfile } from '$lib/state/profile.svelte';
 import { isWailsDesktop, saveFile } from '$lib/wails';
 import type { Character, Chat, Persona, Preferences } from '$lib/types';
+import { createImportConflictState, type ImportConflictState } from '$lib/export/importConflict';
 import { m } from '$lib/paraglide/messages.js';
 
 export type DataCategory = 'account' | 'characters' | 'savedCharacters' | 'personas' | 'chats' | 'preferences';
@@ -229,7 +230,7 @@ async function importAccountFile(json: string): Promise<void> {
  *  since both actions require real authorship. Route those to the saved
  *  characters store instead, exactly where they'd land if you'd bookmarked
  *  them from the network. */
-async function importCharactersFile(json: string): Promise<ImportSummary> {
+async function importCharactersFile(json: string, conflict: ImportConflictState): Promise<ImportSummary> {
 	const parsed: unknown = JSON.parse(json);
 	if (!Array.isArray(parsed)) throw new Error(m.data_export_error_not_valid_characters());
 	const myPubkey = getKeyring()?.publicKey;
@@ -237,7 +238,7 @@ async function importCharactersFile(json: string): Promise<ImportSummary> {
 	for (const item of parsed as Character[]) {
 		results.push(
 			item.author === myPubkey
-				? await restoreCharacter(item)
+				? await restoreCharacter(item, { conflict })
 				: await restoreSavedCharacter(item)
 		);
 	}
@@ -257,22 +258,22 @@ async function importSavedCharactersFile(json: string): Promise<ImportSummary> {
 	return summarizeRestoreResults('savedCharacters', results);
 }
 
-async function importPersonasFile(json: string): Promise<ImportSummary> {
+async function importPersonasFile(json: string, conflict: ImportConflictState): Promise<ImportSummary> {
 	const parsed: unknown = JSON.parse(json);
 	if (!Array.isArray(parsed)) throw new Error(m.data_export_error_not_valid_personas());
 	const results: ('added' | 'updated' | 'skipped')[] = [];
 	for (const item of parsed as Persona[]) {
-		results.push(await restorePersona(item));
+		results.push(await restorePersona(item, { conflict }));
 	}
 	return summarizeRestoreResults('personas', results);
 }
 
-async function importChatsFile(json: string): Promise<ImportSummary> {
+async function importChatsFile(json: string, conflict: ImportConflictState): Promise<ImportSummary> {
 	const parsed: unknown = JSON.parse(json);
 	if (!Array.isArray(parsed)) throw new Error(m.data_export_error_not_valid_chats());
 	const results: ('added' | 'updated' | 'skipped')[] = [];
 	for (const item of parsed as Chat[]) {
-		results.push(await restoreChat(item));
+		results.push(await restoreChat(item, { conflict }));
 	}
 	return summarizeRestoreResults('chats', results);
 }
@@ -297,7 +298,7 @@ async function importPreferencesFile(json: string): Promise<void> {
 	await updatePreferences(patch);
 }
 
-async function importOne(filename: string, json: string): Promise<ImportSummary> {
+async function importOne(filename: string, json: string, conflict: ImportConflictState): Promise<ImportSummary> {
 	let parsed: unknown;
 	try {
 		parsed = JSON.parse(json);
@@ -311,13 +312,13 @@ async function importOne(filename: string, json: string): Promise<ImportSummary>
 			await importAccountFile(json);
 			return { category };
 		case 'characters':
-			return importCharactersFile(json);
+			return importCharactersFile(json, conflict);
 		case 'savedCharacters':
 			return importSavedCharactersFile(json);
 		case 'personas':
-			return importPersonasFile(json);
+			return importPersonasFile(json, conflict);
 		case 'chats':
-			return importChatsFile(json);
+			return importChatsFile(json, conflict);
 		case 'preferences':
 			await importPreferencesFile(json);
 			return { category };
@@ -327,9 +328,14 @@ async function importOne(filename: string, json: string): Promise<ImportSummary>
 /** Imports a previously exported file — either a single category's JSON, or
  *  a zip bundle produced when exporting more than one category at once. */
 export async function importDataFile(file: File): Promise<ImportSummary[]> {
+	// Shared across every item restored below — see importConflict.ts. A
+	// "Replace All" choice on the first same-version conflict anywhere in
+	// this import (any category, single file or zip bundle) silently
+	// resolves every later one the same way instead of prompting per item.
+	const conflict = createImportConflictState();
 	const isZip = file.name.toLowerCase().endsWith('.zip') || file.type === 'application/zip';
 	if (!isZip) {
-		return [await importOne(file.name, await file.text())];
+		return [await importOne(file.name, await file.text(), conflict)];
 	}
 	const buffer = new Uint8Array(await file.arrayBuffer());
 	const entries = unzipSync(buffer);
@@ -347,7 +353,7 @@ export async function importDataFile(file: File): Promise<ImportSummary[]> {
 	const names = Object.keys(entries).sort((a, b) => rank(a) - rank(b));
 	const summaries: ImportSummary[] = [];
 	for (const name of names) {
-		summaries.push(await importOne(name, strFromU8(entries[name])));
+		summaries.push(await importOne(name, strFromU8(entries[name]), conflict));
 	}
 	return summaries;
 }

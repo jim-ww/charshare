@@ -9,7 +9,8 @@ import {
 	setKeepPublished as dbSetKeepPublished
 } from '$lib/db/characters';
 import { poolConnected } from '$lib/nostr/pool';
-import { confirmDialog } from '$lib/state/confirmDialog.svelte';
+import { confirmDialogWithExtra } from '$lib/state/confirmDialog.svelte';
+import type { ImportConflictState } from '$lib/export/importConflict';
 import { m } from '$lib/paraglide/messages.js';
 import { getKeyring, initAuth } from '$lib/state/auth.svelte';
 import {
@@ -326,7 +327,10 @@ export async function forkCharacter(source: Character): Promise<Character> {
  *  - Not tracked locally at all → added as a new local-only character.
  *  - Tracked locally as a local-only draft → the higher `version` wins; on a
  *    tie with differing content, the user is asked which to keep. */
-export async function restoreCharacter(character: Character): Promise<'added' | 'updated' | 'skipped'> {
+export async function restoreCharacter(
+	character: Character,
+	options: { conflict?: ImportConflictState } = {}
+): Promise<'added' | 'updated' | 'skipped'> {
 	const entries = await loadMyCharacterEntries();
 	const existingEntry = entries.find((e) => e.id === character.id);
 
@@ -354,13 +358,15 @@ export async function restoreCharacter(character: Character): Promise<'added' | 
 	if (character.version === existing.version && JSON.stringify(character) === JSON.stringify(existing)) {
 		return 'skipped';
 	}
-	if (character.version === existing.version) {
-		const preferImported = await confirmDialog({
+	if (character.version === existing.version && !options.conflict?.replaceAll) {
+		const result = await confirmDialogWithExtra({
 			title: m.import_conflict_title(),
 			message: m.characters_restore_conflict_message({ name: existing.name }),
-			confirmLabel: m.import_conflict_replace()
+			confirmLabel: m.import_conflict_replace(),
+			extraLabel: m.import_conflict_replace_all()
 		});
-		if (!preferImported) return 'skipped';
+		if (result === 'cancel') return 'skipped';
+		if (result === 'extra' && options.conflict) options.conflict.replaceAll = true;
 	}
 
 	await saveLocalOnlyCharacter(character);

@@ -2,7 +2,8 @@ import { browser } from '$app/environment';
 import type { Chat, ChatId, CharacterId, Message, MessageId, MessageRole, PersonaId } from '$lib/types';
 import { loadChats, saveChats } from '$lib/db/chats';
 import { getPreferences } from '$lib/state/preferences.svelte';
-import { confirmDialog } from '$lib/state/confirmDialog.svelte';
+import { confirmDialogWithExtra } from '$lib/state/confirmDialog.svelte';
+import type { ImportConflictState } from '$lib/export/importConflict';
 import { m } from '$lib/paraglide/messages.js';
 
 let chats = $state<Record<ChatId, Chat>>({});
@@ -312,7 +313,10 @@ export async function importChat(
  *
  *  Chats have no version field, so an id collision with different content is
  *  resolved by asking the user which to keep. */
-export async function restoreChat(chat: Chat): Promise<'added' | 'updated' | 'skipped'> {
+export async function restoreChat(
+	chat: Chat,
+	options: { conflict?: ImportConflictState } = {}
+): Promise<'added' | 'updated' | 'skipped'> {
 	const existing = chats[chat.id];
 	if (!existing) {
 		chats = { ...chats, [chat.id]: chat };
@@ -321,12 +325,16 @@ export async function restoreChat(chat: Chat): Promise<'added' | 'updated' | 'sk
 	}
 	if (JSON.stringify(existing) === JSON.stringify(chat)) return 'skipped';
 
-	const preferImported = await confirmDialog({
-		title: m.import_conflict_title(),
-		message: m.chats_restore_conflict_message({ name: existing.name }),
-		confirmLabel: m.import_conflict_replace()
-	});
-	if (!preferImported) return 'skipped';
+	if (!options.conflict?.replaceAll) {
+		const result = await confirmDialogWithExtra({
+			title: m.import_conflict_title(),
+			message: m.chats_restore_conflict_message({ name: existing.name }),
+			confirmLabel: m.import_conflict_replace(),
+			extraLabel: m.import_conflict_replace_all()
+		});
+		if (result === 'cancel') return 'skipped';
+		if (result === 'extra' && options.conflict) options.conflict.replaceAll = true;
+	}
 
 	chats = { ...chats, [chat.id]: chat };
 	await persist();

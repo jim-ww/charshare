@@ -683,6 +683,7 @@
 
 	"import_conflict_title": "Replace existing item?",
 	"import_conflict_replace": "Replace",
+	"import_conflict_replace_all": "Replace All",
 	"chats_restore_conflict_message": "A chat named \"{name}\" already exists with different content. Replace it with the imported version?",
 	"characters_restore_conflict_message": "\"{name}\" already exists locally at the same version with different content. Replace it with the imported version?",
 	"personas_restore_conflict_message": "A persona named \"{name}\" already exists with different content. Replace it with the imported version?"

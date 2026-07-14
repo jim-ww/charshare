@@ -1,4 +1,4 @@
-- on data import, add button 'replace all', that answers yes to all replacements
+- Replying... still shows when 'stop' have been pressed
 - implement multi-tag search? in character definitions, always store tags sorted to allow search like tag-subtag-subsubtag?
 - feat: add some characters from other platforms
 - consider: android build target
