@@ -26,6 +26,7 @@ export async function requestCompletion(
 			temperature: config.temperature,
 			max_tokens: config.max_tokens,
 			top_p: config.top_p,
+			min_p: config.min_p,
 			frequency_penalty: config.frequency_penalty
 		}),
 		signal: options.signal

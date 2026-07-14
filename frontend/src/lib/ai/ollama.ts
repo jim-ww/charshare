@@ -23,6 +23,7 @@ export async function requestCompletion(
 				temperature: config.temperature,
 				top_k: config.top_k,
 				top_p: config.top_p,
+				min_p: config.min_p,
 				repeat_penalty: config.repetition_penalty,
 				num_predict: config.max_tokens,
 				num_ctx: config.context_size

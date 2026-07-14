@@ -46,6 +46,7 @@ export async function requestCompletion(
 			temperature: config.temperature,
 			max_tokens: config.max_tokens,
 			top_p: config.top_p,
+			min_p: config.min_p,
 			repetition_penalty: config.repetition_penalty,
 			frequency_penalty: config.frequency_penalty,
 			...(config.disable_thinking ? { reasoning: { effort: 'none' } } : {})

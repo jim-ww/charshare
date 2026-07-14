@@ -594,6 +594,7 @@
 	"ai_tab_context_size_label": "Context size",
 	"ai_tab_top_k_label": "Top-K",
 	"ai_tab_top_p_label": "Top-P",
+	"ai_tab_min_p_label": "Min-P",
 	"ai_tab_repetition_penalty_label": "Repetition penalty",
 	"ai_tab_frequency_penalty_label": "Frequency penalty",
 	"ai_tab_frequency_penalty_unsupported": "Not supported by Ollama",

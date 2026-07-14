@@ -23,6 +23,7 @@ export const DEFAULT_OPENROUTER_CONFIG: OpenRouterProviderConfig = {
 	context_size: 8192,
 	top_k: 0,
 	top_p: 1,
+	min_p: 0,
 	repetition_penalty: 1,
 	frequency_penalty: 0,
 	forbidden_words: [],
@@ -39,6 +40,7 @@ export const DEFAULT_OLLAMA_CONFIG: OllamaProviderConfig = {
 	context_size: 8192, // 4096
 	top_k: 40,
 	top_p: 0.9,
+	min_p: 0,
 	repetition_penalty: 1,
 	frequency_penalty: 0,
 	forbidden_words: [],
@@ -56,6 +58,7 @@ export const DEFAULT_HUGGINGFACE_CONFIG: HuggingFaceProviderConfig = {
 	context_size: 8192,
 	top_k: 0,
 	top_p: 1,
+	min_p: 0,
 	repetition_penalty: 1,
 	frequency_penalty: 0,
 	forbidden_words: [],
@@ -74,6 +77,7 @@ export const DEFAULT_OPENAI_COMPATIBLE_CONFIG: OpenAiCompatibleProviderConfig =
 		context_size: 8192,
 		top_k: 0,
 		top_p: 1,
+		min_p: 0,
 		repetition_penalty: 1,
 		frequency_penalty: 0,
 		forbidden_words: [],
@@ -116,6 +120,7 @@ const ADVANCED_DEFAULT_KEYS = [
 	"context_size",
 	"top_k",
 	"top_p",
+	"min_p",
 	"repetition_penalty",
 	"frequency_penalty",
 	"forbidden_words",
@@ -131,6 +136,7 @@ function withTosAgreed<T extends ProviderConfig>(config: T): T {
 	return {
 		...config,
 		tosAgreed: config.tosAgreed ?? config.provider === "ollama",
+		min_p: config.min_p ?? 0,
 	};
 }
 

@@ -195,6 +195,18 @@
 					/>
 				</label>
 				<label class="form-control">
+					<span class="label-text">{m.ai_tab_min_p_label()}</span>
+					<input
+						class="input input-bordered"
+						type="number"
+						step="0.01"
+						min="0"
+						max="1"
+						value={provider.min_p}
+						oninput={(e) => update('min_p', Number(e.currentTarget.value))}
+					/>
+				</label>
+				<label class="form-control">
 					<span class="label-text">{m.ai_tab_repetition_penalty_label()}</span>
 					<input
 						class="input input-bordered"
