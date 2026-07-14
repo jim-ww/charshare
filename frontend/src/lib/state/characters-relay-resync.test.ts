@@ -28,10 +28,16 @@ vi.mock('$lib/db/characters', () => ({
 	},
 	removeMyCharacterEntry: async (id: string) => {
 		entryStore.delete(id);
+	},
+	setKeepPublished: async (id: string, keepPublished: boolean) => {
+		const existing = entryStore.get(id);
+		if (!existing) return;
+		entryStore.set(id, { ...existing, keepPublished });
 	}
 }));
 
-const { __refreshCharactersForTests, getMyCharacters } = await import('./characters.svelte');
+const { __refreshCharactersForTests, getMyCharacters, isKeepPublished, publishMyCharacter, createOrEditCharacter } =
+	await import('./characters.svelte');
 
 /** Covers the scenario from the spec discussion: a user's connected relay can
  *  change between app launches (configurable relays, or just a different
@@ -141,5 +147,32 @@ describe('"keep published" opt-in', () => {
 		expect((await getCharacter(created.id)).ok).toBe(false);
 		// Still shown locally (from cache), just not republished.
 		expect(getMyCharacters().map((c) => c.id)).toContain(created.id);
+	});
+});
+
+describe('"keep published" defaults on when a character is actually published', () => {
+	it('publishMyCharacter (the "Publish" action on a local-only draft) opts in automatically', async () => {
+		const keyring = generateKeyring();
+		const { pool } = createFakePool();
+		__setPoolForTests(pool);
+		__setKeyringForTests(keyring);
+
+		const draft = await createOrEditCharacter(baseFields, { localOnly: true });
+		expect(isKeepPublished(draft.id)).toBe(false);
+
+		await publishMyCharacter(draft.id);
+
+		expect(isKeepPublished(draft.id)).toBe(true);
+	});
+
+	it('creating a character directly published (not kept local) opts in automatically', async () => {
+		const keyring = generateKeyring();
+		const { pool } = createFakePool();
+		__setPoolForTests(pool);
+		__setKeyringForTests(keyring);
+
+		const created = await createOrEditCharacter(baseFields, { localOnly: false });
+
+		expect(isKeepPublished(created.id)).toBe(true);
 	});
 });

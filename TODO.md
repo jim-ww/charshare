@@ -1,4 +1,3 @@
-- profile doesnt get republished on init
 - set keep_published to true, on publish action
 - set default relays / relay discoverability
 - add alternative login nostr methods?

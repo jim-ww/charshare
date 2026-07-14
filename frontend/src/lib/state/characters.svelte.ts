@@ -221,6 +221,7 @@ export async function createOrEditCharacter(
 		}
 		const doc = await nostrPublishCharacter(fields);
 		await addPublishedCharacterId(doc.id, doc);
+		await dbSetKeepPublished(doc.id, true);
 		await refresh();
 		return doc;
 	}
@@ -240,6 +241,7 @@ export async function createOrEditCharacter(
 		}
 		const published = await nostrPublishLocalCharacter(edited);
 		await addPublishedCharacterId(published.id, published);
+		await dbSetKeepPublished(published.id, true);
 		await refresh();
 		return published;
 	}
@@ -259,6 +261,11 @@ export async function publishMyCharacter(id: CharacterId): Promise<Character> {
 	if (!existing) throw new Error('Character not found.');
 	const doc = await nostrPublishLocalCharacter($state.snapshot(existing));
 	await addPublishedCharacterId(doc.id, doc);
+	// Publishing is the moment this character starts actually mattering on the
+	// network — opt it into "keep published" by default so it self-heals on
+	// every refresh() if a relay switch or flaky relay ever drops it, instead
+	// of silently going missing until the user notices and hits "Republish".
+	await dbSetKeepPublished(doc.id, true);
 	await refresh();
 	return doc;
 }
