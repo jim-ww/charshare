@@ -1,3 +1,4 @@
+import { pushState } from '$app/navigation';
 import type { Chat, Character } from '$lib/types';
 
 let expandedChat = $state<Chat | undefined>(undefined);
@@ -26,7 +27,7 @@ export function openImageViewer(chat: Chat, character: Character): void {
 	expandedChat = chat;
 	expandedCharacter = character;
 	if (typeof window !== 'undefined') {
-		history.pushState({ imageViewer: true }, '');
+		pushState('', { imageViewer: true });
 		ownsHistoryEntry = true;
 	}
 }
