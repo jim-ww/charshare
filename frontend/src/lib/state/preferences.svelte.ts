@@ -88,7 +88,7 @@ export const DEFAULT_OPENAI_COMPATIBLE_CONFIG: OpenAiCompatibleProviderConfig =
 
 export const DEFAULT_PREFERENCES: Preferences = {
 	nostrRelays: DEFAULT_NOSTR_RELAYS,
-	theme: "sunset", // best: dark forest halloween dracula night coffee dim sunset
+	theme: "dracula", // best: dark forest halloween dracula night coffee dim sunset
 	blockedTags: [],
 	blockedAuthors: [],
 	hiddenCharacterIds: [],
