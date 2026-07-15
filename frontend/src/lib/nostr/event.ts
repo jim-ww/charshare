@@ -15,8 +15,18 @@ const PUBLISH_TIMEOUT_MS = 3000;
  *  connection level (e.g. accepts a handshake but never completes it), the
  *  whole query can hang forever with no error. This timeout keeps that from
  *  wedging callers (like account import, which queries once per restored
- *  character) — falling back to whatever events were already collected. */
-const QUERY_TIMEOUT_MS = 5000;
+ *  character) — falling back to whatever events were already collected.
+ *
+ *  Must comfortably exceed SimplePool's own per-relay connect timeout
+ *  (~3000ms, nostr-tools' default `maxWaitForConnection`) plus real
+ *  round-trip time for the relays that *do* connect — an unreachable relay
+ *  in the active set burns its full ~3000ms on every single call (nothing
+ *  remembers it just failed), which left the working relays too little of a
+ *  5000ms budget to finish their own handshake+query on a slower/higher-
+ *  latency mobile connection, even though the exact same query succeeded
+ *  fine on a fast desktop connection — surfacing as "the network has
+ *  nothing" everywhere queryEvents is used (browse feed, search, resync). */
+const QUERY_TIMEOUT_MS = 9000;
 
 /** Signs `template` and publishes it to `relays`, resolving once any relay
  *  acks (or after PUBLISH_TIMEOUT_MS, whichever comes first). Returns the
