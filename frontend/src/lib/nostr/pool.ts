@@ -53,6 +53,65 @@ export async function poolConnected(relays: string[] = getActiveRelays(), timeou
 	return connected;
 }
 
+/** How long a relay that just failed to connect is skipped before being
+ *  retried. Per-relay (unlike CONNECTIVITY_CACHE_MS's whole-set verdict
+ *  above) — a single dead relay in an otherwise-healthy set must not gate
+ *  whether the others get queried at all. */
+const RELAY_FAILURE_CACHE_MS = 30000;
+
+/** How long to give a not-yet-known-bad relay to connect when probing it —
+ *  matches nostr-tools' own default per-relay connect timeout
+ *  (maxWaitForConnection), since there's no point being more patient here
+ *  than SimplePool itself would be. */
+const RELAY_PROBE_TIMEOUT_MS = 3000;
+
+const relayFailedAt = new Map<string, number>();
+
+/** Narrows `relays` down to ones not already known-dead, connecting to any
+ *  not-yet-checked ones to find out. Without this, `SimplePool.querySync`
+ *  (which waits for *every* relay in the list to settle, connected or not,
+ *  before resolving) pays a truly-unreachable relay's full connect timeout
+ *  on every single call — including each of refreshNetwork's retries —
+ *  before the relays that actually work even get a chance to answer, which
+ *  on a slower/higher-latency connection can burn through the whole overall
+ *  query budget before anything real comes back. Never returns an empty
+ *  list even if every relay is currently marked dead — better to actually
+ *  try than to silently query nothing (mirrors why poolConnected's result
+ *  must never gate queryEvents either, see its call site). */
+export async function filterReachableRelays(relays: string[]): Promise<string[]> {
+	const now = Date.now();
+	const uncheckedOrStale = relays.filter((url) => {
+		const failedAt = relayFailedAt.get(url);
+		return failedAt === undefined || now - failedAt >= RELAY_FAILURE_CACHE_MS;
+	});
+	const knownDead = relays.filter((url) => !uncheckedOrStale.includes(url));
+	if (uncheckedOrStale.length === 0) return relays;
+	const pool = getPool();
+	const probed = await Promise.all(
+		uncheckedOrStale.map(async (url) => {
+			try {
+				await Promise.race([
+					pool.ensureRelay(url),
+					new Promise((_, reject) => setTimeout(() => reject(new Error('probe timed out')), RELAY_PROBE_TIMEOUT_MS))
+				]);
+				relayFailedAt.delete(url);
+				return url;
+			} catch {
+				relayFailedAt.set(url, now);
+				return null;
+			}
+		})
+	);
+	const reachable = [...probed.filter((url): url is string => url !== null)];
+	if (reachable.length === 0 && knownDead.length === relays.length) {
+		// Everything's marked dead (or just failed re-probing) — try the
+		// full original set rather than querying nothing at all, in case
+		// they're all actually back up and the cache is just stale.
+		return relays;
+	}
+	return reachable;
+}
+
 /** In-memory cache of each author's declared NIP-65 relay list (kind 10002),
  *  keyed by pubkey — avoids re-querying it on every single author-scoped
  *  lookup. Session-scoped only; no persistence. Populated/consumed by the
@@ -73,4 +132,5 @@ export function __setPoolForTests(pool: SimplePool | null): void {
 	instance = pool;
 	relayListCache.clear();
 	connectivityCache = null;
+	relayFailedAt.clear();
 }

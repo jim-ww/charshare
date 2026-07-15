@@ -1,7 +1,7 @@
 import type { Event as NostrEvent, EventTemplate, Filter } from 'nostr-tools';
 import type { Keyring } from '$lib/types';
 import { signEvent, verifySignedEvent } from './sign';
-import { getPool, poolConnected } from './pool';
+import { filterReachableRelays, getPool, poolConnected } from './pool';
 
 /** A relay's publish ack isn't guaranteed to fire promptly on flaky public
  *  relays (SimplePool.publish's per-relay promises), so this timeout keeps a
@@ -71,9 +71,15 @@ export async function queryEvents(filter: Filter, relays: string[]): Promise<Nos
 	// remembering that false verdict). The QUERY_TIMEOUT_MS race below is
 	// what actually guards against a stalled relay hanging the caller.
 	await poolConnected(relays);
+	// SimplePool.querySync waits for every relay passed in to settle before
+	// resolving — a relay that's actually dead (not just slow) otherwise
+	// makes every single call pay its full connect timeout before the
+	// relays that work even get a chance to answer. Skip ones recently
+	// found dead instead (see filterReachableRelays).
+	const reachable = await filterReachableRelays(relays);
 	const pool = getPool();
 	const events = await Promise.race([
-		pool.querySync(relays, filter),
+		pool.querySync(reachable, filter),
 		new Promise<NostrEvent[]>((resolve) => setTimeout(() => resolve([]), QUERY_TIMEOUT_MS))
 	]);
 	const verified = events.filter(verifySignedEvent);
@@ -85,7 +91,7 @@ export async function queryEvents(filter: Filter, relays: string[]): Promise<Nos
 			verified: verified.length
 		});
 	}
-	console.debug('[nostr] queryEvents', { filter, relays, received: events.length, verified: verified.length });
+	console.debug('[nostr] queryEvents', { filter, relays, reachable, received: events.length, verified: verified.length });
 	return verified;
 }
 
