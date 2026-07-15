@@ -24,6 +24,7 @@
 	import { getPreferences } from "$lib/state/preferences.svelte";
 	import { initPersonas } from "$lib/state/personas.svelte";
 	import { getEditingMessageId } from "$lib/state/chatEditing.svelte";
+	import { toggleChatSidebar } from "$lib/state/chatSidebar.svelte";
 	import { m } from "$lib/paraglide/messages.js";
 
 	untrack(() => void initPersonas());
@@ -142,7 +143,29 @@
 	<div class="flex h-full">
 		<div class="flex h-full min-w-0 flex-1 flex-col">
 			<div class="flex flex-wrap items-center justify-between gap-1">
-				<ChatThreadSwitcher {chat} />
+				<div class="flex min-w-0 items-center gap-1">
+					<button
+						class="btn btn-sm btn-ghost gap-2 shrink-0 md:hidden"
+						type="button"
+						onclick={toggleChatSidebar}
+					>
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							class="h-4 w-4"
+						>
+							<rect width="18" height="18" x="3" y="3" rx="2" />
+							<path d="M9 3v18" />
+						</svg>
+						Chats
+					</button>
+					<ChatThreadSwitcher {chat} />
+				</div>
 				<div class="m-2 ml-auto flex gap-2">
 					<button
 						class="btn btn-sm"

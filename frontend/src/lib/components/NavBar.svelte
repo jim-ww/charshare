@@ -67,7 +67,7 @@
 		<div class="dropdown md:hidden">
 			<button
 				tabindex="0"
-				class="btn btn-ghost btn-sm px-2"
+				class="btn btn-ghost btn-square"
 				type="button"
 				aria-label={m.navbar_nav_characters()}
 			>
@@ -79,24 +79,48 @@
 					stroke-width="2"
 					stroke-linecap="round"
 					stroke-linejoin="round"
-					class="h-5 w-5"
+					class="h-6 w-6"
 				>
 					<path d="M4 6h16M4 12h16M4 18h16" />
 				</svg>
 			</button>
 			<ul
-				class="menu dropdown-content menu-sm z-10 mt-3 w-40 rounded-box bg-base-200 p-2 shadow"
+				class="menu dropdown-content z-10 mt-3 w-64 gap-0.5 rounded-box bg-base-200 p-2 shadow-lg"
 			>
+				<li class="menu-title px-2 pt-1 pb-0.5 text-xs">
+					Browse
+				</li>
 				{#each navLinks as { href, label } (href)}
 					<li>
 						<a
 							{href}
-							class={isActive(href)
-								? "text-primary"
-								: ""}>{label}</a
+							class="rounded-lg py-3 text-base {isActive(href)
+								? 'text-primary'
+								: ''}">{label}</a
 						>
 					</li>
 				{/each}
+				<li>
+					<a
+						href={resolve("/characters/new")}
+						class="rounded-lg py-3 text-base"
+					>
+						{m.navbar_new_character()}
+					</a>
+				</li>
+				<div class="my-1 border-t border-base-300"></div>
+				<li class="menu-title px-2 pt-1 pb-0.5 text-xs">
+					{displayName}
+				</li>
+				<li>
+					<button
+						type="button"
+						class="rounded-lg py-3 text-base"
+						onclick={() => openSettings("account")}
+					>
+						{m.navbar_account_settings()}
+					</button>
+				</li>
 			</ul>
 		</div>
 		<a
@@ -124,28 +148,25 @@
 		onsubmit={handleSearch}
 	>
 		<input
-			class="input input-bordered input-sm w-full min-w-0"
+			class="input input-bordered w-full min-w-0"
 			placeholder={m.navbar_search_placeholder()}
 			value={getSearchQuery()}
 			oninput={(e) => setSearchQuery(e.currentTarget.value)}
 		/>
 		<button
-			class="btn btn-sm btn-primary shrink-0"
+			class="btn btn-primary shrink-0"
 			type="submit"
 			disabled={isSearching()}
 		>
 			{isSearching() ? "…" : m.navbar_search_button()}
 		</button>
 	</form>
-	<div class="flex shrink-0 items-center gap-2">
+	<div class="hidden shrink-0 items-center gap-2 md:flex">
 		<a
 			href={resolve("/characters/new")}
 			class="btn btn-sm btn-primary"
 		>
-			<span class="hidden sm:inline"
-				>{m.navbar_new_character()}</span
-			>
-			<span class="sm:hidden">+</span>
+			{m.navbar_new_character()}
 		</a>
 		<button
 			class="btn btn-sm btn-ghost gap-2 px-2"

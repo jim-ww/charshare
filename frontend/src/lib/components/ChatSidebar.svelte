@@ -118,23 +118,23 @@
 	<div class="dropdown dropdown-end">
 		<button
 			tabindex="0"
-			class="btn btn-ghost btn-xs px-1"
+			class="btn btn-ghost btn-square btn-sm md:btn-xs"
 			type="button"
 			aria-label={m.chat_sidebar_more_options()}
 		>
 			⋮
 		</button>
-		<ul class="menu dropdown-content menu-sm z-10 w-40 rounded-box bg-base-200 p-1 shadow">
-			<li><button type="button" onclick={() => handleRename(chat)}>{m.chat_sidebar_rename()}</button></li>
-			<li><button type="button" onclick={() => handleShare(chat)}>{m.chat_sidebar_share_link()}</button></li>
-			<li><button type="button" onclick={() => handleExport(chat)}>{m.chat_sidebar_export()}</button></li>
+		<ul class="menu dropdown-content z-10 w-48 gap-0.5 rounded-box bg-base-200 p-2 shadow-lg md:menu-sm md:w-40 md:p-1">
+			<li><button type="button" class="rounded-lg py-2.5 text-base md:py-1 md:text-sm" onclick={() => handleRename(chat)}>{m.chat_sidebar_rename()}</button></li>
+			<li><button type="button" class="rounded-lg py-2.5 text-base md:py-1 md:text-sm" onclick={() => handleShare(chat)}>{m.chat_sidebar_share_link()}</button></li>
+			<li><button type="button" class="rounded-lg py-2.5 text-base md:py-1 md:text-sm" onclick={() => handleExport(chat)}>{m.chat_sidebar_export()}</button></li>
 			<li>
-				<a href={resolve('/characters/[id]', { id: chat.character_id })}>{m.chat_sidebar_view_character()}</a>
+				<a class="rounded-lg py-2.5 text-base md:py-1 md:text-sm" href={resolve('/characters/[id]', { id: chat.character_id })}>{m.chat_sidebar_view_character()}</a>
 			</li>
 			<li>
-				<a href={`${resolve('/chats/[id]', { id: chat.id })}?pick-character`}>{m.chat_sidebar_choose_character()}</a>
+				<a class="rounded-lg py-2.5 text-base md:py-1 md:text-sm" href={`${resolve('/chats/[id]', { id: chat.id })}?pick-character`}>{m.chat_sidebar_choose_character()}</a>
 			</li>
-			<li><button type="button" class="text-error" onclick={() => handleDelete(chat)}>{m.chat_sidebar_delete()}</button></li>
+			<li><button type="button" class="rounded-lg py-2.5 text-base text-error md:py-1 md:text-sm" onclick={() => handleDelete(chat)}>{m.chat_sidebar_delete()}</button></li>
 		</ul>
 	</div>
 {/snippet}
@@ -190,7 +190,7 @@
 						{characterChats.length} {expanded[characterId] ? '▴' : '▾'}
 					</button>
 				{/if}
-				<div class="shrink-0 opacity-0 group-hover:opacity-100">
+				<div class="shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100">
 					{@render chatActions(latest)}
 				</div>
 			</div>
@@ -205,7 +205,7 @@
 								>
 									{chat.name}
 								</a>
-								<div class="shrink-0 opacity-0 group-hover:opacity-100">
+								<div class="shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100">
 									{@render chatActions(chat)}
 								</div>
 							</div>

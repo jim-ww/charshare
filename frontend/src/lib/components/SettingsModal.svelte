@@ -57,9 +57,9 @@
 	}
 </script>
 
-<dialog bind:this={dialogEl} class="modal" onclose={closeSettings}>
+<dialog bind:this={dialogEl} class="modal modal-bottom sm:modal-middle" onclose={closeSettings}>
 	<div
-		class="modal-box flex h-full w-full max-w-2xl flex-col gap-0 rounded-none p-0 sm:h-[38rem] sm:rounded-2xl"
+		class="modal-box flex max-h-[92dvh] w-full max-w-2xl flex-col gap-0 rounded-b-none rounded-t-2xl p-0 pb-[env(safe-area-inset-bottom)] sm:h-[38rem] sm:rounded-2xl sm:pb-0"
 	>
 		<div
 			class="flex shrink-0 items-center gap-2 border-b border-base-300 p-3 sm:hidden"
