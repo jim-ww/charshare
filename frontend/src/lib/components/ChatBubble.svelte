@@ -179,6 +179,30 @@
 	// buttons underneath it, and they overflow/wrap past the bubble edge.
 	let controlsWidth = $state(0);
 
+	// The `ch`-based width below sizes the textarea to its content, but that's
+	// an intrinsic size — nested inside the `.chat` grid (daisyUI's chat-bubble
+	// sets an explicit min-width, so the grid's auto-min-content sizing pass
+	// can still inflate the row wider than the viewport before percentage-based
+	// max-width has anything meaningful to clamp against). Measuring the outer
+	// `.chat` row's actual rendered width sidesteps that entirely — it's a real
+	// post-layout pixel value, not dependent on how the grid resolves.
+	//
+	// The *90%* factor mirrors daisyUI's own `.chat-bubble{max-width:90%}` (of
+	// the same track this approximates) — without it, the editing textarea
+	// reaches closer to the screen edge than the rendered bubble ever does,
+	// so the two look misaligned instead of occupying the same footprint.
+	// The `-32` accounts for `.chat-bubble`'s own horizontal padding
+	// (`padding-inline: 1rem`) — it wraps the textarea as a fit-content box,
+	// so that padding is added on top of whatever width the textarea gets,
+	// and needs subtracting here to land the *bubble's* outer edge at 90%,
+	// not the textarea's. The further `-16` is pure breathing room, so the
+	// editing bubble sits a touch inside that edge instead of landing exactly
+	// flush with it.
+	let chatRowWidth = $state(0);
+	const editMaxWidthPx = $derived(
+		chatRowWidth > 0 ? Math.max((chatRowWidth - 64) * 0.9 - 48, 160) : undefined
+	);
+
 	$effect(() => {
 		if (!editing) return;
 		const node = editTextarea;
@@ -382,6 +406,7 @@
 	class="chat group"
 	class:chat-end={message.role === 'user'}
 	class:chat-start={message.role === 'character'}
+	bind:clientWidth={chatRowWidth}
 >
 	<div class="chat-image">
 		{#if message.role === 'character'}
@@ -466,12 +491,16 @@
 			</div>
 		{/if}
 	</div>
-	<div class="chat-bubble">
+	<div class="chat-bubble min-w-0">
 		{#if editing}
 			<textarea
 				bind:this={editTextarea}
 				class="textarea textarea-bordered text-base-content"
-				style="width: {editWidthCh}ch; min-width: {controlsWidth}px; max-width: 100%; max-height: 60vh; min-height: 2.5rem; resize: vertical; overflow-y: auto;"
+				style="width: {editWidthCh}ch; min-width: {editMaxWidthPx
+					? Math.min(controlsWidth, editMaxWidthPx)
+					: controlsWidth}px; max-width: {editMaxWidthPx
+					? `${editMaxWidthPx}px`
+					: 'min(100%, 80vw)'}; max-height: 60vh; min-height: 2.5rem; resize: vertical; overflow-y: auto;"
 				bind:value={draft}
 			></textarea>
 			<div class="mt-1 flex items-center gap-1" bind:clientWidth={controlsWidth}>
