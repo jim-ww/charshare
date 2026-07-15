@@ -15,12 +15,20 @@
 	let justSaved = $state(false);
 	let saveTimeout: ReturnType<typeof setTimeout> | undefined;
 
+	// The active relay set is only read at app startup (see
+	// +layout.svelte:initCharacters/initChats/initProfile) — a saved change
+	// here has no effect on the already-running session until the page
+	// reloads, so offer that reload directly instead of leaving the user to
+	// notice the hint below and go do it themselves.
+	let relaysChanged = $state(false);
+
 	function handleSave() {
 		const relays = relaysText
 			.split("\n")
 			.map((r) => r.trim())
 			.filter(Boolean);
 		updatePreferences({ nostrRelays: relays });
+		relaysChanged = true;
 
 		justSaved = true;
 		clearTimeout(saveTimeout);
@@ -98,6 +106,18 @@
 				<span class="text-success text-sm">{m.network_tab_saved()}</span>
 			{/if}
 		</div>
+		{#if relaysChanged}
+			<div class="alert alert-warning flex items-center justify-between gap-2 py-2 text-sm">
+				<span>{m.network_tab_reload_notice()}</span>
+				<button
+					class="btn btn-xs shrink-0"
+					type="button"
+					onclick={() => location.reload()}
+				>
+					{m.network_tab_reload_button()}
+				</button>
+			</div>
+		{/if}
 	</div>
 
 	<div class="divider my-0"></div>

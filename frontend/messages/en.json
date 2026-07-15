@@ -696,6 +696,8 @@
 	"network_tab_hint": "Takes effect the next time the app loads. Clearing the list entirely puts the app in offline mode — no network browsing, publishing, or syncing.",
 	"network_tab_save": "Save",
 	"network_tab_saved": "Saved!",
+	"network_tab_reload_notice": "Relay list changed — refresh the page for it to take effect.",
+	"network_tab_reload_button": "Refresh page",
 
 	"content_tab_blocked_tags_label": "Blocked tags",
 	"content_tab_blocked_tags_hint": "Characters carrying any of these tags are excluded from Browse.",
