@@ -64,11 +64,20 @@
 			pull = 0;
 		}
 	}
+
+	// Svelte's ontouchmove= attribute binds via addEventListener's browser
+	// default, which is passive for touchmove — event.preventDefault() above
+	// would be silently ignored (and log a warning) without this explicit
+	// non-passive listener, so touchmove is wired up manually here instead of
+	// via svelte:window below.
+	$effect(() => {
+		window.addEventListener("touchmove", handleTouchMove, { passive: false });
+		return () => window.removeEventListener("touchmove", handleTouchMove);
+	});
 </script>
 
 <svelte:window
 	ontouchstart={handleTouchStart}
-	ontouchmove={handleTouchMove}
 	ontouchend={handleTouchEnd}
 	ontouchcancel={handleTouchEnd}
 />

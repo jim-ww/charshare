@@ -1,3 +1,4 @@
+- add delete all chats option
 - mobile: make round png logo
 - mobile(characters page): add refresh page motion, that refreshes the page
 - ui: design better navbar, chat page bars
@@ -7,5 +8,4 @@
 - add licensing for logo
 - consider: implement multi-tag search? in character definitions, always store tags sorted to allow search like tag-subtag-subsubtag?
 - consider: add some characters from other platforms
-- consider: android build target
 - consider: implement lorebooks
