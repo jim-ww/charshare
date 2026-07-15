@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace 'io.github.jim_ww.charshare'
+    namespace 'com.wails.app'
     compileSdk 35
 
     buildFeatures {

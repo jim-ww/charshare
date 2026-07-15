@@ -1,4 +1,4 @@
-package io.github.jim_ww.charshare;
+package com.wails.app;
 
 import android.net.Uri;
 import android.util.Log;

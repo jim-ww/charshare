@@ -8,5 +8,5 @@
 }
 
 # Keep Wails bridge classes
--keep class io.github.jim_ww.charshare.WailsBridge { *; }
--keep class io.github.jim_ww.charshare.WailsJSBridge { *; }
+-keep class com.wails.app.WailsBridge { *; }
+-keep class com.wails.app.WailsJSBridge { *; }

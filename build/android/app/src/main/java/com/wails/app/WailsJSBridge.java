@@ -1,11 +1,11 @@
-package io.github.jim_ww.charshare;
+package com.wails.app;
 
 import android.util.Log;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
-import io.github.jim_ww.charshare.BuildConfig;
+import com.wails.app.BuildConfig;
 
 /**
  * WailsJSBridge provides the JavaScript interface that allows the web frontend
