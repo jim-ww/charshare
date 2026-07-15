@@ -246,6 +246,12 @@ export async function deleteChat(id: ChatId): Promise<void> {
 	await persist();
 }
 
+/** Wipes every chat on this device — the DataTab "danger zone" action. */
+export async function deleteAllChats(): Promise<void> {
+	chats = {};
+	await persist();
+}
+
 /** Serializes a chat for the "Export" action — plain JSON so it round-trips
  *  through importChat (see below). */
 export function exportChat(id: ChatId): string {

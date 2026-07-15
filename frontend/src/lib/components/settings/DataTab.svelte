@@ -7,6 +7,8 @@
 		type ImportSummary
 	} from '$lib/export/dataExport';
 	import { notify } from '$lib/state/notifications.svelte';
+	import { deleteAllChats } from '$lib/state/chats.svelte';
+	import { confirmDialog } from '$lib/state/confirmDialog.svelte';
 	import { m } from '$lib/paraglide/messages.js';
 
 	const DATA_CATEGORIES = $derived(dataCategories());
@@ -65,6 +67,24 @@
 		} finally {
 			importing = false;
 			input.value = '';
+		}
+	}
+
+	let deletingAllChats = $state(false);
+
+	async function handleDeleteAllChats() {
+		const confirmed = await confirmDialog({
+			title: m.data_tab_delete_all_chats_heading(),
+			message: m.data_tab_delete_all_chats_confirm(),
+			danger: true
+		});
+		if (!confirmed) return;
+		deletingAllChats = true;
+		try {
+			await deleteAllChats();
+			notify(m.data_tab_delete_all_chats_done(), { kind: 'success' });
+		} finally {
+			deletingAllChats = false;
 		}
 	}
 </script>
@@ -200,5 +220,25 @@
 				{/each}
 			</ul>
 		{/if}
+	</div>
+
+	<div class="divider"></div>
+
+	<div>
+		<h3 class="text-error font-semibold">{m.data_tab_danger_heading()}</h3>
+		<div class="mt-2">
+			<h4 class="font-semibold">{m.data_tab_delete_all_chats_heading()}</h4>
+			<p class="text-sm opacity-70">
+				{m.data_tab_delete_all_chats_body()}
+			</p>
+			<button
+				class="btn btn-sm btn-error mt-2"
+				type="button"
+				disabled={deletingAllChats}
+				onclick={handleDeleteAllChats}
+			>
+				{m.data_tab_delete_all_chats_button()}
+			</button>
+		</div>
 	</div>
 </div>

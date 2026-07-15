@@ -1,6 +1,3 @@
-- add delete all chats option
-- mobile: make round png logo
-- mobile(characters page): add refresh page motion, that refreshes the page
 - ui: design better navbar, chat page bars
 - pressing your own name/avatar in chat should open your profile?
 - improve auth flow: allow to enter private key, maybe add alternative login nostr methods (split Account and Profile?)

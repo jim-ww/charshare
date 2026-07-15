@@ -5,6 +5,7 @@ import {
 	addMessage,
 	chatLastMessageAt,
 	createChat,
+	deleteAllChats,
 	deleteChat,
 	deleteMessage,
 	editMessage,
@@ -41,6 +42,14 @@ describe('createChat / deleteChat', () => {
 		const chat = await createChat('char-1', 'Test chat');
 		await renameChat(chat.id, 'New name');
 		expect(getChat(chat.id)!.name).toBe('New name');
+	});
+
+	it('deletes every chat', async () => {
+		await createChat('char-1', 'Test chat 1');
+		await createChat('char-2', 'Test chat 2');
+		expect(getChats()).toHaveLength(2);
+		await deleteAllChats();
+		expect(getChats()).toEqual([]);
 	});
 });
 

@@ -647,6 +647,12 @@
 	"data_tab_importing": "Importing…",
 	"data_tab_imported_count": "Imported {category}{count}",
 	"data_tab_skipped_unchanged": "{skipped} unchanged, kept as-is",
+	"data_tab_danger_heading": "Danger zone",
+	"data_tab_delete_all_chats_heading": "Delete all chats",
+	"data_tab_delete_all_chats_body": "Permanently deletes every chat on this device. This cannot be undone — export a backup first if you might want them later.",
+	"data_tab_delete_all_chats_button": "Delete all chats",
+	"data_tab_delete_all_chats_confirm": "Delete all chats? This cannot be undone.",
+	"data_tab_delete_all_chats_done": "All chats deleted.",
 
 	"data_category_account_label": "Account",
 	"data_category_account_description": "Your private key — treat this like a password.",
