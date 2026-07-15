@@ -94,19 +94,33 @@ export function isNetworkLoadingMore(): boolean {
 // themselves to force a second fetch.
 const NETWORK_RETRY_DELAYS_MS = [1500, 3000];
 
-async function loadFirstNetworkPage(): Promise<void> {
+// refreshNetwork() has several callers that can overlap (mount, sort-order
+// change, pull-to-refresh) and each retries internally over several seconds
+// (see NETWORK_RETRY_DELAYS_MS above, plus queryEvents' own per-attempt
+// timeout) — without this guard, an older call's slower attempt finishing
+// after a newer call's already landed would unconditionally clobber
+// networkResults with its own (possibly empty/stale) results, silently
+// discarding real data that had just been shown. Mirrors the same
+// stale-response guard in characters.svelte.ts:refresh().
+let networkRefreshSeq = 0;
+
+async function loadFirstNetworkPage(seq: number): Promise<void> {
 	const { characters, cursor } = await browseNetworkPage(null, NETWORK_PAGE_SIZE, networkSortOrder);
+	if (seq !== networkRefreshSeq) return;
 	networkResults = characters;
 	networkCursor = cursor;
 	networkExhausted = cursor === null;
 }
 
 export async function refreshNetwork(): Promise<void> {
-	await loadFirstNetworkPage();
+	const seq = ++networkRefreshSeq;
+	await loadFirstNetworkPage(seq);
 	for (const delay of NETWORK_RETRY_DELAYS_MS) {
+		if (seq !== networkRefreshSeq) return;
 		if (networkResults.length > 0) return;
 		await new Promise((resolve) => setTimeout(resolve, delay));
-		await loadFirstNetworkPage();
+		if (seq !== networkRefreshSeq) return;
+		await loadFirstNetworkPage(seq);
 	}
 }
 
