@@ -118,12 +118,17 @@
 		const currentId = id;
 		synced = false;
 		reachable = true;
-		// Show a previously-saved copy instantly instead of always starting
-		// from a blank "Loading…" state — the live subscription below still
-		// runs and refreshes it, but a character we've already seen (viewed,
-		// saved, or fetched for a chat) shouldn't have to wait on a relay
-		// round-trip just to redisplay what we already have.
-		character = getSavedCharacter(currentId) ?? null;
+		// Show a previously-saved or already-authored copy instantly instead
+		// of always starting from a blank "Loading…" state — the live
+		// subscription below still runs and refreshes it, but a character
+		// we've already seen (viewed, saved, fetched for a chat, or simply
+		// our own — already sitting in getMyCharacters() from the list page
+		// a moment ago) shouldn't have to wait on a relay round-trip just to
+		// redisplay what we already have in memory.
+		character =
+			getSavedCharacter(currentId) ??
+			getMyCharacters().find((c) => c.id === currentId) ??
+			null;
 		notFound = false;
 
 		// Local-only characters were never published to a relay — subscribing there
