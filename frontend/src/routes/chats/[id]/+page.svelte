@@ -24,7 +24,6 @@
 	import { getPreferences } from "$lib/state/preferences.svelte";
 	import { initPersonas } from "$lib/state/personas.svelte";
 	import { getEditingMessageId } from "$lib/state/chatEditing.svelte";
-	import { toggleChatSidebar } from "$lib/state/chatSidebar.svelte";
 	import { m } from "$lib/paraglide/messages.js";
 
 	untrack(() => void initPersonas());
@@ -147,7 +146,7 @@
 					<button
 						class="btn btn-sm btn-ghost gap-2 shrink-0 md:hidden"
 						type="button"
-						onclick={toggleChatSidebar}
+						onclick={() => goto(resolve('/chats'))}
 					>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
