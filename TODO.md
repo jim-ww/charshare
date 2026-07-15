@@ -1,4 +1,3 @@
 - consider: implement multi-tag search? in character definitions, always store tags sorted to allow search like tag-subtag-subsubtag?
-- characters page(pagination): check that next pages are correctly fetched
 - consider: add some characters from other platforms
 - consider: implement lorebooks

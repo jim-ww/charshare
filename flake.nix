@@ -106,7 +106,7 @@
 
       frontendDist = pkgs.stdenv.mkDerivation (finalAttrs: {
         pname = "charshare-frontend";
-        version = "0.0.1";
+        version = "0.1.0";
         src = ./frontend;
 
         nativeBuildInputs = [
@@ -121,12 +121,14 @@
           hash = "sha256-/iwj8F91/wZYjkMqRUSEJq7wcxTJEhZBHzCzBygybRg=";
         };
 
-        # legal/license/+page.ts imports the repo-root LICENSE file via a
-        # relative path that reaches outside frontend/ — but frontendDist's
-        # src is scoped to just frontend/, so that file doesn't exist here
-        # unless copied in at the same relative position first.
+        # legal/license/+page.ts imports the repo-root LICENSE and
+        # LICENSE-ASSETS files via relative paths that reach outside
+        # frontend/ — but frontendDist's src is scoped to just frontend/,
+        # so those files don't exist here unless copied in at the same
+        # relative position first.
         preBuild = ''
           cp ${./LICENSE} ../LICENSE
+          cp ${./LICENSE-ASSETS} ../LICENSE-ASSETS
         '';
 
         buildPhase = ''
@@ -144,7 +146,7 @@
     in {
       packages.default = pkgs.buildGoModule {
         pname = "charshare";
-        version = "0.0.1";
+        version = "0.1.0";
         src = ./.;
 
         vendorHash = "sha256-hP8M9yoEo0nU+Pxse6W3k/DSv3DCtEQzUlG/XPKOKNo=";
