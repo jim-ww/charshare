@@ -1,4 +1,4 @@
-.PHONY: dev icons bindings build-android run-android build release changelog checksums
+.PHONY: dev icons bindings build-android run-android build release changelog checksums android-apk
 
 dev:
 	nix develop -c wails3 dev
@@ -29,12 +29,15 @@ endif
 # can't do. windows/amd64 and windows/arm64 always cross-compile cleanly
 # from either host, since Wails' WebView2 backend is pure Go — confirmed no
 # windows_*.go file in the vendored module imports "C", unlike linux/darwin.
-TARGETS := linux/$(NATIVE_LINUX_ARCH) windows/amd64 windows/arm64
+# "android" isn't a GOOS/GOARCH pair — see the android-apk target below —
+# but is always included here too so a plain `make build` ships everything.
+TARGETS := linux/$(NATIVE_LINUX_ARCH) windows/amd64 windows/arm64 android
 
 # Builds and packages every target in $(TARGETS) into $(DIST_DIR), goreleaser-
-# style: one APPNAME_GOOS_GOARCH.tar.gz per target (containing just the
-# binary — renamed to $(APP_NAME) regardless of platform — plus the README
-# and both licenses), and one APPNAME_VERSION_checksums.txt covering them all.
+# style: one APPNAME_GOOS_GOARCH.tar.gz per desktop target (containing just
+# the binary — renamed to $(APP_NAME), with a .exe suffix added on windows —
+# plus the README and both licenses), the APK unarchived (see android-apk),
+# and one APPNAME_VERSION_checksums.txt covering everything.
 build:
 	@test -n "$(VERSION)" || { echo "no tag on HEAD — run 'git tag vX.Y.Z' first"; exit 1; }
 	rm -rf $(DIST_DIR)
@@ -45,23 +48,36 @@ build:
 		pnpm --dir frontend install --frozen-lockfile; \
 		pnpm --dir frontend run build; \
 		for target in $(TARGETS); do \
+			case "$$target" in android) continue ;; esac; \
 			goos=$${target%%/*}; goarch=$${target##*/}; \
 			echo "==> building $$goos/$$goarch"; \
 			case "$$goos" in \
-				linux) cgo=1; tags=desktop,production,gtk3 ;; \
-				windows) cgo=0; tags=desktop,production,devtools ;; \
+				linux) cgo=1; tags=desktop,production,gtk3; ext= ;; \
+				windows) cgo=0; tags=desktop,production,devtools; ext=.exe ;; \
 				*) echo "unknown GOOS $$goos" >&2; exit 1 ;; \
 			esac; \
 			workdir=$$(mktemp -d); \
 			CGO_ENABLED=$$cgo GOOS=$$goos GOARCH=$$goarch \
-				go build -tags "$$tags" -ldflags "-s -w" -o "$$workdir/$(APP_NAME)" .; \
+				go build -tags "$$tags" -ldflags "-s -w" -o "$$workdir/$(APP_NAME)$$ext" .; \
 			cp README.md LICENSE LICENSE-ASSETS "$$workdir/"; \
 			tar -C "$$workdir" -czf "$(DIST_DIR)/$(APP_NAME)_$${goos}_$${goarch}.tar.gz" \
-				$(APP_NAME) README.md LICENSE LICENSE-ASSETS; \
+				"$(APP_NAME)$$ext" README.md LICENSE LICENSE-ASSETS; \
 			rm -rf "$$workdir"; \
 		done \
 	'
+	@if echo " $(TARGETS) " | grep -qw android; then $(MAKE) android-apk; fi
 	$(MAKE) checksums
+
+# Fat (arm64+amd64) release APK via wails3's gradle pipeline (see
+# build/android/Taskfile.yml's package:fat task, also used by
+# `make build-android`) — debug-signed, no release keystore is configured
+# (see that Taskfile's assemble:apk:release comment). Copied into
+# $(DIST_DIR) unarchived, unlike the desktop targets — an APK is already
+# its own single-file install artifact, no tar.gz/README/LICENSE needed.
+android-apk:
+	nix develop .#android -c wails3 task android:package:fat
+	mkdir -p $(DIST_DIR)
+	cp bin/$(APP_NAME).apk $(DIST_DIR)/$(APP_NAME).apk
 
 # Extracted out of `build` so CI's release job (which assembles $(DIST_DIR)
 # from several runners' worth of `make build TARGETS=...` output — a single
@@ -70,7 +86,8 @@ build:
 # tag/naming logic instead of a second copy of it in the workflow YAML.
 checksums:
 	@test -n "$(VERSION)" || { echo "no tag on HEAD — run 'git tag vX.Y.Z' first"; exit 1; }
-	cd $(DIST_DIR) && sha256sum $(APP_NAME)_*.tar.gz > $(APP_NAME)_$(VERSION)_checksums.txt
+	cd $(DIST_DIR) && sha256sum $(APP_NAME)_*.tar.gz $$([ -f $(APP_NAME).apk ] && echo $(APP_NAME).apk) \
+		> $(APP_NAME)_$(VERSION)_checksums.txt
 	@echo "built $(DIST_DIR)/$(APP_NAME)_$(VERSION)_checksums.txt covering:"
 	@cd $(DIST_DIR) && cat $(APP_NAME)_$(VERSION)_checksums.txt
 
@@ -102,6 +119,7 @@ release: build changelog
 		--title "$(VERSION)" \
 		--notes-file "$(DIST_DIR)/changelog.txt" \
 		$(DIST_DIR)/$(APP_NAME)_*.tar.gz \
+		$(DIST_DIR)/$(APP_NAME).apk \
 		$(DIST_DIR)/$(APP_NAME)_$(VERSION)_checksums.txt
 
 build-android:

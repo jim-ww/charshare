@@ -41,9 +41,11 @@ jobs:
           retention-days: 1
 
   # Not a `go build` at all — a gradle/APK pipeline driven by wails3's
-  # Taskfile (see build/android/Taskfile.yml's package:fat task, also used
-  # by `make build-android`). Debug-signed (no release keystore is
-  # configured — see that Taskfile's assemble:apk:release comment).
+  # Taskfile (see the Makefile's android-apk target). Debug-signed (no
+  # release keystore is configured — see build/android/Taskfile.yml's
+  # assemble:apk:release comment). Split into its own job since it needs the
+  # much heavier `.#android` devShell (Android SDK/NDK/JDK), unlike the
+  # desktop matrix above.
   android:
     runs-on: ubuntu-latest
     steps:
@@ -52,13 +54,12 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
 
-      - name: Build fat release APK (arm64 + amd64)
-        run: nix develop .#android -c wails3 task android:package:fat
+      - run: make android-apk
 
       - uses: actions/upload-artifact@v4
         with:
           name: charshare-apk
-          path: bin/charshare.apk
+          path: dist/charshare.apk
           retention-days: 1
 
   release:
