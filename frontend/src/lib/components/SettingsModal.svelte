@@ -40,12 +40,18 @@
 	// Mobile-only: drill-down between the section list and the section detail,
 	// like the stock Android Settings app. Ignored at `sm:` and up, where both
 	// the sidebar and the detail pane are always shown side by side.
+	//
+	// Every caller of openSettings() passes an explicit target tab (there's no
+	// "just open settings, figure out the tab" call site) — so on open, jump
+	// straight to that tab's content instead of making the caller's chosen
+	// destination (e.g. gating a publish/comment attempt on Account) a second
+	// tap away behind the section list.
 	let mobileView = $state<"list" | "detail">("list");
 
 	$effect(() => {
 		if (open) {
 			dialogEl?.showModal();
-			untrack(() => (mobileView = "list"));
+			untrack(() => (mobileView = "detail"));
 		} else {
 			dialogEl?.close();
 		}

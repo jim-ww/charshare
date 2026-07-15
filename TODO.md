@@ -1,4 +1,5 @@
 - improve auth flow: allow to enter private key directly
+- suggest refresh page button, if user changed relays in settings
 - consider: implement multi-tag search? in character definitions, always store tags sorted to allow search like tag-subtag-subsubtag?
 - characters page(pagination): check that next pages are correctly fetched
 - consider: add some characters from other platforms
