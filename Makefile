@@ -3,6 +3,9 @@
 dev:
 	nix develop -c wails3 dev
 
+build-android:
+	nix develop .#android -c wails3 task android:package ARCH=arm64
+
 # frontend/bindings/ is committed (not gitignored/regenerated at build time)
 # because the Nix package build's frontend step is a plain `pnpm run build`
 # with no network access, and nixpkgs has no wails3 CLI package to reach for
