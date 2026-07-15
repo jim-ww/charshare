@@ -1,14 +1,17 @@
 <script lang="ts">
-	// Mobile-only pull-down-to-reload gesture: browsers show this natively for
+	// Mobile-only pull-down-to-refresh gesture: browsers show this natively for
 	// plain webpages, but neither the installed PWA nor the Android WebView
-	// (Wails) gets it for free, so we fake it and just call location.reload().
+	// (Wails) gets it for free, so we fake it. Calls the caller's own refresh
+	// logic rather than location.reload() — Wails serves the app from a custom
+	// wails.localhost scheme that a hard reload can't always re-navigate to.
 	import type { Snippet } from "svelte";
 
 	interface Props {
+		onrefresh: () => Promise<unknown>;
 		children: Snippet;
 	}
 
-	let { children }: Props = $props();
+	let { onrefresh, children }: Props = $props();
 
 	const THRESHOLD = 72;
 	const MAX_PULL = 120;
@@ -45,13 +48,18 @@
 		pull = Math.min(MAX_PULL, delta * 0.5);
 	}
 
-	function handleTouchEnd() {
+	async function handleTouchEnd() {
 		if (!tracking) return;
 		tracking = false;
 		if (pull >= THRESHOLD) {
 			refreshing = true;
 			pull = THRESHOLD;
-			location.reload();
+			try {
+				await onrefresh();
+			} finally {
+				refreshing = false;
+				pull = 0;
+			}
 		} else {
 			pull = 0;
 		}

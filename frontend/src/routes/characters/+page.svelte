@@ -8,6 +8,7 @@
 		getMyCharacters,
 		isCharacterLocalOnly,
 		isCharactersReady,
+		refreshCharacters,
 	} from "$lib/state/characters.svelte";
 	import { getSavedCharacters } from "$lib/state/savedCharacters.svelte";
 	import { getCurrentUser } from "$lib/state/auth.svelte";
@@ -75,6 +76,15 @@
 		refreshNetwork();
 		loadFollowedAuthors();
 	});
+
+	function handlePullRefresh() {
+		return Promise.all([
+			refreshCharacters(),
+			refreshNetwork(),
+			loadFollowedAuthors(),
+			runSearch(),
+		]);
+	}
 
 	$effect(() => {
 		const q = page.url.searchParams.get("q") ?? "";
@@ -174,7 +184,7 @@
 	});
 </script>
 
-<PullToRefresh>
+<PullToRefresh onrefresh={handlePullRefresh}>
 <div class="p-4">
 	<div class="mb-6 flex flex-col items-center gap-3">
 		<TagCarousel

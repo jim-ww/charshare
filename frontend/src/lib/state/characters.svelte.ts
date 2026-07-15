@@ -180,9 +180,15 @@ async function refresh(options?: { resyncMissing?: boolean }): Promise<void> {
 	keepPublishedMap = Object.fromEntries(valid.map((r) => [r.character.id, r.keepPublished === true]));
 }
 
-/** Test-only escape hatch: runs the same load/resync logic initCharacters()
- *  gates behind its once-per-page initPromise, without needing a fresh
- *  module instance per test. */
+/** Re-runs the same load/resync logic initCharacters() gates behind its
+ *  once-per-page initPromise — for callers that want a fresh resync without
+ *  waiting for a full page reload (e.g. pull-to-refresh). */
+export function refreshCharacters(): Promise<void> {
+	return refresh({ resyncMissing: true });
+}
+
+/** Test-only escape hatch: same as refreshCharacters(), but exposes the
+ *  `resyncMissing` toggle so tests can exercise the non-resync path too. */
 export function __refreshCharactersForTests(options?: { resyncMissing?: boolean }): Promise<void> {
 	return refresh(options);
 }
