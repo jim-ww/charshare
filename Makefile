@@ -6,10 +6,13 @@ dev:
 APP_NAME := charshare
 DIST_DIR := dist
 
-# A release is always named after the tag on HEAD — there's no "snapshot"
-# concept here. Both `build` and `release` refuse to run without one so the
-# archive/checksums/release names below are never guessed at.
-VERSION := $(shell git describe --tags --exact-match 2>/dev/null)
+# A release is always named after a tag — there's no "snapshot" concept
+# here. Defaults to the tag on HEAD; set TAG (env var or `make build
+# TAG=vX.Y.Z`) to override without needing an actual tag on HEAD. Both
+# `build` and `release` refuse to run without one so the archive/checksums/
+# release names below are never guessed at.
+TAG ?=
+VERSION := $(if $(TAG),$(TAG),$(shell git describe --tags --exact-match 2>/dev/null))
 
 HOST_ARCH := $(shell uname -m)
 ifeq ($(HOST_ARCH),x86_64)
@@ -39,7 +42,7 @@ TARGETS := linux/$(NATIVE_LINUX_ARCH) windows/amd64 windows/arm64 android
 # plus the README and both licenses), the APK unarchived (see android-apk),
 # and one APPNAME_VERSION_checksums.txt covering everything.
 build:
-	@test -n "$(VERSION)" || { echo "no tag on HEAD — run 'git tag vX.Y.Z' first"; exit 1; }
+	@test -n "$(VERSION)" || { echo "no tag on HEAD — run 'git tag vX.Y.Z' first, or set TAG=vX.Y.Z"; exit 1; }
 	rm -rf $(DIST_DIR)
 	mkdir -p $(DIST_DIR)
 	nix develop -c bash -c ' \
@@ -85,7 +88,7 @@ android-apk:
 # regenerate one checksums file covering everything, via the same
 # tag/naming logic instead of a second copy of it in the workflow YAML.
 checksums:
-	@test -n "$(VERSION)" || { echo "no tag on HEAD — run 'git tag vX.Y.Z' first"; exit 1; }
+	@test -n "$(VERSION)" || { echo "no tag on HEAD — run 'git tag vX.Y.Z' first, or set TAG=vX.Y.Z"; exit 1; }
 	cd $(DIST_DIR) && sha256sum $(APP_NAME)_*.tar.gz $$([ -f $(APP_NAME).apk ] && echo $(APP_NAME).apk) \
 		> $(APP_NAME)_$(VERSION)_checksums.txt
 	@echo "built $(DIST_DIR)/$(APP_NAME)_$(VERSION)_checksums.txt covering:"
@@ -95,7 +98,7 @@ checksums:
 # since the previous tag (or full history if this is the first tag) — no
 # nix needed, this only touches git.
 changelog:
-	@test -n "$(VERSION)" || { echo "no tag on HEAD — run 'git tag vX.Y.Z' first"; exit 1; }
+	@test -n "$(VERSION)" || { echo "no tag on HEAD — run 'git tag vX.Y.Z' first, or set TAG=vX.Y.Z"; exit 1; }
 	@mkdir -p $(DIST_DIR)
 	@prev=$$(git describe --tags --abbrev=0 "$(VERSION)^" 2>/dev/null || true); \
 	{ \
