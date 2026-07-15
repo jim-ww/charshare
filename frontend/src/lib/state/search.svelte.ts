@@ -20,6 +20,12 @@ let networkResults = $state<Character[]>([]);
 let networkCursor: BrowseCursor | null = null;
 let networkExhausted = $state(false);
 let networkLoadingMore = $state(false);
+// True from the moment a refreshNetwork() call starts until it (or a newer
+// call superseding it) settles — separate from networkResults.length === 0,
+// which is also true, indistinguishably, once a load has genuinely come back
+// empty. Lets the UI show "loading" instead of "no characters found" while a
+// first fetch (or retry) is still in flight (see routes/characters/+page.svelte).
+let networkLoading = $state(false);
 let networkSortOrder = $state<BrowseSortOrder>("desc");
 let searching = $state(false);
 let searchedQuery = $state("");
@@ -87,6 +93,10 @@ export function isNetworkLoadingMore(): boolean {
 	return networkLoadingMore;
 }
 
+export function isNetworkLoading(): boolean {
+	return networkLoading;
+}
+
 // A cold relay pool can have its WebSocket connected (see poolConnected) but
 // still not have synced the tag index data from the relay yet — the first
 // page of a session can come back empty even though the network isn't
@@ -137,13 +147,21 @@ async function loadFirstNetworkPage(seq: number): Promise<void> {
 
 export async function refreshNetwork(): Promise<void> {
 	const seq = ++networkRefreshSeq;
-	await loadFirstNetworkPage(seq);
-	for (const delay of NETWORK_RETRY_DELAYS_MS) {
-		if (seq !== networkRefreshSeq) return;
-		if (networkResults.length > 0) return;
-		await new Promise((resolve) => setTimeout(resolve, delay));
-		if (seq !== networkRefreshSeq) return;
+	networkLoading = true;
+	try {
 		await loadFirstNetworkPage(seq);
+		for (const delay of NETWORK_RETRY_DELAYS_MS) {
+			if (seq !== networkRefreshSeq) return;
+			if (networkResults.length > 0) return;
+			await new Promise((resolve) => setTimeout(resolve, delay));
+			if (seq !== networkRefreshSeq) return;
+			await loadFirstNetworkPage(seq);
+		}
+	} finally {
+		// Only the call that's still current gets to clear the flag — an
+		// older, now-superseded call finishing late must not flip it off
+		// while a newer call is still actually in flight.
+		if (seq === networkRefreshSeq) networkLoading = false;
 	}
 }
 

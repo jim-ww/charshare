@@ -34,6 +34,7 @@
 		getSearchedQuery,
 		getSelectedTags,
 		isNetworkExhausted,
+		isNetworkLoading,
 		isNetworkLoadingMore,
 		loadMoreNetwork,
 		matchesQuery,
@@ -365,6 +366,12 @@
 	</div>
 
 	{#if !ready}
+		<p>{m.char_list_loading()}</p>
+	{:else if results.length === 0 && (listFilter === "all" || listFilter === "network") && !getSearchedQuery() && isNetworkLoading()}
+		<!-- The network feed's first page (or a retry — see search.svelte.ts)
+		     is still in flight: an empty result so far doesn't yet mean the
+		     network truly has nothing, so don't claim "no characters found"
+		     ahead of that actually being known. -->
 		<p>{m.char_list_loading()}</p>
 	{:else if results.length === 0}
 		<p class="opacity-70">

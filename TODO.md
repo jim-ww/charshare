@@ -1,5 +1,3 @@
-- remove nostr.wine, nostr.band relays from default ones
-- characters page: immediately shows 'No characters found' even when loading
 - add delete all chats option
 - mobile: make round png logo
 - mobile(characters page): add refresh page motion, that refreshes the page
