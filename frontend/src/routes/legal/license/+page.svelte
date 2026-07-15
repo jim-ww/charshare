@@ -18,6 +18,12 @@
 	<pre
 		class="overflow-x-auto whitespace-pre-wrap text-sm text-base-content/80">{data.licenseText}</pre>
 
+	<h2 class="pt-12 pb-4 text-xl font-bold tracking-tight">
+		{m.legal_license_assets_heading()}
+	</h2>
+	<pre
+		class="overflow-x-auto whitespace-pre-wrap text-sm text-base-content/80">{data.assetsLicenseText}</pre>
+
 	<div class="pt-12">
 		<a href={resolve("/legal")} class="link link-hover"
 			>{m.legal_back_legal()}</a
