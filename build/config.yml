@@ -6,7 +6,7 @@ version: '3'
 
 info:
   companyName: "jim-ww"
-  productName: "charshare"
+  productName: "Charshare"
   productIdentifier: "io.github.jim_ww.charshare"
   description: "Decentralized, unmoderated platform to share and talk to AI characters"
   copyright: ""
