@@ -13,7 +13,7 @@ vars:
   # build/Taskfile.yml) for APK/AAB output naming and paths.
   APP_NAME: charshare
   BIN_DIR: bin
-  APP_ID: com.wails.charshare
+  APP_ID: io.github.jim_ww.charshare
 
 includes:
   android: ./build/android/Taskfile.yml

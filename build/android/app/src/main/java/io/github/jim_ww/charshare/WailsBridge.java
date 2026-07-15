@@ -1,4 +1,4 @@
-package com.wails.app;
+package io.github.jim_ww.charshare;
 
 import android.app.Activity;
 import android.app.Notification;

@@ -1,5 +1,3 @@
-- mobile: set icon to our logo
-- mobile: fill in APP metadata
 - mobile(characters page): add refresh page motion, that refreshes the page
 - ui: design better navbar, chat page bars
 - pressing your own name/avatar in chat should open your profile?
