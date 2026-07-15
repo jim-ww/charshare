@@ -15,6 +15,7 @@
 	import { getEditingMessageId, requestStartEdit, stopEditing } from '$lib/state/chatEditing.svelte';
 	import { setChatGenerationError } from '$lib/state/chatGenerationError.svelte';
 	import { getMyProfile } from '$lib/state/profile.svelte';
+	import { getCurrentUser } from '$lib/state/auth.svelte';
 	import { getPersona, personaDisplayName } from '$lib/state/personas.svelte';
 	import { getPreferences, updatePreferences } from '$lib/state/preferences.svelte';
 	import {
@@ -30,6 +31,7 @@
 	import { isWailsDesktop } from '$lib/wails';
 	import Avatar from './Avatar.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
+	import UserProfileModal from './UserProfileModal.svelte';
 	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
@@ -372,6 +374,8 @@
 	function handleTtsConsentCancel() {
 		showTtsConsent = false;
 	}
+
+	let showOwnProfile = $state(false);
 </script>
 
 <div
@@ -384,6 +388,10 @@
 			<a href={resolve('/characters/[id]', { id: character.id })}>
 				<Avatar name={character.name} imageUrl={firstImageUrl(character.media)} />
 			</a>
+		{:else if !readonly && !userNameOverride}
+			<button type="button" class="cursor-pointer" onclick={() => (showOwnProfile = true)}>
+				<Avatar name={displayName} imageUrl={getMyProfile()?.image_url} />
+			</button>
 		{:else}
 			<Avatar name={displayName} imageUrl={getMyProfile()?.image_url} />
 		{/if}
@@ -395,6 +403,8 @@
 		<span class="flex items-baseline gap-2">
 			{#if message.role === 'character'}
 				<a class="link link-hover" href={resolve('/characters/[id]', { id: character.id })}>{displayName}</a>
+			{:else if !readonly && !userNameOverride}
+				<button type="button" class="link link-hover" onclick={() => (showOwnProfile = true)}>{displayName}</button>
 			{:else}
 				<span>{displayName}</span>
 			{/if}
@@ -625,4 +635,10 @@
 	confirmLabel={m.chat_bubble_tts_consent_confirm()}
 	onconfirm={handleTtsConsentConfirm}
 	oncancel={handleTtsConsentCancel}
+/>
+
+<UserProfileModal
+	open={showOwnProfile}
+	pubkey={getCurrentUser()}
+	onclose={() => (showOwnProfile = false)}
 />
