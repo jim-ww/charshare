@@ -71,16 +71,23 @@ build:
 	@if echo " $(TARGETS) " | grep -qw android; then $(MAKE) android-apk; fi
 	$(MAKE) checksums
 
-# Fat (arm64+amd64) release APK via wails3's gradle pipeline (see
-# build/android/Taskfile.yml's package:fat task, also used by
-# `make build-android`) — debug-signed, no release keystore is configured
-# (see that Taskfile's assemble:apk:release comment). Copied into
-# $(DIST_DIR) unarchived, unlike the desktop targets — an APK is already
-# its own single-file install artifact, no tar.gz/README/LICENSE needed.
+# One APK per arch (arm64 + amd64), not a single fat APK: wails3's Taskfile
+# (compile:go:shared) only ever *adds* a .so into jniLibs/<abi>/, it never
+# clears the other arch's leftover one, so building "package ARCH=X" twice
+# in a row without cleaning in between silently produces a fat APK again —
+# hence the jniLibs wipe before each. Debug-signed, no release keystore is
+# configured (see build/android/Taskfile.yml's assemble:apk:release
+# comment). Copied into $(DIST_DIR) unarchived, unlike the desktop
+# targets — an APK is already its own single-file install artifact, no
+# tar.gz/README/LICENSE needed.
 android-apk:
-	nix develop .#android -c wails3 task android:package:fat
 	mkdir -p $(DIST_DIR)
-	cp bin/$(APP_NAME).apk $(DIST_DIR)/$(APP_NAME).apk
+	rm -f build/android/app/src/main/jniLibs/*/libwails.so
+	nix develop .#android -c wails3 task android:package ARCH=arm64
+	cp bin/$(APP_NAME).apk $(DIST_DIR)/$(APP_NAME)_android_arm64.apk
+	rm -f build/android/app/src/main/jniLibs/*/libwails.so
+	nix develop .#android -c wails3 task android:package ARCH=amd64
+	cp bin/$(APP_NAME).apk $(DIST_DIR)/$(APP_NAME)_android_amd64.apk
 
 # Extracted out of `build` so CI's release job (which assembles $(DIST_DIR)
 # from several runners' worth of `make build TARGETS=...` output — a single
@@ -89,7 +96,7 @@ android-apk:
 # tag/naming logic instead of a second copy of it in the workflow YAML.
 checksums:
 	@test -n "$(VERSION)" || { echo "no tag on HEAD — run 'git tag vX.Y.Z' first, or set TAG=vX.Y.Z"; exit 1; }
-	cd $(DIST_DIR) && sha256sum $(APP_NAME)_*.tar.gz $$([ -f $(APP_NAME).apk ] && echo $(APP_NAME).apk) \
+	cd $(DIST_DIR) && sha256sum $(APP_NAME)_*.tar.gz $$(ls $(APP_NAME)_android_*.apk 2>/dev/null) \
 		> $(APP_NAME)_$(VERSION)_checksums.txt
 	@echo "built $(DIST_DIR)/$(APP_NAME)_$(VERSION)_checksums.txt covering:"
 	@cd $(DIST_DIR) && cat $(APP_NAME)_$(VERSION)_checksums.txt
@@ -122,7 +129,7 @@ release: build changelog
 		--title "$(VERSION)" \
 		--notes-file "$(DIST_DIR)/changelog.txt" \
 		$(DIST_DIR)/$(APP_NAME)_*.tar.gz \
-		$(DIST_DIR)/$(APP_NAME).apk \
+		$(DIST_DIR)/$(APP_NAME)_android_*.apk \
 		$(DIST_DIR)/$(APP_NAME)_$(VERSION)_checksums.txt
 
 build-android:

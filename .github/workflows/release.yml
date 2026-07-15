@@ -59,7 +59,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: charshare-apk
-          path: dist/charshare.apk
+          path: dist/charshare_android_*.apk
           retention-days: 1
 
   release:
@@ -93,4 +93,4 @@ jobs:
           files: |
             dist/charshare_*.tar.gz
             dist/charshare_*_checksums.txt
-            dist/charshare.apk
+            dist/charshare_android_*.apk
