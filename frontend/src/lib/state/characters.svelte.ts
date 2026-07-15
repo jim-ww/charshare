@@ -6,7 +6,8 @@ import {
 	loadMyCharacterEntries,
 	removeMyCharacterEntry,
 	saveLocalOnlyCharacter,
-	setKeepPublished as dbSetKeepPublished
+	setKeepPublished as dbSetKeepPublished,
+	type LocalCharacterEntry
 } from '$lib/db/characters';
 import { poolConnected } from '$lib/nostr/pool';
 import { confirmDialogWithExtra } from '$lib/state/confirmDialog.svelte';
@@ -96,6 +97,88 @@ function normalizeLocalCharacter(character: Character): Character {
 	};
 }
 
+type ResolvedEntry = { character: Character; published: boolean; keepPublished?: boolean };
+
+/** The actual network resolve/resync for one entry — unchanged from before
+ *  this was split out of refresh() below, just given a name so it can run
+ *  per-entry instead of only as part of one giant Promise.all. */
+async function resolveEntry(
+	entry: LocalCharacterEntry,
+	resyncMissing: boolean,
+	keyring: ReturnType<typeof getKeyring>
+): Promise<ResolvedEntry | null> {
+	if (!entry.published) {
+		if (!entry.character) return null;
+		const character = normalizeLocalCharacter(entry.character);
+		// A local-only entry can be wrong — e.g. a character imported from a
+		// backup that raced the relay pool's connection during the network check (see
+		// restoreCharacter) can get filed as local-only even though it's
+		// really already published. Only worth checking on startup resync;
+		// a normal local-only draft has no reason to suddenly appear on the
+		// network between one refresh() and the next.
+		if (resyncMissing && keyring && character.author === keyring.publicKey) {
+			const onNetwork = await getCharacter(entry.id);
+			if (onNetwork.ok) {
+				await addPublishedCharacterId(entry.id, onNetwork.doc);
+				return { character: onNetwork.doc, published: true, keepPublished: entry.keepPublished };
+			}
+		}
+		return { character, published: false, keepPublished: entry.keepPublished };
+	}
+	const result = await getCharacter(entry.id);
+	if (result.ok) {
+		// Keep the local cache in sync with whatever the relay just returned, so
+		// it stays a good fallback for the next time no relay is reachable.
+		await addPublishedCharacterId(entry.id, result.doc);
+		return { character: result.doc, published: true, keepPublished: entry.keepPublished };
+	}
+	// Not found on this relay. If we're doing a startup resync — or this
+	// entry has opted into "keep published" (see setCharacterKeepPublished),
+	// which extends the same healing to every refresh(), not just the
+	// once-per-app-start resync — and this is our own cached, already-signed
+	// copy, the connected relay simply never got this document (new relay /
+	// relay switch / it just hasn't seen it yet) — republish the exact
+	// signed snapshot as-is rather than dropping it. Otherwise (no cache, or
+	// not our own character) this is just an unreachable relay or someone
+	// else's doc — fall back to the cache without writing.
+	if (
+		(resyncMissing || entry.keepPublished) &&
+		entry.character &&
+		keyring &&
+		entry.character.author === keyring.publicKey
+	) {
+		try {
+			const republished = await nostrPublishLocalCharacter(normalizeLocalCharacter(entry.character));
+			await addPublishedCharacterId(entry.id, republished);
+			return { character: republished, published: true, keepPublished: entry.keepPublished };
+		} catch {
+			// Relay write failed (e.g. still not connected) — fall through to
+			// the cached-copy fallback below instead of losing the character.
+		}
+	}
+	return entry.character
+		? { character: normalizeLocalCharacter(entry.character), published: true, keepPublished: entry.keepPublished }
+		: null;
+}
+
+/** Applies one resolved entry to the reactive state in place — preserves
+ *  list position for an entry that was already shown from cache (see
+ *  refresh() below), only appending for one that had no cached copy at all
+ *  (an entry that resolveEntry can only return non-null for once the
+ *  network confirms it exists). */
+function applyResolvedEntry({ character, published, keepPublished }: ResolvedEntry): void {
+	const idx = myCharacters.findIndex((c) => c.id === character.id);
+	if (idx >= 0) {
+		const next = [...myCharacters];
+		next[idx] = character;
+		myCharacters = next;
+	} else {
+		myCharacters = [...myCharacters, character];
+	}
+	publishedMap = { ...publishedMap, [character.id]: published };
+	keepPublishedMap = { ...keepPublishedMap, [character.id]: keepPublished === true };
+}
+
 /** `resyncMissing` handles connecting to a relay that's never seen this
  *  author's data before — e.g. a fresh relay, or a user who switched relays
  *  in Preferences between sessions (see spec: configurable relays). Only
@@ -106,78 +189,45 @@ async function refresh(options?: { resyncMissing?: boolean }): Promise<void> {
 	const callSeq = ++refreshCallSeq;
 	const resyncMissing = options?.resyncMissing ?? false;
 	const entries = await loadMyCharacterEntries();
-	const anyKeepPublished = entries.some((e) => e.keepPublished);
-	if (resyncMissing || anyKeepPublished) await poolConnected();
-	const keyring = getKeyring();
-	const resolved = await Promise.all(
-		entries.map(async (entry) => {
-			if (!entry.published) {
-				if (!entry.character) return null;
-				const character = normalizeLocalCharacter(entry.character);
-				// A local-only entry can be wrong — e.g. a character imported from a
-				// backup that raced the relay pool's connection during the network check (see
-				// restoreCharacter) can get filed as local-only even though it's
-				// really already published. Only worth checking on startup resync;
-				// a normal local-only draft has no reason to suddenly appear on the
-				// network between one refresh() and the next.
-				if (resyncMissing && keyring && character.author === keyring.publicKey) {
-					const onNetwork = await getCharacter(entry.id);
-					if (onNetwork.ok) {
-						await addPublishedCharacterId(entry.id, onNetwork.doc);
-						return { character: onNetwork.doc, published: true, keepPublished: entry.keepPublished };
-					}
-				}
-				return { character, published: false, keepPublished: entry.keepPublished };
-			}
-			const result = await getCharacter(entry.id);
-			if (result.ok) {
-				// Keep the local cache in sync with whatever the relay just returned, so
-				// it stays a good fallback for the next time no relay is reachable.
-				await addPublishedCharacterId(entry.id, result.doc);
-				return { character: result.doc, published: true, keepPublished: entry.keepPublished };
-			}
-			// Not found on this relay. If we're doing a startup resync — or this
-			// entry has opted into "keep published" (see setCharacterKeepPublished),
-			// which extends the same healing to every refresh(), not just the
-			// once-per-app-start resync — and this is our own cached, already-signed
-			// copy, the connected relay simply never got this document (new relay /
-			// relay switch / it just hasn't seen it yet) — republish the exact
-			// signed snapshot as-is rather than dropping it. Otherwise (no cache, or
-			// not our own character) this is just an unreachable relay or someone
-			// else's doc — fall back to the cache without writing.
-			if (
-				(resyncMissing || entry.keepPublished) &&
-				entry.character &&
-				keyring &&
-				entry.character.author === keyring.publicKey
-			) {
-				try {
-					const republished = await nostrPublishLocalCharacter(normalizeLocalCharacter(entry.character));
-					await addPublishedCharacterId(entry.id, republished);
-					return { character: republished, published: true, keepPublished: entry.keepPublished };
-				} catch {
-					// Relay write failed (e.g. still not connected) — fall through to
-					// the cached-copy fallback below instead of losing the character.
-				}
-			}
-			return entry.character
-				? { character: normalizeLocalCharacter(entry.character), published: true, keepPublished: entry.keepPublished }
-				: null;
-		})
-	);
-
-	// A newer refresh() call has started (and, since these are always awaited
-	// by their caller before that caller proceeds, quite possibly already
-	// finished and applied its own — more current — results) — applying this
-	// older call's results now would clobber them with stale data.
 	if (callSeq !== refreshCallSeq) return;
 
-	const valid: { character: Character; published: boolean; keepPublished?: boolean }[] = resolved.filter(
-		(r) => r !== null
+	// Paint whatever's already cached locally immediately, from IndexedDB
+	// alone — no network round-trip in the way. The per-entry resolve loop
+	// below only refines each one's published/keepPublished status (and
+	// heals/republishes it if needed) in place as its own relay round trip
+	// completes; it must never gate the first paint, or "My Characters"
+	// ends up blocked behind however long a slow/dead relay in the active
+	// set takes to answer (or give up) — which is the whole rest of the
+	// list, dead relay or not, since Promise.all previously wouldn't write
+	// anything until every single entry had finished.
+	const cached = entries.filter((entry): entry is LocalCharacterEntry & { character: Character } => entry.character !== undefined);
+	myCharacters = cached.map((entry) => normalizeLocalCharacter(entry.character));
+	publishedMap = Object.fromEntries(cached.map((entry) => [entry.id, entry.published]));
+	keepPublishedMap = Object.fromEntries(cached.map((entry) => [entry.id, entry.keepPublished === true]));
+	// isCharactersReady() gates the whole "My Characters"/"All" list behind a
+	// loading message (see routes/characters/+page.svelte) — it must flip as
+	// soon as the cache paint above lands, not after the network resolve
+	// loop below finishes, or the immediate paint this function just did is
+	// invisible behind that loading message for however long the network
+	// phase takes regardless.
+	ready = true;
+
+	const anyKeepPublished = entries.some((e) => e.keepPublished);
+	if (resyncMissing || anyKeepPublished) await poolConnected();
+	if (callSeq !== refreshCallSeq) return;
+	const keyring = getKeyring();
+
+	await Promise.all(
+		entries.map(async (entry) => {
+			const result = await resolveEntry(entry, resyncMissing, keyring);
+			// A newer refresh() call has started since — applying this one's
+			// result now would clobber that newer call's (possibly already
+			// applied) data with something stale. Same guard as before, just
+			// checked per-entry now instead of once for the whole batch.
+			if (callSeq !== refreshCallSeq || !result) return;
+			applyResolvedEntry(result);
+		})
 	);
-	myCharacters = valid.map((r) => r.character);
-	publishedMap = Object.fromEntries(valid.map((r) => [r.character.id, r.published]));
-	keepPublishedMap = Object.fromEntries(valid.map((r) => [r.character.id, r.keepPublished === true]));
 }
 
 /** Re-runs the same load/resync logic initCharacters() gates behind its
@@ -201,8 +251,9 @@ export function initCharacters(): Promise<void> {
 			// not awaited before it — wait here so getKeyring() inside refresh()
 			// is actually populated for the author-ownership check.
 			await initAuth();
+			// refresh() itself flips `ready` as soon as the local-cache paint
+			// lands, well before this promise resolves — see its own comment.
 			await refresh({ resyncMissing: true });
-			ready = true;
 		})();
 	}
 	return initPromise;
