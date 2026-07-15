@@ -11,8 +11,8 @@
  *  from pool.ts/preferences.svelte.ts so neither module has to import the
  *  other just to reach this constant. */
 export const DEFAULT_NOSTR_RELAYS: string[] = [
-	"wss://relay.damus.io",
 	"wss://nos.lol",
-	"wss://relay.nostr.band",
-	"wss://nostr.wine",
+	"wss://relay.primal.net",
+	"wss://relay.snort.social",
+	"wss://nostr.mom",
 ];
