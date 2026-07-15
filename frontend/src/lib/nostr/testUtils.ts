@@ -71,7 +71,25 @@ export function createFakePool() {
 			}
 			return Promise.resolve(results);
 		},
-		subscribeMany(relays: string[], _filter: Filter, params: { onevent: (e: NostrEvent) => void }) {
+		subscribeMany(
+			relays: string[],
+			filter: Filter,
+			params: { onevent: (e: NostrEvent) => void; oneose?: () => void }
+		) {
+			// Real relays reply to a REQ with every already-stored event
+			// matching the filter, then EOSE — deduped across relays like
+			// querySync above, since nostr/event.ts:streamEvents relies on
+			// that same semantics (and on oneose actually firing) to resolve.
+			const seen = new Set<string>();
+			for (const relay of relays) {
+				for (const event of storeFor(relay).filter((e) => matchFilter(filter, e))) {
+					if (!seen.has(event.id)) {
+						seen.add(event.id);
+						params.onevent(event);
+					}
+				}
+			}
+			params.oneose?.();
 			for (const relay of relays) {
 				if (!subscribers.has(relay)) subscribers.set(relay, new Set());
 				subscribers.get(relay)!.add(params.onevent);

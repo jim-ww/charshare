@@ -95,6 +95,43 @@ export async function queryEvents(filter: Filter, relays: string[]): Promise<Nos
 	return verified;
 }
 
+/** Like queryEvents, but calls `onEvent` for each verified event as soon as
+ *  it arrives instead of waiting for every relay to finish before returning
+ *  anything at all — lets a caller (e.g. the network browse feed) render
+ *  results incrementally instead of staring at a blank list until the
+ *  slowest relay in the set completes its full round trip. Resolves once
+ *  every relay has reported EOSE (or after QUERY_TIMEOUT_MS, same ceiling
+ *  as queryEvents) — by then onEvent has already fired for everything that
+ *  arrived in time. */
+export async function streamEvents(filter: Filter, relays: string[], onEvent: (event: NostrEvent) => void): Promise<void> {
+	await poolConnected(relays);
+	const reachable = await filterReachableRelays(relays);
+	const pool = getPool();
+	await Promise.race([
+		new Promise<void>((resolve) => {
+			// `oneose` can in principle fire before subscribeMany() itself
+			// returns (a same-tick fake pool in tests does exactly this) —
+			// `sub` wouldn't be assigned yet at that point, so close it
+			// after the fact via the `eosed` flag instead of referencing
+			// `sub` directly inside the callback closure.
+			let sub: { close: () => void } | undefined;
+			let eosed = false;
+			sub = pool.subscribeMany(reachable, filter, {
+				onevent(event) {
+					if (verifySignedEvent(event)) onEvent(event);
+				},
+				oneose() {
+					eosed = true;
+					sub?.close();
+					resolve();
+				}
+			});
+			if (eosed) sub.close();
+		}),
+		new Promise<void>((resolve) => setTimeout(resolve, QUERY_TIMEOUT_MS))
+	]);
+}
+
 /** Subscribes to `filter` on `relays`, calling `onEvent` for every verified
  *  event received (including ones already stored, per relay REQ semantics).
  *  Returns an unsubscribe function. */

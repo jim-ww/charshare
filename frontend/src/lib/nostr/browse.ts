@@ -2,11 +2,20 @@ import { nip19, type Event as NostrEvent } from 'nostr-tools';
 import type { Character, CharacterId } from '$lib/types';
 import { getActiveRelays, getPreferences } from '$lib/state/preferences.svelte';
 import { eventToCharacter, listCharacterIdsByAuthor, getCharacter } from './characters';
-import { queryEvents } from './event';
+import { queryEvents, streamEvents } from './event';
 import { CHARACTER_KIND } from './kinds';
 import { characterCoordinate } from './characterId';
 import { getUsernameClaim } from './usernames';
 import { tokenizeName } from './nameTokens';
+
+/** Shared by parseAndFilter (bulk) and fetchBatch's streaming path
+ *  (per-event) so "tombstoned or blocked" is defined in exactly one place. */
+function characterPassesFilters(character: Character, blockedTags: string[], blockedAuthors: string[]): boolean {
+	if (character.deleted) return false;
+	if (character.tags.some((t) => blockedTags.includes(t))) return false;
+	if (blockedAuthors.includes(character.author)) return false;
+	return true;
+}
 
 /** Parses raw character events, dropping anything that fails verification/
  *  schema, is tombstoned, or carries a tag/author the user has blocked (see
@@ -16,21 +25,17 @@ import { tokenizeName } from './nameTokens';
 function parseAndFilter(events: NostrEvent[]): Character[] {
 	const { blockedTags, blockedAuthors } = getPreferences();
 	const parsed = events.map(eventToCharacter).filter((c): c is Character => c !== null);
-	const notDeleted = parsed.filter((c) => !c.deleted);
-	const notBlockedTag = notDeleted.filter((c) => !c.tags.some((t) => blockedTags.includes(t)));
-	const notBlockedAuthor = notBlockedTag.filter((c) => !blockedAuthors.includes(c.author));
-	if (events.length > 0 && notBlockedAuthor.length === 0) {
+	const filtered = parsed.filter((c) => characterPassesFilters(c, blockedTags, blockedAuthors));
+	if (events.length > 0 && filtered.length === 0) {
 		console.warn('[nostr] parseAndFilter dropped everything', {
 			events: events.length,
 			parsed: parsed.length,
-			notDeleted: notDeleted.length,
-			notBlockedTag: notBlockedTag.length,
-			notBlockedAuthor: notBlockedAuthor.length,
+			filtered: filtered.length,
 			blockedTags,
 			blockedAuthors
 		});
 	}
-	return notBlockedAuthor;
+	return filtered;
 }
 
 /** Fetches published characters carrying `tag`. */
@@ -125,16 +130,36 @@ const FETCH_BATCH_SIZE = 40;
  *  scanning an unbounded history. */
 const MAX_ASC_BATCHES = 50;
 
-async function fetchBatch(until: number | undefined): Promise<{ characters: Character[]; oldestCreatedAt: number | null; count: number }> {
-	const events = await queryEvents(
+/** Streams the batch via streamEvents rather than blocking on queryEvents'
+ *  batch querySync, so `onCharacter` (when given) can fire as each relay's
+ *  events arrive instead of only once every relay in the active set has
+ *  finished — letting a first-page caller (browseNetworkPage below) paint
+ *  cards incrementally rather than waiting out the slowest relay's full
+ *  round trip before showing anything at all. */
+async function fetchBatch(
+	until: number | undefined,
+	onCharacter?: (character: Character) => void
+): Promise<{ characters: Character[]; oldestCreatedAt: number | null; count: number }> {
+	const { blockedTags, blockedAuthors } = getPreferences();
+	const characters: Character[] = [];
+	let oldestCreatedAt: number | null = null;
+	let count = 0;
+	await streamEvents(
 		{ kinds: [CHARACTER_KIND], limit: FETCH_BATCH_SIZE, ...(until !== undefined ? { until } : {}) },
-		getActiveRelays()
+		getActiveRelays(),
+		(event) => {
+			count++;
+			oldestCreatedAt = oldestCreatedAt === null ? event.created_at : Math.min(oldestCreatedAt, event.created_at);
+			const character = eventToCharacter(event);
+			if (!character || !characterPassesFilters(character, blockedTags, blockedAuthors)) return;
+			characters.push(character);
+			onCharacter?.(character);
+		}
 	);
-	const oldestCreatedAt = events.length > 0 ? Math.min(...events.map((e) => e.created_at)) : null;
-	return { characters: parseAndFilter(events), oldestCreatedAt, count: events.length };
+	return { characters, oldestCreatedAt, count };
 }
 
-function sortByPublishedAt(characters: Character[], order: BrowseSortOrder): Character[] {
+export function sortByPublishedAt(characters: Character[], order: BrowseSortOrder): Character[] {
 	return [...characters].sort((a, b) => (order === 'desc' ? b.created_at - a.created_at : a.created_at - b.created_at));
 }
 
@@ -147,11 +172,18 @@ function sortByPublishedAt(characters: Character[], order: BrowseSortOrder): Cha
  *  calls just slice through the resulting in-memory pool.
  *
  *  Pass the previous call's returned cursor to continue; pass `null` to
- *  start fresh. Returns a `null` cursor once fully exhausted. */
+ *  start fresh. Returns a `null` cursor once fully exhausted.
+ *
+ *  `onCharacter`, when given, fires for each character as its event streams
+ *  in (see fetchBatch/streamEvents) — purely a "preview as it arrives" side
+ *  channel for a caller that wants to paint cards incrementally; the
+ *  returned `characters`/`cursor` stay the single source of truth for
+ *  pagination state either way. */
 export async function browseNetworkPage(
 	cursor: BrowseCursor | null,
 	pageSize: number,
-	order: BrowseSortOrder = 'desc'
+	order: BrowseSortOrder = 'desc',
+	onCharacter?: (character: Character) => void
 ): Promise<{ characters: Character[]; cursor: BrowseCursor | null }> {
 	const effectiveOrder = cursor?.order ?? order;
 	let pool = cursor?.pool ?? [];
@@ -161,7 +193,7 @@ export async function browseNetworkPage(
 		let until: number | undefined;
 		let all: Character[] = [];
 		for (let round = 0; round < MAX_ASC_BATCHES; round++) {
-			const batch = await fetchBatch(until);
+			const batch = await fetchBatch(until, onCharacter);
 			all = all.concat(batch.characters);
 			if (batch.count < FETCH_BATCH_SIZE || batch.oldestCreatedAt === null) break;
 			until = batch.oldestCreatedAt - 1;
@@ -170,7 +202,7 @@ export async function browseNetworkPage(
 		nextUntil = null;
 	} else if (effectiveOrder === 'desc') {
 		while (pool.length < pageSize && nextUntil !== null) {
-			const batch = await fetchBatch(nextUntil === undefined ? undefined : nextUntil);
+			const batch = await fetchBatch(nextUntil === undefined ? undefined : nextUntil, onCharacter);
 			pool = sortByPublishedAt(pool.concat(batch.characters), 'desc');
 			if (batch.count < FETCH_BATCH_SIZE || batch.oldestCreatedAt === null) {
 				nextUntil = null;

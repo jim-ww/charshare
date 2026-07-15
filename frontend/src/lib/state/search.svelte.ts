@@ -5,6 +5,7 @@ import {
 	browseByTag,
 	browseForksOf,
 	browseNetworkPage,
+	sortByPublishedAt,
 	type BrowseCursor,
 	type BrowseSortOrder,
 } from "$lib/nostr/browse";
@@ -105,7 +106,19 @@ const NETWORK_RETRY_DELAYS_MS = [1500, 3000];
 let networkRefreshSeq = 0;
 
 async function loadFirstNetworkPage(seq: number): Promise<void> {
-	const { characters, cursor } = await browseNetworkPage(null, NETWORK_PAGE_SIZE, networkSortOrder);
+	// Paints cards as their events stream in (see browseNetworkPage's
+	// onCharacter/fetchBatch/streamEvents) instead of leaving the list blank
+	// until every relay in the active set has fully responded — a single
+	// slow/borderline relay no longer means staring at nothing for several
+	// seconds. Deduped by character id since the same character can arrive
+	// from more than one relay; superseded the moment a newer refresh starts
+	// (seq check), same as the final authoritative write below.
+	const streamed = new Map<string, Character>();
+	const { characters, cursor } = await browseNetworkPage(null, NETWORK_PAGE_SIZE, networkSortOrder, (character) => {
+		if (seq !== networkRefreshSeq) return;
+		streamed.set(character.id, character);
+		networkResults = sortByPublishedAt([...streamed.values()], networkSortOrder).slice(0, NETWORK_PAGE_SIZE);
+	});
 	if (seq !== networkRefreshSeq) {
 		console.warn('[search] loadFirstNetworkPage discarded a stale response', {
 			seq,
@@ -115,6 +128,8 @@ async function loadFirstNetworkPage(seq: number): Promise<void> {
 		return;
 	}
 	console.debug('[search] loadFirstNetworkPage writing networkResults', { seq, count: characters.length });
+	// Authoritative final write — supersedes whatever the streaming callback
+	// above painted in the meantime (correct pagination slice/order/cursor).
 	networkResults = characters;
 	networkCursor = cursor;
 	networkExhausted = cursor === null;
