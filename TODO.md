@@ -1,3 +1,4 @@
+- fix(wails): hide open devtools button in production builds
 - consider: implement multi-tag search? in character definitions, always store tags sorted to allow search like tag-subtag-subsubtag?
 - consider: add some characters from other platforms
 - consider: implement lorebooks

@@ -9,100 +9,87 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  # linux/amd64 and linux/arm64 (Wails' GTK3/webkitgtk backend needs cgo, so
+  # each builds natively on its own runner — see the Makefile's TARGETS
+  # comment), plus windows/amd64 and windows/arm64 cross-compiled from the
+  # amd64 leg (no cgo needed there). All packaging (tar.gz + binary renaming
+  # + README/licenses) is handled by `make build` itself — see the Makefile.
+  desktop:
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
-            id: linux
-            asset: charshare_linux_x86_64.tar.gz
-          - os: ubuntu-24.04-arm
-            id: linux
-            asset: charshare_linux_arm64.tar.gz
-          - os: windows-latest
-            id: windows
-            asset: charshare_windows_x86_64.zip
-          - os: macos-13
-            id: darwin
-            asset: charshare_darwin_x86_64.tar.gz
-          - os: macos-14
-            id: darwin
-            asset: charshare_darwin_arm64.tar.gz
-    runs-on: ${{ matrix.os }}
+          - id: amd64
+            runner: ubuntu-latest
+            targets: "linux/amd64 windows/amd64 windows/arm64"
+          - id: arm64
+            runner: ubuntu-24.04-arm
+            targets: "linux/arm64"
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v5
-        with:
-          go-version: "1.25"
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
-
-      - name: Install Linux GUI deps
-        if: matrix.id == 'linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev pkg-config
-
-      - name: Install MinGW (Windows cgo)
-        if: matrix.id == 'windows'
-        uses: egor-tensin/setup-mingw@v2
-
-      - name: Build frontend
-        run: |
-          pnpm --dir frontend install --frozen-lockfile
-          pnpm --dir frontend run build
-
-      - uses: goreleaser/goreleaser-action@v6
-        with:
-          distribution: goreleaser
-          version: latest
-          args: build --single-target --id ${{ matrix.id }} --clean
-
-      - name: Archive (tar.gz)
-        if: matrix.id != 'windows'
-        shell: bash
-        run: |
-          bin=$(find dist -type f -name 'charshare*' ! -name '*.tar.gz' ! -name '*.zip')
-          tar -C "$(dirname "$bin")" -czf "${{ matrix.asset }}" "$(basename "$bin")"
-
-      - name: Archive (zip)
-        if: matrix.id == 'windows'
-        shell: pwsh
-        run: |
-          $bin = Get-ChildItem -Path dist -Recurse -Filter "charshare*.exe" | Select-Object -First 1
-          Compress-Archive -Path $bin.FullName -DestinationPath "${{ matrix.asset }}"
+      - run: make build TARGETS="${{ matrix.targets }}"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.asset }}
-          path: ${{ matrix.asset }}
+          name: charshare-archives-${{ matrix.id }}
+          path: dist/charshare_*.tar.gz
+          retention-days: 1
+
+  # Not a `go build` at all — a gradle/APK pipeline driven by wails3's
+  # Taskfile (see build/android/Taskfile.yml's package:fat task, also used
+  # by `make build-android`). Debug-signed (no release keystore is
+  # configured — see that Taskfile's assemble:apk:release comment).
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Build fat release APK (arm64 + amd64)
+        run: nix develop .#android -c wails3 task android:package:fat
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: charshare-apk
+          path: bin/charshare.apk
           retention-days: 1
 
   release:
-    needs: build
+    needs: [desktop, android]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          fetch-tags: true
 
       - uses: actions/download-artifact@v4
         with:
-          pattern: charshare_*
-          path: release-assets
+          pattern: charshare-archives-*
+          path: dist
           merge-multiple: true
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: charshare-apk
+          path: dist
+
+      # Regenerates the checksums file across every runner's archives (each
+      # `make build` above only covered its own leg) and writes the
+      # changelog goreleaser-release-notes style — see the Makefile.
+      - run: make checksums changelog
 
       - uses: softprops/action-gh-release@v2
         with:
-          files: release-assets/*
-          generate_release_notes: true
+          body_path: dist/changelog.txt
+          files: |
+            dist/charshare_*.tar.gz
+            dist/charshare_*_checksums.txt
+            dist/charshare.apk
