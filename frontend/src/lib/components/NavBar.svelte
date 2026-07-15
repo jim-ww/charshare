@@ -90,16 +90,64 @@
 				<li class="menu-title px-2 pt-1 pb-0.5 text-xs">
 					Browse
 				</li>
-				{#each navLinks as { href, label } (href)}
-					<li>
-						<a
-							{href}
-							class="rounded-lg py-3 text-base {isActive(href)
-								? 'text-primary'
-								: ''}">{label}</a
+				<li>
+					<a
+						href={resolve("/characters")}
+						class="rounded-lg py-3 text-base {isActive(
+							resolve('/characters'),
+						)
+							? 'text-primary'
+							: ''}"
+					>
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							class="h-5 w-5"
 						>
-					</li>
-				{/each}
+							<path
+								d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
+							/>
+							<circle cx="9" cy="7" r="4" />
+							<path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+							<path d="M16 3.13a4 4 0 0 1 0 7.75" />
+						</svg>
+						{m.navbar_nav_characters()}
+					</a>
+				</li>
+				<li>
+					<a
+						href={resolve("/chats")}
+						class="rounded-lg py-3 text-base {isActive(
+							resolve('/chats'),
+						)
+							? 'text-primary'
+							: ''}"
+					>
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							class="h-5 w-5"
+						>
+							<path
+								d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"
+							/>
+							<path
+								d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"
+							/>
+						</svg>
+						{m.navbar_nav_chats()}
+					</a>
+				</li>
 				<li>
 					<a
 						href={resolve("/characters/new")}
@@ -118,6 +166,21 @@
 						class="rounded-lg py-3 text-base"
 						onclick={() => openSettings("account")}
 					>
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							class="h-5 w-5"
+						>
+							<path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+							<path
+								d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"
+							/>
+						</svg>
 						{m.navbar_account_settings()}
 					</button>
 				</li>
