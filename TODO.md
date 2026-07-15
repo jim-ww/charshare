@@ -1,5 +1,6 @@
 - ui: design better navbar, chat page bars
-- improve auth flow: allow to enter private key, maybe add alternative login nostr methods (split Account and Profile?)
+- improve auth flow: allow to enter private key directly
 - consider: implement multi-tag search? in character definitions, always store tags sorted to allow search like tag-subtag-subsubtag?
+- characters page(pagination): check that next pages are correctly fetched
 - consider: add some characters from other platforms
 - consider: implement lorebooks

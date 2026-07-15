@@ -31,11 +31,20 @@ bindings:
 # Browser/desktop favicons (apple-touch-icon, icon-192/512, favicon.ico,
 # appicon, windows icon) come from logo.png (a copy of the original
 # logo_old.png art with its solid rounded-square background) — those
-# contexts need an opaque square. Android's ic_launcher and ic_launcher_round
-# both come from logo_round.png (transparent art bled to the edge of a
-# circle, no solid backing) instead: Android circle-masks its icons, and
-# doing that to an opaque square source leaves an ugly ring of empty space
-# around a shrunken icon.
+# contexts need an opaque square. Android's icons come from logo_round.png
+# (transparent art bled to the edge of a circle, no solid backing) instead:
+# Android circle-masks its icons, and doing that to an opaque square source
+# leaves an ugly ring of empty space around a shrunken icon.
+#
+# Android also gets real adaptive icons (mipmap-anydpi-v26/ic_launcher*.xml,
+# committed separately, not regenerated here), not just legacy ic_launcher/
+# ic_launcher_round bitmaps. Without those, Android 8+ launchers auto-wrap
+# the legacy bitmap in their own adaptive mask and shrink it to fit a
+# conservative safe zone — which is why the icon used to render as a small
+# mascot floating in a big white circle instead of filling it like other
+# apps' icons do. The adaptive XML's foreground layer points at
+# ic_launcher_foreground, generated below from the same full-bleed
+# logo_round.png, so the OS masks it directly instead of double-shrinking.
 icons:
 	nix develop -c ffmpeg -y -i frontend/static/logo.png -vf scale=180:180 frontend/static/apple-touch-icon.png
 	nix develop -c ffmpeg -y -i frontend/static/logo.png -vf scale=192:192 frontend/static/icon-192.png
@@ -52,4 +61,6 @@ icons:
 			build/android/app/src/main/res/mipmap-$$density/ic_launcher.png; \
 		nix develop -c ffmpeg -y -i frontend/static/logo_round.png -vf scale=$$size:$$size \
 			build/android/app/src/main/res/mipmap-$$density/ic_launcher_round.png; \
+		nix develop -c ffmpeg -y -i frontend/static/logo_round.png -vf scale=$$size:$$size \
+			build/android/app/src/main/res/mipmap-$$density/ic_launcher_foreground.png; \
 	done
