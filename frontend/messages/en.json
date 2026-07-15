@@ -458,7 +458,7 @@
 	"navbar_search_placeholder": "Search by name, tag, or @username/@pubkey…",
 	"navbar_search_button": "Search",
 	"navbar_new_character": "+ New Character",
-	"navbar_account_settings": "Account settings",
+	"navbar_account_settings": "Settings",
 
 	"settings_tab_account": "Account",
 	"settings_tab_personas": "Personas",
