@@ -12,6 +12,7 @@ export default defineConfig({
 	resolve: {
 		alias: {
 			'$app/environment': path.resolve(__dirname, 'src/test/mocks/app-environment.ts'),
+			'$app/navigation': path.resolve(__dirname, 'src/test/mocks/app-navigation.ts'),
 			$lib: path.resolve(__dirname, 'src/lib')
 		}
 	}
