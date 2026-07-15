@@ -130,9 +130,9 @@
 <div class="mx-auto max-w-5xl px-6 py-16">
 	<section class="flex flex-col items-center gap-6 py-16 text-center">
 		<img
-			src={asset("/icon-192.png")}
+			src={asset("/logo_round.png")}
 			alt="Charshare"
-			class="h-32 w-32 rounded-2xl shadow-sm"
+			class="h-32 w-32"
 		/>
 		<h1 class="text-4xl font-bold tracking-tight sm:text-5xl">
 			{m.landing_hero_title()}

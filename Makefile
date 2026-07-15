@@ -6,6 +6,9 @@ dev:
 build-android:
 	nix develop .#android -c wails3 task android:package ARCH=arm64
 
+run-android:
+	nix develop .#android -c wails3 task android:run:device
+
 # frontend/bindings/ is committed (not gitignored/regenerated at build time)
 # because the Nix package build's frontend step is a plain `pnpm run build`
 # with no network access, and nixpkgs has no wails3 CLI package to reach for
@@ -25,10 +28,14 @@ bindings:
 # macOS's icon.icns isn't generated here either — wails builds it itself from
 # build/appicon.png automatically whenever build/darwin/icon.icns is absent.
 #
-# Android's mipmap-*/ic_launcher(_round).png are regenerated too, at the
-# standard mdpi/hdpi/xhdpi/xxhdpi/xxxhdpi densities (48/72/96/144/192px) —
-# ic_launcher and ic_launcher_round share the same source since logo.png
-# already bakes in its own rounded-square padding.
+# Browser/desktop favicons (apple-touch-icon, icon-192/512, favicon.ico,
+# appicon, windows icon) come from logo.png (a copy of the original
+# logo_old.png art with its solid rounded-square background) — those
+# contexts need an opaque square. Android's ic_launcher and ic_launcher_round
+# both come from logo_round.png (transparent art bled to the edge of a
+# circle, no solid backing) instead: Android circle-masks its icons, and
+# doing that to an opaque square source leaves an ugly ring of empty space
+# around a shrunken icon.
 icons:
 	nix develop -c ffmpeg -y -i frontend/static/logo.png -vf scale=180:180 frontend/static/apple-touch-icon.png
 	nix develop -c ffmpeg -y -i frontend/static/logo.png -vf scale=192:192 frontend/static/icon-192.png
@@ -41,8 +48,8 @@ icons:
 	cp frontend/static/favicon.ico build/windows/icon.ico
 	for density_size in mdpi:48 hdpi:72 xhdpi:96 xxhdpi:144 xxxhdpi:192; do \
 		density=$${density_size%%:*}; size=$${density_size##*:}; \
-		nix develop -c ffmpeg -y -i frontend/static/logo.png -vf scale=$$size:$$size \
+		nix develop -c ffmpeg -y -i frontend/static/logo_round.png -vf scale=$$size:$$size \
 			build/android/app/src/main/res/mipmap-$$density/ic_launcher.png; \
-		cp build/android/app/src/main/res/mipmap-$$density/ic_launcher.png \
+		nix develop -c ffmpeg -y -i frontend/static/logo_round.png -vf scale=$$size:$$size \
 			build/android/app/src/main/res/mipmap-$$density/ic_launcher_round.png; \
 	done
