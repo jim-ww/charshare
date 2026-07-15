@@ -12,6 +12,7 @@
 	import { getSavedCharacters } from "$lib/state/savedCharacters.svelte";
 	import { getCurrentUser } from "$lib/state/auth.svelte";
 	import CharacterCard from "$lib/components/CharacterCard.svelte";
+	import PullToRefresh from "$lib/components/PullToRefresh.svelte";
 	import TagCarousel from "$lib/components/TagCarousel.svelte";
 	import {
 		getPreferences,
@@ -173,6 +174,7 @@
 	});
 </script>
 
+<PullToRefresh>
 <div class="p-4">
 	<div class="mb-6 flex flex-col items-center gap-3">
 		<TagCarousel
@@ -388,3 +390,4 @@
 		{/if}
 	{/if}
 </div>
+</PullToRefresh>
