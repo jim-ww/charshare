@@ -106,7 +106,15 @@ let networkRefreshSeq = 0;
 
 async function loadFirstNetworkPage(seq: number): Promise<void> {
 	const { characters, cursor } = await browseNetworkPage(null, NETWORK_PAGE_SIZE, networkSortOrder);
-	if (seq !== networkRefreshSeq) return;
+	if (seq !== networkRefreshSeq) {
+		console.warn('[search] loadFirstNetworkPage discarded a stale response', {
+			seq,
+			currentSeq: networkRefreshSeq,
+			charactersReceived: characters.length
+		});
+		return;
+	}
+	console.debug('[search] loadFirstNetworkPage writing networkResults', { seq, count: characters.length });
 	networkResults = characters;
 	networkCursor = cursor;
 	networkExhausted = cursor === null;

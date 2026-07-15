@@ -76,7 +76,17 @@ export async function queryEvents(filter: Filter, relays: string[]): Promise<Nos
 		pool.querySync(relays, filter),
 		new Promise<NostrEvent[]>((resolve) => setTimeout(() => resolve([]), QUERY_TIMEOUT_MS))
 	]);
-	return events.filter(verifySignedEvent);
+	const verified = events.filter(verifySignedEvent);
+	if (verified.length !== events.length) {
+		console.warn('[nostr] queryEvents dropped events failing verification', {
+			filter,
+			relays,
+			received: events.length,
+			verified: verified.length
+		});
+	}
+	console.debug('[nostr] queryEvents', { filter, relays, received: events.length, verified: verified.length });
+	return verified;
 }
 
 /** Subscribes to `filter` on `relays`, calling `onEvent` for every verified

@@ -15,12 +15,22 @@ import { tokenizeName } from './nameTokens';
  *  plain relay filter (no index step needed anymore). */
 function parseAndFilter(events: NostrEvent[]): Character[] {
 	const { blockedTags, blockedAuthors } = getPreferences();
-	return events
-		.map(eventToCharacter)
-		.filter((c): c is Character => c !== null)
-		.filter((c) => !c.deleted)
-		.filter((c) => !c.tags.some((t) => blockedTags.includes(t)))
-		.filter((c) => !blockedAuthors.includes(c.author));
+	const parsed = events.map(eventToCharacter).filter((c): c is Character => c !== null);
+	const notDeleted = parsed.filter((c) => !c.deleted);
+	const notBlockedTag = notDeleted.filter((c) => !c.tags.some((t) => blockedTags.includes(t)));
+	const notBlockedAuthor = notBlockedTag.filter((c) => !blockedAuthors.includes(c.author));
+	if (events.length > 0 && notBlockedAuthor.length === 0) {
+		console.warn('[nostr] parseAndFilter dropped everything', {
+			events: events.length,
+			parsed: parsed.length,
+			notDeleted: notDeleted.length,
+			notBlockedTag: notBlockedTag.length,
+			notBlockedAuthor: notBlockedAuthor.length,
+			blockedTags,
+			blockedAuthors
+		});
+	}
+	return notBlockedAuthor;
 }
 
 /** Fetches published characters carrying `tag`. */
