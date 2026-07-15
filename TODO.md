@@ -1,6 +1,8 @@
+- fix: in wails app, show landing page once, then characters/chats should be default initial load page
+- fix(landing): in wails app: hide Install section
 - fix(wails): hide open devtools button in production builds
-- feat(synchronization): when loading characters, accept newer version overwriting existing local characters
 - fix(preferences): profile is not updated, when 'sync' finishes
+- fix: page refresh on relay change doesnt work in wails
 - improve tag selector on mobiles
 - consider: implement multi-tag search? in character definitions, always store tags sorted to allow search like tag-subtag-subsubtag?
 - consider: add some characters from other platforms
