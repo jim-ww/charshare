@@ -412,10 +412,10 @@
 		</span>
 		{#if !editing && !readonly}
 			<div
-				class="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100"
+				class="flex gap-1 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100"
 			>
 				<button
-					class="btn btn-sm btn-ghost btn-circle text-error"
+					class="btn btn-md btn-ghost btn-circle text-error md:btn-sm"
 					type="button"
 					aria-label={m.chat_bubble_delete_message()}
 					title={m.chat_bubble_delete_message()}
@@ -440,7 +440,7 @@
 					</svg>
 				</button>
 				<button
-					class="btn btn-sm btn-ghost btn-circle"
+					class="btn btn-md btn-ghost btn-circle md:btn-sm"
 					type="button"
 					aria-label={m.chat_bubble_edit_message()}
 					title={m.chat_bubble_edit_message()}
@@ -476,17 +476,17 @@
 			></textarea>
 			<div class="mt-1 flex items-center gap-1" bind:clientWidth={controlsWidth}>
 				{#if message.role === 'user'}
-					<button class="btn btn-xs btn-primary" type="button" onclick={saveAndResend}>
+					<button class="btn btn-sm btn-primary md:btn-xs" type="button" onclick={saveAndResend}>
 						{m.chat_bubble_send()}
 					</button>
-					<button class="btn btn-xs btn-ghost" type="button" onclick={saveEditOnly}>
+					<button class="btn btn-sm btn-ghost md:btn-xs" type="button" onclick={saveEditOnly}>
 						{m.chat_bubble_save_only()}
 					</button>
 				{:else}
-					<button class="btn btn-xs" type="button" onclick={saveEditOnly}>{m.chat_bubble_save()}</button>
+					<button class="btn btn-sm md:btn-xs" type="button" onclick={saveEditOnly}>{m.chat_bubble_save()}</button>
 				{/if}
 				<button
-					class="btn btn-xs"
+					class="btn btn-sm md:btn-xs"
 					type="button"
 					onclick={() => {
 						stopEditing(message.id);
@@ -508,12 +508,12 @@
 	</div>
 	<div class="chat-footer flex items-center gap-2 text-xs opacity-70">
 		{#if branches.length > 1}
-			<button class="btn btn-xs btn-ghost" type="button" disabled={branchPos <= 0} onclick={() => goBranch(-1)}>
+			<button class="btn btn-sm btn-ghost md:btn-xs" type="button" disabled={branchPos <= 0} onclick={() => goBranch(-1)}>
 				‹
 			</button>
 			<span>{branchPos + 1}/{branches.length}</span>
 			<button
-				class="btn btn-xs btn-ghost"
+				class="btn btn-sm btn-ghost md:btn-xs"
 				type="button"
 				disabled={branchPos >= branches.length - 1}
 				onclick={() => goBranch(1)}
@@ -524,7 +524,7 @@
 		{#if !editing && !readonly && message.role === 'character'}
 			{#if streamingHere}
 				<button
-					class="btn btn-xs btn-ghost"
+					class="btn btn-sm btn-ghost md:btn-xs"
 					type="button"
 					aria-label={m.chat_bubble_stop_generating()}
 					title={m.chat_bubble_stop_generating()}
@@ -536,7 +536,7 @@
 				</button>
 			{:else}
 				<button
-					class="btn btn-xs btn-ghost"
+					class="btn btn-sm btn-ghost md:btn-xs"
 					type="button"
 					disabled={regenerating}
 					aria-label={m.chat_bubble_regenerate_response()}
@@ -559,7 +559,7 @@
 					</svg>
 				</button>
 				<button
-					class="btn btn-xs btn-ghost"
+					class="btn btn-sm btn-ghost md:btn-xs"
 					type="button"
 					disabled={regenerating || message.content === ''}
 					aria-label={m.chat_bubble_continue_message()}
@@ -571,7 +571,7 @@
 			{/if}
 			{#if ttsAvailable}
 				<button
-					class="btn btn-xs btn-ghost"
+					class="btn btn-sm btn-ghost md:btn-xs"
 					type="button"
 					disabled={message.content === '' || ttsState === 'loading'}
 					aria-label={ttsState === 'playing'

@@ -343,7 +343,7 @@
 >
 	<div class="relative">
 		<textarea
-			class="textarea textarea-bordered w-full pb-10"
+			class="textarea textarea-bordered w-full pb-14 md:pb-10"
 			rows="4"
 			placeholder={m.chat_composer_placeholder()}
 			bind:value={content}
@@ -351,7 +351,7 @@
 			oninput={handleInput}
 		></textarea>
 		<button
-			class="btn btn-sm btn-circle btn-ghost absolute bottom-2 left-2"
+			class="btn btn-md btn-circle btn-ghost absolute bottom-2 left-2 md:btn-sm"
 			type="button"
 			disabled={sending && !generatingDraft}
 			aria-label={generatingDraft
@@ -384,7 +384,7 @@
 		</button>
 		{#if micSupported}
 			<button
-				class="btn btn-sm btn-circle btn-ghost absolute bottom-2 left-12"
+				class="btn btn-md btn-circle btn-ghost absolute bottom-2 left-16 md:btn-sm md:left-12"
 				class:text-error={listening}
 				type="button"
 				disabled={transcribing || downloadProgress !== null}
@@ -439,7 +439,7 @@
 			</button>
 		{/if}
 		<button
-			class="btn btn-sm btn-primary btn-soft btn-circle absolute right-2 bottom-2"
+			class="btn btn-md btn-primary btn-soft btn-circle absolute right-2 bottom-2 md:btn-sm"
 			type="submit"
 			aria-label={sending ? m.chat_composer_stop() : m.chat_composer_send()}
 		>
