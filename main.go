@@ -22,6 +22,10 @@ func main() {
 
 	app := NewApp()
 
+	if err := app.mediaProxy.Start(); err != nil {
+		println("Error starting media proxy:", err.Error())
+	}
+
 	wailsApp := application.New(application.Options{
 		Name: "charshare",
 		Services: []application.Service{
@@ -32,6 +36,7 @@ func main() {
 		},
 		OnShutdown: func() {
 			app.proxyImport.Stop()
+			app.mediaProxy.Stop()
 		},
 	})
 

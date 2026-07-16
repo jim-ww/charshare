@@ -28,33 +28,36 @@
       webkitDeps = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux [
         pkgs.gtk3
         pkgs.webkitgtk_4_1
-        # Mic recording is browser-only for now (desktop mic support was
-        # dropped — see ChatComposer.svelte), so these are commented out
-        # rather than needed. Restore alongside gstPluginPath below and the
-        # GST_PLUGIN_SYSTEM_PATH_1_0 exports if desktop mic capture returns.
-        # WebKitGTK's getUserMedia/WebRTC capture backend goes through
-        # GStreamer, not directly through PulseAudio/PipeWire — without
-        # these plugins it enumerates zero audio devices and getUserMedia
-        # fails ("Audio capture was requested but no device was found
-        # amongst 0 devices" / "GStreamer element appsink not found"),
-        # independent of the app's own mic-permission handling.
-        # gst-plugins-base: appsink/audioconvert (the missing element in
-        # the error above). gst-plugins-good: pulsesrc/autoaudiosrc, the
-        # actual PulseAudio/PipeWire (via its Pulse shim) capture source.
-        # pkgs.gst_all_1.gstreamer
-        # pkgs.gst_all_1.gst-plugins-base
-        # pkgs.gst_all_1.gst-plugins-good
+        # WebKitGTK's <video>/<audio> playback (and getUserMedia/WebRTC
+        # capture, if desktop mic support ever returns — see
+        # ChatComposer.svelte) goes through GStreamer, not a built-in
+        # decoder. With none of these plugins present, WebKitGTK finds zero
+        # GStreamer elements at all: playbin can't build a pipeline, and
+        # instead of failing cleanly it hangs the whole webview waiting on
+        # negotiation that will never finish.
+        # gst-plugins-base: core elements (playbin, videoconvert, appsink).
+        # gst-plugins-good: container demuxing (qtdemux for mp4, matroska
+        # for webm). gst-plugins-bad/ugly + gst-libav: the actual video/audio
+        # codecs (h264, aac, vp8/vp9, mp3) needed to decode real-world files.
+        pkgs.gst_all_1.gstreamer
+        pkgs.gst_all_1.gst-plugins-base
+        pkgs.gst_all_1.gst-plugins-good
+        pkgs.gst_all_1.gst-plugins-bad
+        pkgs.gst_all_1.gst-plugins-ugly
+        pkgs.gst_all_1.gst-libav
       ];
 
       # GStreamer doesn't scan Nix store paths by default the way it would
       # FHS system dirs — needs GST_PLUGIN_SYSTEM_PATH_1_0 pointed at each
-      # plugin package's lib/gstreamer-1.0 explicitly. Commented out along
-      # with the gst_all_1 packages above — see that comment.
-      # gstPluginPath = pkgs.lib.makeSearchPathOutput "lib" "lib/gstreamer-1.0" [
-      #   pkgs.gst_all_1.gstreamer
-      #   pkgs.gst_all_1.gst-plugins-base
-      #   pkgs.gst_all_1.gst-plugins-good
-      # ];
+      # plugin package's lib/gstreamer-1.0 explicitly.
+      gstPluginPath = pkgs.lib.makeSearchPathOutput "lib" "lib/gstreamer-1.0" [
+        pkgs.gst_all_1.gstreamer
+        pkgs.gst_all_1.gst-plugins-base
+        pkgs.gst_all_1.gst-plugins-good
+        pkgs.gst_all_1.gst-plugins-bad
+        pkgs.gst_all_1.gst-plugins-ugly
+        pkgs.gst_all_1.gst-libav
+      ];
 
       # nixpkgs has no wails3 package yet (v3 is alpha) — run the pinned CLI
       # straight from its module cache instead. Version must match go.mod's
@@ -207,8 +210,8 @@
             --suffix XDG_DATA_DIRS : "${gsettings-desktop-schemas}/share/gsettings-schemas/${gsettings-desktop-schemas.name}:${gtk3}/share/gsettings-schemas/${gtk3.name}" \
             --set GIO_EXTRA_MODULES "${glib-networking}/lib/gio/modules" \
             --set SSL_CERT_FILE "${cacert}/etc/ssl/certs/ca-bundle.crt" \
-            --set NIX_SSL_CERT_FILE "${cacert}/etc/ssl/certs/ca-bundle.crt"
-            # --set GST_PLUGIN_SYSTEM_PATH_1_0 (gstPluginPath, commented out above)
+            --set NIX_SSL_CERT_FILE "${cacert}/etc/ssl/certs/ca-bundle.crt" \
+            --set GST_PLUGIN_SYSTEM_PATH_1_0 "${gstPluginPath}"
         '';
 
         meta = {
@@ -274,7 +277,7 @@
           export GIO_EXTRA_MODULES="${pkgs.glib-networking}/lib/gio/modules";
           export SSL_CERT_FILE="${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
           export NIX_SSL_CERT_FILE="${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
-          # export GST_PLUGIN_SYSTEM_PATH_1_0 (gstPluginPath, commented out above);
+          export GST_PLUGIN_SYSTEM_PATH_1_0="${gstPluginPath}";
         '';
       };
     });

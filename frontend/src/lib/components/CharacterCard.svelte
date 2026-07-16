@@ -24,6 +24,7 @@
 	import { estimateCharacterTokens, formatTokenCount } from "$lib/ai/tokenEstimate";
 	import { getPreferences } from "$lib/state/preferences.svelte";
 	import { m } from '$lib/paraglide/messages.js';
+	import { mediaProxyUrl } from "$lib/types/media";
 
 	interface Props {
 		character: Character;
@@ -176,7 +177,7 @@
 			{#if coverMedia?.type === "video"}
 				<!-- svelte-ignore a11y_media_has_caption -->
 				<video
-					src={coverMedia.url}
+					src={mediaProxyUrl(coverMedia.url)}
 					class="h-full w-full object-cover object-top"
 					autoplay
 					muted

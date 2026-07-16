@@ -12,6 +12,7 @@ import (
 type App struct {
 	app         *application.App
 	proxyImport proxyImportServer
+	mediaProxy  mediaProxyServer
 }
 
 // NewApp creates a new App application struct

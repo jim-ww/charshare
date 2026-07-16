@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages.js';
 	import type { MediaItem } from '$lib/types';
+	import { mediaProxyUrl } from '$lib/types/media';
 
 	interface Props {
 		media: MediaItem[];
@@ -82,7 +83,7 @@
 		{#if current.type === 'video'}
 			<!-- svelte-ignore a11y_media_has_caption -->
 			<video
-				src={current.url}
+				src={mediaProxyUrl(current.url)}
 				controls
 				class={mediaClass}
 				onloadeddata={() => (loadedSrc = current.url)}
