@@ -1,3 +1,7 @@
+- videos should loop forever
+- add image viewer minimap, allowing to go to first/last/Nth image
+- dragging image urls doesnt work in wails?
+- follow button should open preferences.Account login screen
 - fix: in wails app, show landing page once, then characters/chats should be default initial load page
 - fix(landing): in wails app: hide Install section
 - fix(wails): hide open devtools button in production builds
