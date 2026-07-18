@@ -55,7 +55,26 @@ vi.mock('idb-keyval', () => ({
 	get: async (key: string) => idbStore.get(key),
 	set: async (key: string, value: unknown) => {
 		idbStore.set(key, value);
-	}
+	},
+	del: async (key: string) => {
+		idbStore.delete(key);
+	},
+	// $lib/crypto/dataEncryption.ts (imported transitively via $lib/db/*.ts)
+	// uses these at module load time for its atomic enable/disable-encryption
+	// transaction — this test never exercises that path, so a passthrough
+	// stub is enough to let the module load without crashing.
+	createStore: () => (_mode: string, callback: (store: unknown) => unknown) => {
+		const puts: [unknown, unknown][] = [];
+		const fakeStore = {
+			put: (value: unknown, key: unknown) => puts.push([key, value]),
+			delete: () => {},
+			transaction: Promise.resolve()
+		};
+		return Promise.resolve(callback(fakeStore)).then(() => {
+			for (const [key, value] of puts) idbStore.set(key as string, value);
+		});
+	},
+	promisifyRequest: (p: unknown) => p
 }));
 
 // $lib/db/savedCharacters wraps idb-keyval, which needs a real IndexedDB that

@@ -1,5 +1,7 @@
 import { applyBrowserLocaleOnFirstVisit } from '$lib/i18n';
 import { initPreferences } from '$lib/state/preferences.svelte';
+import * as encryption from '$lib/crypto/dataEncryption';
+import { isWailsDesktop, secretServiceGet } from '$lib/wails';
 
 export const ssr = false;
 export const prerender = true;
@@ -19,7 +21,27 @@ applyBrowserLocaleOnFirstVisit();
 // sequencing only in +layout.svelte's onMount isn't enough) and briefly
 // fall back to the built-in default relays instead of the ones the user
 // actually configured.
+//
+// If local-data encryption is enabled, every idb-keyval read (including
+// preferences itself, see crypto/dataEncryption.ts) needs the passphrase
+// first. The desktop build tries the OS credential store silently before
+// falling back to prompting; a `locked: true` result tells +layout.svelte
+// to render UnlockGate instead of the app until the user unlocks it (which
+// then calls initPreferences() itself once encryption.unlock() succeeds).
 export async function load() {
+	if (await encryption.isEncryptionEnabled()) {
+		if (isWailsDesktop()) {
+			try {
+				const saved = await secretServiceGet();
+				if (saved) await encryption.unlock(saved);
+			} catch {
+				// Fall through to the manual unlock prompt below.
+			}
+		}
+		if (!encryption.isUnlocked()) {
+			return { locked: true };
+		}
+	}
 	await initPreferences();
-	return {};
+	return { locked: false };
 }

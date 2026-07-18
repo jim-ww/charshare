@@ -1,4 +1,4 @@
-import { get, set } from 'idb-keyval';
+import { get, set } from '$lib/crypto/dataEncryption';
 import type { Persona, PersonaId } from '$lib/types';
 
 /** Personas are always local-only — never published or synced to a relay — so

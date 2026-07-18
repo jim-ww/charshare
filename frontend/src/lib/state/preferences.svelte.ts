@@ -1,5 +1,5 @@
 import { browser } from "$app/environment";
-import { get, set } from "idb-keyval";
+import { get, set } from "$lib/crypto/dataEncryption";
 import type {
 	HuggingFaceProviderConfig,
 	OllamaProviderConfig,

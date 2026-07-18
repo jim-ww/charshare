@@ -668,6 +668,23 @@
 	"data_tab_delete_all_chats_confirm": "Delete all chats? This cannot be undone.",
 	"data_tab_delete_all_chats_done": "All chats deleted.",
 
+	"data_tab_encryption_heading": "Encryption",
+	"data_tab_encryption_body": "Encrypt everything this device stores locally (your key, chats, characters, personas, and preferences, including any AI provider API keys) with a passphrase. Forgetting the passphrase means losing all of it — there's no recovery.",
+	"data_tab_encryption_enabled_body": "Local data is encrypted. You'll need your passphrase to unlock the app on future launches.",
+	"data_tab_encryption_enable_button": "Encrypt local data",
+	"data_tab_encryption_disable_button": "Disable encryption",
+	"data_tab_encryption_change_passphrase_button": "Change passphrase",
+	"data_tab_encryption_set_passphrase_title": "Set a passphrase",
+	"data_tab_encryption_change_passphrase_title": "Change your passphrase",
+	"data_tab_encryption_current_passphrase_title": "Enter your current passphrase",
+	"data_tab_encryption_new_passphrase_title": "Enter a new passphrase",
+	"data_tab_encryption_wrong_passphrase_error": "Incorrect passphrase.",
+	"data_tab_encryption_enabled_done": "Local data is now encrypted.",
+	"data_tab_encryption_disabled_done": "Encryption disabled — local data is stored unencrypted again.",
+	"data_tab_encryption_passphrase_changed_done": "Passphrase changed.",
+	"data_tab_encryption_remember_label": "Remember this passphrase in the system keychain",
+	"passphrase_field_toggle_visibility": "Show/hide passphrase",
+
 	"data_category_account_label": "Account",
 	"data_category_account_description": "Your private key — treat this like a password.",
 	"data_category_characters_label": "My characters",
@@ -710,5 +727,12 @@
 	"import_conflict_replace_all": "Replace All",
 	"chats_restore_conflict_message": "A chat named \"{name}\" already exists with different content. Replace it with the imported version?",
 	"characters_restore_conflict_message": "\"{name}\" already exists locally at the same version with different content. Replace it with the imported version?",
-	"personas_restore_conflict_message": "A persona named \"{name}\" already exists with different content. Replace it with the imported version?"
+	"personas_restore_conflict_message": "A persona named \"{name}\" already exists with different content. Replace it with the imported version?",
+
+	"unlock_gate_title": "Unlock Charshare",
+	"unlock_gate_body": "Your local data is encrypted. Enter your passphrase to continue.",
+	"unlock_gate_placeholder": "Passphrase",
+	"unlock_gate_remember": "Remember on this device",
+	"unlock_gate_unlock": "Unlock",
+	"unlock_gate_wrong_passphrase": "Incorrect passphrase."
 }

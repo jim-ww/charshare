@@ -23,6 +23,7 @@
 		"@tailwindcss/vite": "^4.1.18",
 		"@types/node": "^26.1.0",
 		"daisyui": "^5.5.19",
+		"fake-indexeddb": "^6.2.5",
 		"playwright-core": "^1.61.1",
 		"svelte": "^5.54.0",
 		"svelte-check": "^4.4.2",

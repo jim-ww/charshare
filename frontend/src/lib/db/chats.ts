@@ -1,4 +1,4 @@
-import { get, set } from 'idb-keyval';
+import { get, set } from '$lib/crypto/dataEncryption';
 import type { Chat, ChatId } from '$lib/types';
 
 /** Chats are local-only (see spec: Chat Management) — IndexedDB, never

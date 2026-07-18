@@ -1,4 +1,4 @@
-import { get, set } from 'idb-keyval';
+import { get, set } from '$lib/crypto/dataEncryption';
 import type { CommentId } from '$lib/types';
 
 /** Comments are immutable Nostr events (NIP-22) — there is no revision to

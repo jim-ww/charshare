@@ -62,6 +62,35 @@ export function SaveFile(filename: string, base64Data: string): $CancellableProm
 }
 
 /**
+ * SecretServiceDelete removes any stored passphrase (e.g. when the user
+ * disables encryption or turns off "remember on this device"). Returns an
+ * error message on failure, or "" on success — including when nothing was
+ * stored to begin with.
+ */
+export function SecretServiceDelete(): $CancellablePromise<string> {
+    return $Call.ByID(682201587);
+}
+
+/**
+ * SecretServiceGet retrieves a previously-stored passphrase. Returns ("",
+ * "") if nothing has been stored yet — that's an expected, non-error case
+ * (e.g. first launch, or the user never opted into remembering it) — and
+ * ("", errorMessage) for any other failure.
+ */
+export function SecretServiceGet(): $CancellablePromise<[string, string]> {
+    return $Call.ByID(923299412);
+}
+
+/**
+ * SecretServiceSet stores the passphrase in the OS credential store,
+ * overwriting any previously-stored value. Returns an error message on
+ * failure, or "" on success.
+ */
+export function SecretServiceSet(passphrase: string): $CancellablePromise<string> {
+    return $Call.ByID(1374461064, passphrase);
+}
+
+/**
  * StartProxyImportServer starts a local HTTP server that a chat site's
  * custom-endpoint chat requests can be pointed at, to import a character's
  * persona/scenario/greeting straight from an authenticated browser chat.

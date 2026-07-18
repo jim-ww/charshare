@@ -1,4 +1,4 @@
-import { get, set } from 'idb-keyval';
+import { get, set } from '$lib/crypto/dataEncryption';
 import type { Character, CharacterId } from '$lib/types';
 
 /** Local cache of other authors' characters this browser has chosen to keep

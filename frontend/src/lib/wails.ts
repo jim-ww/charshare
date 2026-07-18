@@ -80,6 +80,33 @@ export async function saveFile(filename: string, base64Data: string): Promise<st
 	return App.SaveFile(filename, base64Data);
 }
 
+/** Stores the local-data encryption passphrase in the OS credential store
+ *  (Keychain/Credential Manager/Secret Service), so the desktop build can
+ *  unlock without prompting on every launch. Throws on failure. */
+export async function secretServiceSet(passphrase: string): Promise<void> {
+	const App = await loadApp();
+	const err = await App.SecretServiceSet(passphrase);
+	if (err) throw new Error(err);
+}
+
+/** Reads back a passphrase saved via {@link secretServiceSet}. Returns
+ *  `null` if nothing has been stored (not an error — e.g. first launch, or
+ *  the user never opted in). Throws on any other failure. */
+export async function secretServiceGet(): Promise<string | null> {
+	const App = await loadApp();
+	const [passphrase, err] = await App.SecretServiceGet();
+	if (err) throw new Error(err);
+	return passphrase || null;
+}
+
+/** Removes a stored passphrase, e.g. when the user disables encryption or
+ *  turns off "remember on this device". Throws on failure. */
+export async function secretServiceDelete(): Promise<void> {
+	const App = await loadApp();
+	const err = await App.SecretServiceDelete();
+	if (err) throw new Error(err);
+}
+
 /** Opens the webview's devtools window, for the preferences "Developer" toggle. */
 export async function openDevTools(): Promise<void> {
 	const App = await loadApp();

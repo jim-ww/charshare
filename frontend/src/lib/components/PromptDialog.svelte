@@ -8,11 +8,20 @@
 		title: string;
 		initialValue?: string;
 		confirmLabel?: string;
+		inputType?: 'text' | 'password';
 		onconfirm: (value: string) => void;
 		oncancel: () => void;
 	}
 
-	let { open, title, initialValue = '', confirmLabel = m.prompt_dialog_default_confirm(), onconfirm, oncancel }: Props = $props();
+	let {
+		open,
+		title,
+		initialValue = '',
+		confirmLabel = m.prompt_dialog_default_confirm(),
+		inputType = 'text',
+		onconfirm,
+		oncancel
+	}: Props = $props();
 
 	let dialogEl: HTMLDialogElement | undefined;
 	let value = $state('');
@@ -56,19 +65,42 @@
 		};
 	});
 
+	// The dialog's own `close` event fires on *every* close — including the
+	// one that happens right after a successful confirm (onconfirm sets
+	// `open` false, which makes the `$effect` above call dialogEl.close()).
+	// Without this flag, that trailing close would call `oncancel` too, right
+	// after `oncancel`'s caller may have already moved on to a new prompt
+	// (e.g. a "confirm passphrase" step chained after "set passphrase") —
+	// resolving that brand-new prompt with a stray cancel before the user
+	// ever sees it, instead of the confirm-path close being a no-op like it
+	// should be.
+	let suppressNextClose = false;
+
 	function handleSubmit(event: SubmitEvent) {
 		event.preventDefault();
 		const trimmed = value.trim();
-		if (trimmed) onconfirm(trimmed);
+		if (trimmed) {
+			suppressNextClose = true;
+			onconfirm(trimmed);
+		}
+	}
+
+	function handleClose() {
+		if (suppressNextClose) {
+			suppressNextClose = false;
+			return;
+		}
+		oncancel();
 	}
 </script>
 
-<dialog bind:this={dialogEl} class="modal" onclose={oncancel}>
+<dialog bind:this={dialogEl} class="modal" onclose={handleClose}>
 	<div class="modal-box max-h-[90vh] overflow-y-auto">
 		<h3 class="text-lg font-semibold">{title}</h3>
 		<form class="mt-3 flex flex-col gap-3" onsubmit={handleSubmit}>
 			<input
 				bind:this={inputEl}
+				type={inputType}
 				class="input input-bordered w-full"
 				bind:value
 				onkeydown={(e) => e.key === 'Escape' && oncancel()}

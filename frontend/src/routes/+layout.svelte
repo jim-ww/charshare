@@ -17,9 +17,26 @@
 	import ImageViewerOverlay from '$lib/components/ImageViewerOverlay.svelte';
 	import NotificationStack from '$lib/components/NotificationStack.svelte';
 	import GlobalConfirmDialog from '$lib/components/GlobalConfirmDialog.svelte';
+	import UnlockGate from '$lib/components/UnlockGate.svelte';
 	import { installWailsConsoleForward } from '$lib/wailsConsoleForward';
 
-	let { children } = $props();
+	let { children, data } = $props();
+
+	// True only when local-data encryption is enabled and +layout.ts's
+	// `load()` couldn't unlock it silently (no/wrong saved passphrase on
+	// desktop, or the plain website build, which has no OS credential store
+	// to try). UnlockGate's onunlock callback runs the exact same
+	// init*() sequence once the user provides the right passphrase.
+	let locked = $state(data.locked);
+
+	function runInit() {
+		initPreferences();
+		initAuth();
+		initProfile().then(() => checkUsernameConflict());
+		initCharacters();
+		initSavedCharacters();
+		initChats();
+	}
 
 	onMount(() => {
 		installWailsConsoleForward();
@@ -27,14 +44,16 @@
 		// awaited this exact promise before this component (or any route
 		// content) rendered at all, so preferences are guaranteed loaded before
 		// initProfile/initCharacters resolve which relays to talk to (see
-		// state/preferences.svelte.ts:getActiveRelays).
-		initPreferences();
-		initAuth();
-		initProfile().then(() => checkUsernameConflict());
-		initCharacters();
-		initSavedCharacters();
-		initChats();
+		// state/preferences.svelte.ts:getActiveRelays). When locked, load()
+		// skipped initPreferences() entirely — runInit() fires instead once
+		// UnlockGate's onunlock callback confirms the passphrase.
+		if (!locked) runInit();
 	});
+
+	function handleUnlock() {
+		locked = false;
+		runInit();
+	}
 
 	$effect(() => {
 		document.documentElement.dataset.theme = getPreferences().theme;
@@ -88,12 +107,16 @@
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 <svelte:window onkeydown={handleGlobalKeydown} />
-<NavBar />
-{@render children()}
-<SettingsModal />
-<ImageViewerOverlay />
-<NotificationStack />
-<GlobalConfirmDialog />
+{#if locked}
+	<UnlockGate onunlock={handleUnlock} />
+{:else}
+	<NavBar />
+	{@render children()}
+	<SettingsModal />
+	<ImageViewerOverlay />
+	<NotificationStack />
+	<GlobalConfirmDialog />
+{/if}
 
 <div style="display:none">
 	{#each locales as locale}

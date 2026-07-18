@@ -1,4 +1,4 @@
-import { get, set, del } from 'idb-keyval';
+import { get, set, del } from '$lib/crypto/dataEncryption';
 import type { User } from '$lib/types';
 
 /** Local cache of the current browser's own published profile, so the

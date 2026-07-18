@@ -1,4 +1,4 @@
-import { get, set, del } from 'idb-keyval';
+import { get, set, del } from '$lib/crypto/dataEncryption';
 import type { Keyring } from '$lib/types';
 
 /** Private key storage — IndexedDB only, never localStorage (see spec: Signing). */
