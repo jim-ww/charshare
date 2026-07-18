@@ -152,7 +152,7 @@
         version = "0.1.0";
         src = ./.;
 
-        vendorHash = "sha256-hP8M9yoEo0nU+Pxse6W3k/DSv3DCtEQzUlG/XPKOKNo=";
+        vendorHash = "sha256-GbqPNTbAt46GGAOmYIzu7jIQomaJsNvAsHz9I9OOQ6Y=";
 
         # `go mod vendor` (buildGoModule's default) unconditionally resolves
         # every dependency's go:embed patterns for every GOOS/GOARCH, and
