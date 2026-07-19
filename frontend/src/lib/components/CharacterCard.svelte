@@ -228,6 +228,14 @@
 					{m.char_card_nsfw_badge()}
 				</span>
 			{/if}
+			{#if character.forked_from}
+				<span
+					class="badge badge-xs badge-info badge-outline"
+					title={m.char_card_fork_title()}
+				>
+					{m.char_card_fork_badge()}
+				</span>
+			{/if}
 			<span class="badge badge-xs badge-ghost" title={m.char_form_total_tokens({ count: String(totalTokens) })}>
 				{m.char_card_tokens_badge({ count: formatTokenCount(totalTokens) })}
 			</span>

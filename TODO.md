@@ -1,3 +1,4 @@
+- messageBubbles(chat): render [ImageName](URL) images in chat, only allowing starting with http:// or https://
 - increase timeout for ollama/ai provider responses. allow to configure
 - on mobile view make currently selected preferences tab clickable in whole width
 - videos should loop forever

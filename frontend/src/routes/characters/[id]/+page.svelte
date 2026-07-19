@@ -596,6 +596,11 @@
 								{m.char_detail_unreachable_badge()}
 							</span>
 						{/if}
+						{#if character.forked_from}
+							<span class="badge badge-sm badge-info badge-outline align-middle" title={m.char_card_fork_title()}>
+								{m.char_card_fork_badge()}
+							</span>
+						{/if}
 						{#if tokens}
 							<span class="badge badge-sm badge-ghost align-middle" title={m.char_form_total_tokens({ count: String(tokens.total) })}>
 								{m.char_detail_total_tokens_badge({ count: String(tokens.total) })}

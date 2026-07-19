@@ -417,6 +417,8 @@
 
 	"char_card_nsfw_title": "NSFW",
 	"char_card_nsfw_badge": "nsfw",
+	"char_card_fork_title": "Forked character",
+	"char_card_fork_badge": "fork",
 	"char_card_tokens_badge": "{count} tok",
 	"char_card_unhide": "Unhide character",
 	"char_card_hide": "Hide character",
