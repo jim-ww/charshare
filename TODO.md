@@ -1,4 +1,3 @@
-- add image viewer minimap, allowing to go to first/last/Nth image
 - dragging image urls doesnt work in wails?
 - follow button should open preferences.Account login screen
 - fix: in wails app, show landing page once, then characters/chats should be default initial load page

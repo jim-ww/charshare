@@ -434,6 +434,7 @@
 	"char_image_viewer_load_failed": "Image failed to load",
 	"char_image_viewer_previous": "Previous image",
 	"char_image_viewer_next": "Next image",
+	"char_image_viewer_jump_to": "Go to image {n}",
 
 	"tag_carousel_show_all": "Show all {count} tags",
 	"tag_carousel_show_less": "Show fewer tags",

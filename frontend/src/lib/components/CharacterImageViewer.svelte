@@ -48,6 +48,18 @@
 		if (index >= media.length) index = 0;
 	});
 
+	// Keeps the active thumbnail visible in the minimap as `index` changes via
+	// prev/next, arrow keys, or Home/End — without this, navigating past the
+	// edge of the (horizontally scrolling) strip leaves the highlighted
+	// thumbnail off-screen with no visual confirmation of where you are.
+	let minimapEl: HTMLDivElement | undefined = $state();
+	$effect(() => {
+		index;
+		minimapEl
+			?.querySelector(`[data-index="${index}"]`)
+			?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+	});
+
 	function prev(event: MouseEvent) {
 		event.stopPropagation();
 		index = (index - 1 + media.length) % media.length;
@@ -65,6 +77,10 @@
 			index = (index - 1 + media.length) % media.length;
 		} else if (event.key === 'ArrowRight') {
 			index = (index + 1) % media.length;
+		} else if (event.key === 'Home') {
+			index = 0;
+		} else if (event.key === 'End') {
+			index = media.length - 1;
 		}
 	}
 
@@ -93,6 +109,7 @@
 
 <svelte:window onkeydown={keyboardNav ? handleKeydown : undefined} />
 
+<div class="flex flex-col items-center gap-2">
 <figure
 	class="relative {fullSize
 		? 'inline-flex min-h-32 min-w-32 max-h-[calc(100vh-1.5rem)] max-w-[calc(100vw-1.5rem)] items-center justify-center sm:max-h-[calc(100vh-3rem)] sm:max-w-[calc(100vw-3rem)]'
@@ -180,3 +197,29 @@
 		</div>
 	{/if}
 </figure>
+{#if fullSize && media.length > 1}
+	<!-- Minimap: jump straight to any slide (first/last/Nth) instead of
+	     stepping through prev/next one at a time. Only shown in the expanded
+	     modal view — the small in-card viewer has no room for it. -->
+	<div bind:this={minimapEl} class="flex max-w-full gap-1.5 overflow-x-auto px-1 pb-1">
+		{#each media as item, i (item.url + i)}
+			<button
+				type="button"
+				data-index={i}
+				class="h-12 w-12 shrink-0 overflow-hidden rounded-md border-2 {i === index
+					? 'border-primary'
+					: 'border-transparent opacity-50 hover:opacity-100'}"
+				onclick={() => (index = i)}
+				aria-label={m.char_image_viewer_jump_to({ n: i + 1 })}
+				aria-current={i === index}
+			>
+				{#if item.type === 'video'}
+					<div class="flex h-full w-full items-center justify-center bg-base-300 text-xs">▶</div>
+				{:else}
+					<img src={item.url} alt="" loading="lazy" class="h-full w-full object-cover" />
+				{/if}
+			</button>
+		{/each}
+	</div>
+{/if}
+</div>
