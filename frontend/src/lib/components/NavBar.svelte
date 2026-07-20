@@ -164,7 +164,7 @@
 					<button
 						type="button"
 						class="rounded-lg py-3 text-base"
-						onclick={() => openSettings("account")}
+						onclick={() => openSettings()}
 					>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
@@ -235,7 +235,7 @@
 			class="btn btn-sm btn-ghost gap-2 px-2"
 			type="button"
 			aria-label={m.navbar_account_settings()}
-			onclick={() => openSettings("account")}
+			onclick={() => openSettings()}
 		>
 			<div
 				class="avatar {profile?.image_url

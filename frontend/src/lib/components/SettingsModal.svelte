@@ -41,17 +41,17 @@
 	// like the stock Android Settings app. Ignored at `sm:` and up, where both
 	// the sidebar and the detail pane are always shown side by side.
 	//
-	// Every caller of openSettings() passes an explicit target tab (there's no
-	// "just open settings, figure out the tab" call site) — so on open, jump
-	// straight to that tab's content instead of making the caller's chosen
-	// destination (e.g. gating a publish/comment attempt on Account) a second
-	// tap away behind the section list.
+	// A caller that passed an explicit target tab to openSettings() (gating a
+	// publish/comment attempt on Account, say) wants that tab's content right
+	// away, not a second tap behind the section list — but the plain nav-bar
+	// entry point (openSettings() with no tab) has nothing to jump to, so it
+	// opens on the list instead.
 	let mobileView = $state<"list" | "detail">("list");
 
 	$effect(() => {
 		if (open) {
 			dialogEl?.showModal();
-			untrack(() => (mobileView = "detail"));
+			untrack(() => (mobileView = activeTab ? "detail" : "list"));
 		} else {
 			dialogEl?.close();
 		}
@@ -140,6 +140,8 @@
 					<CommentsTab />
 				{:else if activeTab === "data"}
 					<DataTab />
+				{:else}
+					<p class="opacity-60">{m.settings_select_section()}</p>
 				{/if}
 			</div>
 		</div>
