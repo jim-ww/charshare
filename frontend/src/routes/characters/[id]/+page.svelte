@@ -191,6 +191,10 @@
 
 	function toggleFollowAuthor() {
 		if (!character) return;
+		if (!isAccountRegistered()) {
+			openSettings("account");
+			return;
+		}
 		if (authorFollowed) unfollowAuthor(character.author);
 		else followAuthor(character.author);
 	}
