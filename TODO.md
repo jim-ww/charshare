@@ -1,4 +1,3 @@
-- videos should loop forever
 - add image viewer minimap, allowing to go to first/last/Nth image
 - dragging image urls doesnt work in wails?
 - follow button should open preferences.Account login screen

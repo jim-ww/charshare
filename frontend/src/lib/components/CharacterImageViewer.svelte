@@ -85,6 +85,7 @@
 			<video
 				src={mediaProxyUrl(current.url)}
 				controls
+				loop
 				class={mediaClass}
 				onloadeddata={() => (loadedSrc = current.url)}
 				onerror={() => (failedSrc = current.url)}
