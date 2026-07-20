@@ -70,8 +70,16 @@
 		return text
 			.replaceAll('&', '&amp;')
 			.replaceAll('<', '&lt;')
-			.replaceAll('>', '&gt;');
+			.replaceAll('>', '&gt;')
+			.replaceAll('"', '&quot;')
+			.replaceAll("'", '&#39;');
 	}
+
+	// [Name](URL) renders as an inline image — restricted to http(s) so this
+	// can never become a javascript:/data: sink. Runs on already-escaped text,
+	// and before the action/aside passes below, so its own parens can't be
+	// mistaken for a user aside.
+	const IMAGE_MARKDOWN = /\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g;
 
 	// Renders *actions* dimmed. Only the user's own (asides) are marked in a
 	// distinct color — those are OOC instructions to the model (see
@@ -79,7 +87,12 @@
 	// are just prose and aren't treated specially. Escapes first so message
 	// content can never inject markup.
 	const formattedContent = $derived.by(() => {
-		const withActions = escapeHtml(displayContent).replace(
+		const withImages = escapeHtml(displayContent).replace(
+			IMAGE_MARKDOWN,
+			(_match, alt: string, url: string) =>
+				`<img src="${url}" alt="${alt}" class="my-1 max-h-64 max-w-full rounded-lg" loading="lazy" />`,
+		);
+		const withActions = withImages.replace(
 			/\*([^*]+)\*/g,
 			'<span class="opacity-60 italic">$1</span>',
 		);
