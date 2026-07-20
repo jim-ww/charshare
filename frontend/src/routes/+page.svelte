@@ -178,61 +178,65 @@
 		{/each}
 	</section>
 
-	<section class="py-12">
-		<h2 class="pb-2 text-center text-2xl font-bold tracking-tight">
-			{m.landing_install_heading()}
-		</h2>
-		<p class="pb-8 text-center text-base-content/70">
-			{m.landing_install_body_before()}
-			<a href={resolve("/characters")} class="link"
-				>/characters</a
-			>
-			{m.landing_install_body_after()}
-		</p>
+	{#if !isWailsDesktop()}
+		<!-- "How to install" is meaningless from inside the desktop app you've
+		     already installed and are currently running. -->
+		<section class="py-12">
+			<h2 class="pb-2 text-center text-2xl font-bold tracking-tight">
+				{m.landing_install_heading()}
+			</h2>
+			<p class="pb-8 text-center text-base-content/70">
+				{m.landing_install_body_before()}
+				<a href={resolve("/characters")} class="link"
+					>/characters</a
+				>
+				{m.landing_install_body_after()}
+			</p>
 
-		<div class="mx-auto grid max-w-3xl gap-6 sm:grid-cols-2">
-			<div
-				class="card border-2 border-base-content/15 bg-base-100 shadow-sm"
-			>
-				<div class="card-body">
-					<h3 class="card-title text-base">
-						{m.landing_download_binary_heading()}
-					</h3>
-					<p class="text-base-content/70">
-						{m.landing_download_binary_body()}
-					</p>
-					<div class="card-actions pt-2">
-						<a
-							href="{REPO_URL}/releases"
-							class="btn btn-soft btn-sm"
-							target="_blank"
-							rel="noreferrer"
-							use:externalLink
-						>
-							{m.landing_github_releases()}
-						</a>
+			<div class="mx-auto grid max-w-3xl gap-6 sm:grid-cols-2">
+				<div
+					class="card border-2 border-base-content/15 bg-base-100 shadow-sm"
+				>
+					<div class="card-body">
+						<h3 class="card-title text-base">
+							{m.landing_download_binary_heading()}
+						</h3>
+						<p class="text-base-content/70">
+							{m.landing_download_binary_body()}
+						</p>
+						<div class="card-actions pt-2">
+							<a
+								href="{REPO_URL}/releases"
+								class="btn btn-soft btn-sm"
+								target="_blank"
+								rel="noreferrer"
+								use:externalLink
+							>
+								{m.landing_github_releases()}
+							</a>
+						</div>
+					</div>
+				</div>
+
+				<div
+					class="card border-2 border-base-content/15 bg-base-100 shadow-sm"
+				>
+					<div class="card-body">
+						<h3 class="card-title text-base">
+							{m.landing_nix_heading()}
+						</h3>
+						<p class="text-base-content/70">
+							{m.landing_nix_body()}
+						</p>
+						<pre
+							class="mt-1 overflow-x-auto rounded-box bg-base-200 p-3 text-sm"><code
+								>nix run github:jim-ww/charshare</code
+							></pre>
 					</div>
 				</div>
 			</div>
-
-			<div
-				class="card border-2 border-base-content/15 bg-base-100 shadow-sm"
-			>
-				<div class="card-body">
-					<h3 class="card-title text-base">
-						{m.landing_nix_heading()}
-					</h3>
-					<p class="text-base-content/70">
-						{m.landing_nix_body()}
-					</p>
-					<pre
-						class="mt-1 overflow-x-auto rounded-box bg-base-200 p-3 text-sm"><code
-							>nix run github:jim-ww/charshare</code
-						></pre>
-				</div>
-			</div>
-		</div>
-	</section>
+		</section>
+	{/if}
 
 	<section class="py-12">
 		<h2 class="pb-2 text-center text-2xl font-bold tracking-tight">
