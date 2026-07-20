@@ -145,7 +145,7 @@
 	<div class="flex flex-wrap justify-center gap-1.5">
 		<button
 			type="button"
-			class="badge badge-sm cursor-pointer"
+			class="badge badge-md sm:badge-sm cursor-pointer"
 			class:badge-neutral={activeCategory === null}
 			class:badge-outline={activeCategory !== null}
 			onclick={() => (activeCategory = null)}
@@ -155,7 +155,7 @@
 		{#each categories as category (category)}
 			<button
 				type="button"
-				class="badge badge-sm cursor-pointer"
+				class="badge badge-md sm:badge-sm cursor-pointer"
 				class:badge-neutral={activeCategory === category}
 				class:badge-outline={activeCategory !== category}
 				onclick={() => (activeCategory = activeCategory === category ? null : category)}
