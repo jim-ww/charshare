@@ -67,6 +67,18 @@
 			index = (index + 1) % media.length;
 		}
 	}
+
+	// Restarts a beat before the end instead of relying on the native `loop`
+	// attribute — letting the video actually reach 'ended' and having the
+	// browser restart it shows a brief flash of the poster/blank frame at the
+	// seam. Seeking back just before that point never lets playback end, so
+	// there's nothing for the browser to flash to.
+	function loopVideo(event: Event) {
+		const video = event.currentTarget as HTMLVideoElement;
+		if (video.duration - video.currentTime < 0.2) {
+			video.currentTime = 0;
+		}
+	}
 </script>
 
 <svelte:window onkeydown={keyboardNav ? handleKeydown : undefined} />
@@ -85,10 +97,10 @@
 			<video
 				src={mediaProxyUrl(current.url)}
 				controls
-				loop
 				class={mediaClass}
 				onloadeddata={() => (loadedSrc = current.url)}
 				onerror={() => (failedSrc = current.url)}
+				ontimeupdate={loopVideo}
 			></video>
 		{:else if onImageClick}
 			<button
