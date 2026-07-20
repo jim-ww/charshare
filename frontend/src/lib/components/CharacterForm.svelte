@@ -65,31 +65,42 @@
 			.filter((m) => m.url.trim()).length;
 	}
 
+	// Pointer-event driven rather than native HTML5 drag-and-drop
+	// (draggable/dragstart/dragover/drop): the packaged Wails app's WebKitGTK
+	// webview doesn't implement HTML5 DnD, so the row handle never even
+	// starts a drag there — pointer events work identically across the
+	// browser build and every native webview.
 	let draggedImageIndex = $state<number | null>(null);
 	let dragOverImageIndex = $state<number | null>(null);
+	let imageRowEls: (HTMLDivElement | null)[] = [];
 
-	function handleImageDragStart(index: number) {
-		draggedImageIndex = index;
-	}
-
-	function handleImageDragOver(event: DragEvent, index: number) {
+	function handleImageDragStart(event: PointerEvent, index: number) {
 		event.preventDefault();
+		draggedImageIndex = index;
 		dragOverImageIndex = index;
 	}
 
-	function handleImageDrop(index: number) {
-		if (draggedImageIndex === null || draggedImageIndex === index) {
-			draggedImageIndex = null;
-			dragOverImageIndex = null;
-			return;
+	function handleImageDragMove(event: PointerEvent) {
+		if (draggedImageIndex === null) return;
+		for (const [i, el] of imageRowEls.entries()) {
+			if (!el) continue;
+			const rect = el.getBoundingClientRect();
+			if (event.clientY >= rect.top && event.clientY <= rect.bottom) {
+				dragOverImageIndex = i;
+				break;
+			}
 		}
-		const [moved] = mediaRows.splice(draggedImageIndex, 1);
-		mediaRows.splice(index, 0, moved);
-		draggedImageIndex = null;
-		dragOverImageIndex = null;
 	}
 
 	function handleImageDragEnd() {
+		if (
+			draggedImageIndex !== null &&
+			dragOverImageIndex !== null &&
+			draggedImageIndex !== dragOverImageIndex
+		) {
+			const [moved] = mediaRows.splice(draggedImageIndex, 1);
+			mediaRows.splice(dragOverImageIndex, 0, moved);
+		}
 		draggedImageIndex = null;
 		dragOverImageIndex = null;
 	}
@@ -360,6 +371,11 @@
 	}
 </script>
 
+<svelte:window
+	onpointermove={handleImageDragMove}
+	onpointerup={handleImageDragEnd}
+/>
+
 <form class="mx-auto flex max-w-6xl flex-col gap-6" onsubmit={handleSubmit}>
 	<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
 		<div
@@ -592,6 +608,7 @@
 							{#each mediaRows as row, i}
 								<div
 									role="listitem"
+									bind:this={imageRowEls[i]}
 									class="flex items-center gap-2 {dragOverImageIndex ===
 										i &&
 									draggedImageIndex !==
@@ -600,28 +617,16 @@
 										i
 										? 'border-primary rounded border-2 border-dashed'
 										: ''}"
-									ondragover={(
-										e,
-									) =>
-										handleImageDragOver(
-											e,
-											i,
-										)}
-									ondrop={() =>
-										handleImageDrop(
-											i,
-										)}
 								>
 									<button
 										type="button"
-										class="btn btn-ghost btn-sm cursor-grab active:cursor-grabbing"
+										class="btn btn-ghost btn-sm cursor-grab touch-none active:cursor-grabbing"
 										aria-label={m.char_form_drag_reorder()}
-										draggable="true"
-										ondragstart={() =>
+										onpointerdown={(e) =>
 											handleImageDragStart(
+												e,
 												i,
 											)}
-										ondragend={handleImageDragEnd}
 									>
 										⠿
 									</button>

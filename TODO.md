@@ -1,4 +1,3 @@
-- dragging image urls doesnt work in wails?
 - follow button should open preferences.Account login screen
 - fix: in wails app, show landing page once, then characters/chats should be default initial load page
 - fix(landing): in wails app: hide Install section
