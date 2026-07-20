@@ -79,6 +79,16 @@
 			video.currentTime = 0;
 		}
 	}
+
+	// Fallback for when timeupdate's granularity skips right past the
+	// restart window above and the video actually reaches 'ended' — without
+	// this, playback would just stop there since the native `loop` attribute
+	// isn't used. Rare enough that the one-off flash it causes doesn't matter.
+	function restartAfterEnded(event: Event) {
+		const video = event.currentTarget as HTMLVideoElement;
+		video.currentTime = 0;
+		void video.play();
+	}
 </script>
 
 <svelte:window onkeydown={keyboardNav ? handleKeydown : undefined} />
@@ -101,6 +111,7 @@
 				onloadeddata={() => (loadedSrc = current.url)}
 				onerror={() => (failedSrc = current.url)}
 				ontimeupdate={loopVideo}
+				onended={restartAfterEnded}
 			></video>
 		{:else if onImageClick}
 			<button
