@@ -51,9 +51,3 @@ func (a *App) ServiceStartup(ctx context.Context, options application.ServiceOpt
 	})
 	return nil
 }
-
-// OpenDevTools opens the webview's devtools window. Only meaningful in the
-// Wails desktop build; the frontend gates this behind isWailsDesktop().
-func (a *App) OpenDevTools() {
-	a.app.Window.Current().OpenDevTools()
-}

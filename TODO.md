@@ -1,4 +1,3 @@
-- fix(wails): hide open devtools button in production builds
 - fix(preferences): profile is not updated, when 'sync' finishes
 - fix: page refresh on relay change doesnt work in wails
 - improve tag selector on mobiles

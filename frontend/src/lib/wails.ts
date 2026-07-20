@@ -107,12 +107,6 @@ export async function secretServiceDelete(): Promise<void> {
 	if (err) throw new Error(err);
 }
 
-/** Opens the webview's devtools window, for the preferences "Developer" toggle. */
-export async function openDevTools(): Promise<void> {
-	const App = await loadApp();
-	await App.OpenDevTools();
-}
-
 /** Opens a URL in the user's default system browser. Plain `<a
  *  target="_blank">` clicks don't reliably escape Wails' webview (notably
  *  webkitgtk on Linux), so external links must go through this instead. */

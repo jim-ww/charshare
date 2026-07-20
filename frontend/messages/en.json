@@ -556,9 +556,6 @@
 	"account_tab_logout_button": "Log out",
 	"account_tab_logout_confirm": "Log out of this account? Make sure you have downloaded a backup first — there is no way to recover this account without it.",
 
-	"general_tab_devtools_label": "Developer tools",
-	"general_tab_devtools_button": "Open dev tools",
-	"general_tab_devtools_hint": "Opens the webview's developer tools window for debugging.",
 
 	"general_tab_language_label": "Language",
 	"general_tab_theme_label": "Theme",

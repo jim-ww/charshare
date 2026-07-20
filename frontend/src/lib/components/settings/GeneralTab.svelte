@@ -4,11 +4,6 @@
 	import { m } from '$lib/paraglide/messages.js';
 	import { getLocale, setLocale, type Locale } from '$lib/paraglide/runtime';
 	import { AVAILABLE_LOCALES, LOCALE_NAMES } from '$lib/i18n';
-	import { isWailsDesktop, openDevTools } from '$lib/wails';
-
-	// Dev tools toggle only makes sense in the Wails desktop app.
-	const showDevToolsSetting = isWailsDesktop();
-
 	const preferences = $derived(getPreferences());
 
 	let themeMenuOpen = $state(false);
@@ -247,13 +242,4 @@
 		</select>
 	</label>
 
-	{#if showDevToolsSetting}
-		<div class="form-control w-full max-w-md">
-			<span class="label-text mb-1 block">{m.general_tab_devtools_label()}</span>
-			<button type="button" class="btn btn-outline btn-sm w-fit" onclick={() => openDevTools()}>
-				{m.general_tab_devtools_button()}
-			</button>
-			<span class="mt-1 text-sm opacity-70">{m.general_tab_devtools_hint()}</span>
-		</div>
-	{/if}
 </div>
