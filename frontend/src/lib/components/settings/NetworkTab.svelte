@@ -6,7 +6,19 @@
 	} from "$lib/state/preferences.svelte";
 	import { getCurrentUser, getKeyring, isAccountRegistered } from "$lib/state/auth.svelte";
 	import { getRelayList, publishRelayList } from "$lib/nostr/relayList";
+	import { isWailsDesktop, reloadWindow } from "$lib/wails";
 	import { m } from '$lib/paraglide/messages.js';
+
+	// location.reload() can't reliably re-navigate the Wails desktop build's
+	// custom wails.localhost scheme (see PullToRefresh.svelte) — go through
+	// Wails' own native window reload there instead.
+	function reload() {
+		if (isWailsDesktop()) {
+			void reloadWindow();
+		} else {
+			location.reload();
+		}
+	}
 
 	const preferences = $derived(getPreferences());
 	let relaysText = $state(
@@ -112,7 +124,7 @@
 				<button
 					class="btn btn-xs shrink-0"
 					type="button"
-					onclick={() => location.reload()}
+					onclick={reload}
 				>
 					{m.network_tab_reload_button()}
 				</button>

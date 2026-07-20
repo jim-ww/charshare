@@ -24,6 +24,9 @@ interface WailsRuntimeModule {
 	Browser: {
 		OpenURL(url: string): Promise<void>;
 	};
+	Window: {
+		Reload(): Promise<void>;
+	};
 }
 
 type CharshareAppBindings = typeof import("../../bindings/charshare/app");
@@ -113,6 +116,17 @@ export async function secretServiceDelete(): Promise<void> {
 export async function openURL(url: string): Promise<void> {
 	const { Browser } = await loadRuntime();
 	await Browser.OpenURL(url);
+}
+
+/** Reloads the current window through Wails' own native runtime call rather
+ *  than `location.reload()` — the app is served from a custom wails.localhost
+ *  scheme that a plain browser-side reload can't always re-navigate to (see
+ *  PullToRefresh.svelte for the same caveat). Use this anywhere a change
+ *  (e.g. the relay list in NetworkTab) needs a full restart of the app's
+ *  init sequence to take effect. */
+export async function reloadWindow(): Promise<void> {
+	const { Window } = await loadRuntime();
+	await Window.Reload();
 }
 
 /** Svelte action for `<a target="_blank">` links to external sites: routes
