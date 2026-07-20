@@ -146,6 +146,14 @@ export async function saveProfile(fields: {
 }): Promise<void> {
 	const doc = await publishProfile(fields);
 	profile = doc;
+	// A successful publish IS a network round-trip confirming this doc — no
+	// need to wait on the background subscription to independently rediscover
+	// what we just published ourselves. Without this, a rename triggered by
+	// checkUsernameConflict() (or any other saveProfile call) leaves the
+	// Account settings "Syncing…" badge waiting on that subscription forever
+	// if it happens to be reading from relays that don't (yet) have the
+	// republished event.
+	synced = true;
 	await saveCachedProfile(doc);
 }
 

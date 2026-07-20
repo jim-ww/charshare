@@ -189,6 +189,25 @@ describe('checkUsernameConflict', () => {
 		expect(notifyMock.mock.calls[0][1]).toMatchObject({ kind: 'warning', duration: 0 });
 	});
 
+	it('marks the profile synced after an auto-rename republish, even if the background subscription never resolves', async () => {
+		// Regression test: loadProfileForSwitchedAccount's subscription is
+		// mocked to never call onUpdate (see the module mock above), so
+		// `synced` can only become true via the republish itself — matching a
+		// real relay that hasn't (yet) surfaced the just-published event back
+		// through the read-side subscription.
+		const { checkUsernameConflict, loadProfileForSwitchedAccount, isProfileSynced } = await freshProfileModule();
+		await loadProfileForSwitchedAccount({ username: 'alice', description: 'hi' });
+		expect(isProfileSynced()).toBe(false);
+		claimResolver = (username) =>
+			username === 'alice'
+				? { ok: true, doc: { authorPub: 'someone-else', deleted: false } }
+				: { ok: false };
+
+		await checkUsernameConflict();
+
+		expect(isProfileSynced()).toBe(true);
+	});
+
 	it('only runs once per session even if called again', async () => {
 		const { checkUsernameConflict, loadProfileForSwitchedAccount } = await freshProfileModule();
 		await loadProfileForSwitchedAccount({ username: 'alice', description: '' });

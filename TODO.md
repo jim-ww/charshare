@@ -1,4 +1,3 @@
-- fix(preferences): profile is not updated, when 'sync' finishes
 - fix: page refresh on relay change doesnt work in wails
 - improve tag selector on mobiles
 - consider: implement multi-tag search? in character definitions, always store tags sorted to allow search like tag-subtag-subsubtag?
