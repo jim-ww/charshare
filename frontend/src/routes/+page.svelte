@@ -5,17 +5,20 @@
 	import { externalLink, isWailsDesktop } from "$lib/wails";
 	import { m } from "$lib/paraglide/messages.js";
 
-	// In the Wails desktop build, skip the marketing landing page on first
-	// launch and go straight into the app. isWailsDesktop() is false in the
-	// web build, so this is a no-op there. Only fires once per app start —
-	// sessionStorage (not localStorage) so the flag doesn't survive across
-	// restarts of the app; each fresh launch of the webview process gets its
-	// own session.
+	// In the Wails desktop build, the marketing landing page is only useful
+	// the very first time the app is ever launched — every later launch
+	// should drop straight into the app instead. localStorage (not
+	// sessionStorage) so this survives across restarts: it's set once, on
+	// that first launch, and checked on every launch after. isWailsDesktop()
+	// is false in the web build, so this is a no-op there — the landing page
+	// stays the normal entry point when just visiting the site.
 	const SKIP_LANDING_KEY = "charshare:skippedInitialLanding";
 	onMount(() => {
-		if (isWailsDesktop() && !sessionStorage.getItem(SKIP_LANDING_KEY)) {
-			sessionStorage.setItem(SKIP_LANDING_KEY, "true");
-			goto(resolve("/characters"), { replaceState: true });
+		if (!isWailsDesktop()) return;
+		if (localStorage.getItem(SKIP_LANDING_KEY)) {
+			goto(resolve("/chats"), { replaceState: true });
+		} else {
+			localStorage.setItem(SKIP_LANDING_KEY, "true");
 		}
 	});
 

@@ -1,4 +1,3 @@
-- fix: in wails app, show landing page once, then characters/chats should be default initial load page
 - fix(landing): in wails app: hide Install section
 - fix(wails): hide open devtools button in production builds
 - fix(preferences): profile is not updated, when 'sync' finishes
