@@ -68,29 +68,30 @@
 		class="modal-box flex max-h-[92dvh] w-full max-w-2xl flex-col gap-0 rounded-b-none rounded-t-2xl p-0 pb-[env(safe-area-inset-bottom)] sm:h-[38rem] sm:rounded-2xl sm:pb-0"
 	>
 		<div
-			class="flex shrink-0 items-center gap-2 border-b border-base-300 p-3 sm:hidden"
+			class="flex shrink-0 items-stretch border-b border-base-300 sm:hidden"
 		>
 			{#if mobileView === "detail"}
 				<button
-					class="btn btn-sm btn-circle btn-ghost"
+					class="btn btn-ghost flex h-auto w-full items-center justify-start gap-2 rounded-none px-4 py-3 text-left"
 					type="button"
 					aria-label={m.settings_back()}
 					onclick={() => (mobileView = "list")}
 				>
-					‹
+					<span class="text-lg">‹</span>
+					<span class="flex-1 truncate text-sm font-semibold">
+						{activeTabLabel}
+					</span>
 				</button>
-				<h2 class="flex-1 truncate text-sm font-semibold">
-					{activeTabLabel}
-				</h2>
 			{:else}
-				<h2 class="flex-1 text-sm font-semibold">{m.settings_heading()}</h2>
 				<button
-					class="btn btn-sm btn-circle btn-ghost"
+					class="btn btn-ghost grid h-auto w-full grid-cols-[2rem_1fr_2rem] items-center rounded-none px-4 py-3"
 					type="button"
 					aria-label={m.settings_close()}
 					onclick={closeSettings}
 				>
-					✕
+					<span></span>
+					<span class="text-center text-sm font-semibold">{m.settings_heading()}</span>
+					<span class="justify-self-end text-lg">✕</span>
 				</button>
 			{/if}
 		</div>

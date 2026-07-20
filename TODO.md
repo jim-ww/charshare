@@ -1,4 +1,3 @@
-- on mobile view make currently selected preferences tab clickable in whole width
 - videos should loop forever
 - add image viewer minimap, allowing to go to first/last/Nth image
 - dragging image urls doesnt work in wails?
