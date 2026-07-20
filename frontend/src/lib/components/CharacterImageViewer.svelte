@@ -124,6 +124,9 @@
 			<video
 				src={mediaProxyUrl(current.url)}
 				controls
+				autoplay
+				muted
+				playsinline
 				class={mediaClass}
 				onloadeddata={() => (loadedSrc = current.url)}
 				onerror={() => (failedSrc = current.url)}
