@@ -242,7 +242,19 @@
 						title={provider.provider === 'ollama' ? m.ai_tab_frequency_penalty_unsupported() : undefined}
 					/>
 				</label>
+				<label class="form-control">
+					<span class="label-text">{m.ai_tab_request_timeout_label()}</span>
+					<input
+						class="input input-bordered"
+						type="number"
+						min="0"
+						step="1"
+						value={provider.request_timeout_seconds}
+						oninput={(e) => update('request_timeout_seconds', Number(e.currentTarget.value))}
+					/>
+				</label>
 			</div>
+			<span class="text-sm opacity-70">{m.ai_tab_request_timeout_hint()}</span>
 
 			<label class="form-control">
 				<span class="label-text">{m.ai_tab_forbidden_words_label()}</span>

@@ -1,6 +1,7 @@
 import type { HuggingFaceProviderConfig } from '$lib/types';
 import type { CompletionMessage, CompletionResult, RequestCompletionOptions } from './openrouter';
 import { stripThinking } from './strip-thinking';
+import { withRequestTimeout } from './requestTimeout';
 
 const HUGGINGFACE_URL = 'https://router.huggingface.co/v1/chat/completions';
 
@@ -29,7 +30,7 @@ export async function requestCompletion(
 			min_p: config.min_p,
 			frequency_penalty: config.frequency_penalty
 		}),
-		signal: options.signal
+		signal: withRequestTimeout(options.signal, config.request_timeout_seconds)
 	});
 
 	if (!response.ok) {

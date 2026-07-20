@@ -30,8 +30,8 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
  * which aborts the underlying HTTP request via NewRequestWithContext. No
  * hand-rolled cancellation registry needed.
  */
-export function FetchOllamaChat(requestID: string, url: string, bodyJSON: string): $CancellablePromise<void> {
-    return $Call.ByID(3375761947, requestID, url, bodyJSON);
+export function FetchOllamaChat(requestID: string, url: string, bodyJSON: string, responseTimeoutSeconds: number): $CancellablePromise<void> {
+    return $Call.ByID(3375761947, requestID, url, bodyJSON, responseTimeoutSeconds);
 }
 
 /**

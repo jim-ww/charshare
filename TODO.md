@@ -1,4 +1,3 @@
-- increase timeout for ollama/ai provider responses. allow to configure
 - on mobile view make currently selected preferences tab clickable in whole width
 - videos should loop forever
 - add image viewer minimap, allowing to go to first/last/Nth image

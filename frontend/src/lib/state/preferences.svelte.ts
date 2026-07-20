@@ -28,6 +28,7 @@ export const DEFAULT_OPENROUTER_CONFIG: OpenRouterProviderConfig = {
 	frequency_penalty: 0,
 	forbidden_words: [],
 	disable_thinking: true,
+	request_timeout_seconds: 120,
 	tosAgreed: false,
 };
 
@@ -45,6 +46,7 @@ export const DEFAULT_OLLAMA_CONFIG: OllamaProviderConfig = {
 	frequency_penalty: 0,
 	forbidden_words: [],
 	disable_thinking: true,
+	request_timeout_seconds: 120,
 	// Ollama talks to a server the user runs themselves — no third-party ToS to agree to.
 	tosAgreed: true,
 	keep_alive_minutes: 10,
@@ -64,6 +66,7 @@ export const DEFAULT_HUGGINGFACE_CONFIG: HuggingFaceProviderConfig = {
 	frequency_penalty: 0,
 	forbidden_words: [],
 	disable_thinking: true,
+	request_timeout_seconds: 120,
 	tosAgreed: false,
 };
 
@@ -83,6 +86,7 @@ export const DEFAULT_OPENAI_COMPATIBLE_CONFIG: OpenAiCompatibleProviderConfig =
 		frequency_penalty: 0,
 		forbidden_words: [],
 		disable_thinking: true,
+		request_timeout_seconds: 120,
 		tosAgreed: false,
 	};
 
@@ -125,6 +129,7 @@ const ADVANCED_DEFAULT_KEYS = [
 	"repetition_penalty",
 	"frequency_penalty",
 	"forbidden_words",
+	"request_timeout_seconds",
 ] as const satisfies (keyof OpenRouterProviderConfig)[];
 
 let preferences = $state<Preferences>(DEFAULT_PREFERENCES);
@@ -140,6 +145,7 @@ function withTosAgreed<T extends ProviderConfig>(config: T): T {
 		...config,
 		tosAgreed: config.tosAgreed ?? config.provider === "ollama",
 		min_p: config.min_p ?? 0,
+		request_timeout_seconds: config.request_timeout_seconds ?? 120,
 	};
 	if (withDefaults.provider === "ollama") {
 		return {

@@ -50,6 +50,7 @@ interface CommonProviderConfig {
   frequency_penalty: number;
   forbidden_words: string[];
   disable_thinking: boolean;
+  request_timeout_seconds: number; // how long to wait for a response before aborting, 0 = no timeout
   // Whether the user has accepted this provider's terms of service. Gates
   // enabling the provider in Settings; not required for Ollama, which talks
   // to a server the user runs themselves rather than a third party.

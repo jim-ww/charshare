@@ -629,6 +629,8 @@
 	"ai_tab_repetition_penalty_label": "Repetition penalty",
 	"ai_tab_frequency_penalty_label": "Frequency penalty",
 	"ai_tab_frequency_penalty_unsupported": "Not supported by Ollama",
+	"ai_tab_request_timeout_label": "Request timeout (seconds)",
+	"ai_tab_request_timeout_hint": "How long to wait for a response before giving up. 0 means no timeout.",
 	"ai_tab_forbidden_words_label": "Forbidden words/phrases (comma-separated)",
 	"ai_tab_reset_defaults": "Reset defaults",
 

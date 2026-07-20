@@ -1,5 +1,6 @@
 import type { OpenRouterProviderConfig } from '$lib/types';
 import { stripThinking } from './strip-thinking';
+import { withRequestTimeout } from './requestTimeout';
 
 export interface CompletionMessage {
 	role: 'system' | 'user' | 'assistant';
@@ -51,7 +52,7 @@ export async function requestCompletion(
 			frequency_penalty: config.frequency_penalty,
 			...(config.disable_thinking ? { reasoning: { effort: 'none' } } : {})
 		}),
-		signal: options.signal
+		signal: withRequestTimeout(options.signal, config.request_timeout_seconds)
 	});
 
 	if (!response.ok) {

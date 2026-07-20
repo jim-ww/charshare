@@ -2,6 +2,7 @@ import type { OllamaProviderConfig } from '$lib/types';
 import type { CompletionMessage, CompletionResult, RequestCompletionOptions } from './openrouter';
 import { stripThinking } from './strip-thinking';
 import { isWailsDesktop, streamOllamaChat } from '$lib/wails';
+import { withRequestTimeout } from './requestTimeout';
 
 interface OllamaStreamState {
 	content: string;
@@ -68,7 +69,8 @@ export async function requestCompletion(
 			url,
 			JSON.stringify(body),
 			(line) => applyOllamaLine(line, state, options.onChunk),
-			options.signal
+			options.signal,
+			config.request_timeout_seconds
 		);
 		return { content: stripThinking(state.content), finishReason: state.finishReason };
 	}
@@ -77,7 +79,7 @@ export async function requestCompletion(
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify(body),
-		signal: options.signal
+		signal: withRequestTimeout(options.signal, config.request_timeout_seconds)
 	});
 
 	if (!response.ok) {

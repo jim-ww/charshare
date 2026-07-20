@@ -16,6 +16,7 @@ const config: OllamaProviderConfig = {
 	frequency_penalty: 0,
 	forbidden_words: [],
 	disable_thinking: true,
+	request_timeout_seconds: 0,
 	tosAgreed: true,
 	keep_alive_minutes: 15
 };

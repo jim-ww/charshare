@@ -174,7 +174,11 @@ export async function streamOllamaChat(
 	url: string,
 	bodyJson: string,
 	onLine: (line: string) => void,
-	signal?: AbortSignal
+	signal?: AbortSignal,
+	// How long to wait for the response headers (a cold model load can take a
+	// while) before giving up — 0/undefined falls back to the Go side's own
+	// default. See ollama.go's ollamaHTTPClient.
+	responseTimeoutSeconds?: number
 ): Promise<void> {
 	const requestId = crypto.randomUUID();
 	const [App, { Events }] = await Promise.all([loadApp(), loadRuntime()]);
@@ -183,7 +187,7 @@ export async function streamOllamaChat(
 		if (payload.requestId === requestId) onLine(payload.line);
 	});
 
-	const call = App.FetchOllamaChat(requestId, url, bodyJson);
+	const call = App.FetchOllamaChat(requestId, url, bodyJson, responseTimeoutSeconds ?? 0);
 	if (signal) call.cancelOn(signal);
 
 	try {
