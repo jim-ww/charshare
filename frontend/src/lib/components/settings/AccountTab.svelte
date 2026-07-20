@@ -173,7 +173,7 @@
 	<p>{m.account_tab_loading()}</p>
 {:else if !registered}
 	{#if authView === 'choice'}
-		<div class="flex min-h-[60vh] flex-col items-center justify-center gap-8 py-8 text-center">
+		<div class="flex flex-col items-center gap-8 pt-16 pb-8 text-center">
 			<div class="flex flex-col gap-2">
 				<h3 class="text-2xl font-semibold">{m.account_tab_choice_heading()}</h3>
 				<p class="mx-auto max-w-sm text-sm opacity-70">{m.account_tab_choice_body()}</p>
