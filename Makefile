@@ -14,27 +14,22 @@ DIST_DIR := dist
 TAG ?=
 VERSION := $(if $(TAG),$(TAG),$(shell git describe --tags --exact-match 2>/dev/null))
 
-HOST_ARCH := $(shell uname -m)
-ifeq ($(HOST_ARCH),x86_64)
-  NATIVE_LINUX_ARCH := amd64
-else ifeq ($(HOST_ARCH),aarch64)
-  NATIVE_LINUX_ARCH := arm64
-else
-  NATIVE_LINUX_ARCH := $(HOST_ARCH)
-endif
-
-# linux/$(NATIVE_LINUX_ARCH) only: Wails' GTK3/webkitgtk backend needs cgo,
-# and nix has no ready-made cross GTK3/webkitgtk sysroot to cross-compile the
-# other Linux arch from here (see flake.nix) — so running this on an x86_64
-# machine ships linux/amd64 but not linux/arm64, and vice versa on arm64.
-# CI (.github/workflows/release.yml) covers both by running this on one
-# runner per arch and merging the results, which a single local machine
-# can't do. windows/amd64 and windows/arm64 always cross-compile cleanly
-# from either host, since Wails' WebView2 backend is pure Go — confirmed no
-# windows_*.go file in the vendored module imports "C", unlike linux/darwin.
-# "android" isn't a GOOS/GOARCH pair — see the android-apk target below —
-# but is always included here too so a plain `make build` ships everything.
-TARGETS := linux/$(NATIVE_LINUX_ARCH) windows/amd64 windows/arm64 android
+# Both Linux arches are built via `nix build` case in
+# `build` below), not a raw `go build` — Wails' GTK3/webkitgtk backend needs
+# cgo, and a plain cross `go build` has no matching arm64 GTK3/webkitgtk
+# sysroot to link against. `nix build .#packages.<system>.default` sidesteps
+# that: aarch64-linux is a first-class nixpkgs platform, so its GTK3/
+# webkitgtk come prebuilt from cache.nixos.org regardless of host arch —
+# only our own package (frontend + Go binary) actually needs building for
+# the target arch, via QEMU user-mode emulation (`boot.binfmt.emulatedSystems`
+# on NixOS; must be registered on whichever machine runs `make build`).
+# windows/amd64 and windows/arm64 always cross-compile cleanly with a plain
+# `go build` from either host, since Wails' WebView2 backend is pure Go —
+# confirmed no windows_*.go file in the vendored module imports "C", unlike
+# linux/darwin. "android" isn't a GOOS/GOARCH pair — see the android-apk
+# target below — but is always included here too so a plain `make build`
+# ships everything.
+TARGETS := linux/amd64 linux/arm64 windows/amd64 windows/arm64 android
 
 # Builds and packages every target in $(TARGETS) into $(DIST_DIR), goreleaser-
 # style: one APPNAME_GOOS_GOARCH.tar.gz per desktop target (containing just
@@ -49,25 +44,38 @@ build:
 		set -eu; \
 		unset GOFLAGS; \
 		pnpm --dir frontend install --frozen-lockfile; \
-		pnpm --dir frontend run build; \
-		for target in $(TARGETS); do \
-			case "$$target" in android) continue ;; esac; \
-			goos=$${target%%/*}; goarch=$${target##*/}; \
-			echo "==> building $$goos/$$goarch"; \
-			case "$$goos" in \
-				linux) cgo=1; tags=desktop,production,gtk3; ext= ;; \
-				windows) cgo=0; tags=desktop,production,devtools; ext=.exe ;; \
-				*) echo "unknown GOOS $$goos" >&2; exit 1 ;; \
-			esac; \
-			workdir=$$(mktemp -d); \
-			CGO_ENABLED=$$cgo GOOS=$$goos GOARCH=$$goarch \
-				go build -tags "$$tags" -ldflags "-s -w" -o "$$workdir/$(APP_NAME)$$ext" .; \
-			cp README.md LICENSE LICENSE-ASSETS "$$workdir/"; \
-			tar -C "$$workdir" -czf "$(DIST_DIR)/$(APP_NAME)_$${goos}_$${goarch}.tar.gz" \
-				"$(APP_NAME)$$ext" README.md LICENSE LICENSE-ASSETS; \
-			rm -rf "$$workdir"; \
-		done \
+		pnpm --dir frontend run build \
 	'
+	for target in $(TARGETS); do \
+		case "$$target" in android) continue ;; esac; \
+		goos=$${target%%/*}; goarch=$${target##*/}; \
+		echo "==> building $$goos/$$goarch"; \
+		ext=""; [ "$$goos" = windows ] && ext=.exe; \
+		workdir=$$(mktemp -d); \
+		case "$$goos" in \
+			linux) \
+				case "$$goarch" in \
+					amd64) nixsystem=x86_64-linux ;; \
+					arm64) nixsystem=aarch64-linux ;; \
+					*) echo "unknown linux GOARCH $$goarch" >&2; exit 1 ;; \
+				esac; \
+				nix build ".#packages.$$nixsystem.default" -o "$$workdir/result"; \
+				cp "$$workdir/result/bin/.$(APP_NAME)-wrapped" "$$workdir/$(APP_NAME)$$ext"; \
+				;; \
+			windows) \
+				nix develop -c bash -c " \
+					unset GOFLAGS; \
+					CGO_ENABLED=0 GOOS=windows GOARCH=$$goarch \
+						go build -tags desktop,production,devtools -ldflags '-s -w' \
+						-o '$$workdir/$(APP_NAME)$$ext' ."; \
+				;; \
+			*) echo "unknown GOOS $$goos" >&2; exit 1 ;; \
+		esac; \
+		cp README.md LICENSE LICENSE-ASSETS "$$workdir/"; \
+		tar -C "$$workdir" -czf "$(DIST_DIR)/$(APP_NAME)_$${goos}_$${goarch}.tar.gz" \
+			"$(APP_NAME)$$ext" README.md LICENSE LICENSE-ASSETS; \
+		rm -rf "$$workdir"; \
+	done
 	@if echo " $(TARGETS) " | grep -qw android; then $(MAKE) android-apk; fi
 	$(MAKE) checksums
 
@@ -89,11 +97,10 @@ android-apk:
 	nix develop .#android -c wails3 task android:package ARCH=amd64
 	cp bin/$(APP_NAME).apk $(DIST_DIR)/$(APP_NAME)_android_amd64.apk
 
-# Extracted out of `build` so CI's release job (which assembles $(DIST_DIR)
-# from several runners' worth of `make build TARGETS=...` output — a single
-# machine can't produce every arch, see the TARGETS comment above) can
-# regenerate one checksums file covering everything, via the same
-# tag/naming logic instead of a second copy of it in the workflow YAML.
+# Extracted out of `build` so it can be rerun on its own (e.g. after hand-
+# editing $(DIST_DIR), or from a CI release job assembling output from
+# several runners) without re-running every build, via the same tag/naming
+# logic instead of a second copy of it elsewhere.
 checksums:
 	@test -n "$(VERSION)" || { echo "no tag on HEAD — run 'git tag vX.Y.Z' first, or set TAG=vX.Y.Z"; exit 1; }
 	cd $(DIST_DIR) && sha256sum $(APP_NAME)_*.tar.gz $$(ls $(APP_NAME)_android_*.apk 2>/dev/null) \
@@ -121,9 +128,10 @@ changelog:
 
 # Same as `build`, plus publishing $(DIST_DIR) to a GitHub Release named
 # after the tag on HEAD (via `gh`, so `gh auth login` must already be done).
-# Only covers this machine's own targets — see the TARGETS comment above —
-# so a full multi-arch release still needs one `make release` per Linux
-# arch (or just use CI, which already does this).
+# Builds every desktop target in $(TARGETS) on this one machine — see the
+# TARGETS comment above for what that requires (QEMU emulation registered
+# for the linux/arm64 leg). Android still needs `nix develop .#android` —
+# see android-apk — but that's the same machine too.
 release: build changelog
 	nix develop -c gh release create "$(VERSION)" \
 		--title "$(VERSION)" \
