@@ -40,6 +40,62 @@ jobs:
           path: dist/charshare_*.tar.gz
           retention-days: 1
 
+  # macOS can't join the `desktop` matrix above: it needs a real macOS host
+  # for its cgo WKWebView backend, and there's no Nix darwin builder in this
+  # setup (unlike Linux/Windows, which go through `make build`'s Nix flow) —
+  # so this builds and packages the tarball by hand instead of via the
+  # Makefile, mirroring its layout (binary + README + both licenses).
+  desktop-macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-13
+            goarch: amd64
+          - os: macos-14
+            goarch: arm64
+    runs-on: ${{ matrix.os }}
+    env:
+      APP_NAME: charshare
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: frontend/package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Build frontend
+        run: |
+          pnpm --dir frontend install --frozen-lockfile
+          pnpm --dir frontend run build
+
+      - name: Build
+        run: |
+          mkdir -p dist
+          workdir=$(mktemp -d)
+          CGO_ENABLED=1 GOOS=darwin GOARCH=${{ matrix.goarch }} \
+            go build -tags desktop,production,devtools -ldflags '-s -w' \
+            -o "$workdir/$APP_NAME" .
+          cp README.md LICENSE LICENSE-ASSETS "$workdir/"
+          tar -C "$workdir" -czf "dist/${APP_NAME}_darwin_${{ matrix.goarch }}.tar.gz" \
+            "$APP_NAME" README.md LICENSE LICENSE-ASSETS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: charshare-archives-macos-${{ matrix.goarch }}
+          path: dist/charshare_*.tar.gz
+          retention-days: 1
+
   # Not a `go build` at all — a gradle/APK pipeline driven by wails3's
   # Taskfile (see the Makefile's android-apk target). Debug-signed (no
   # release keystore is configured — see build/android/Taskfile.yml's
@@ -63,7 +119,7 @@ jobs:
           retention-days: 1
 
   release:
-    needs: [desktop, android]
+    needs: [desktop, desktop-macos, android]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
