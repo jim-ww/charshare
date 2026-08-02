@@ -2,6 +2,7 @@
 	import { m } from '$lib/paraglide/messages.js';
 	import type { MediaItem } from '$lib/types';
 	import { mediaProxyUrl } from '$lib/types/media';
+	import { getMediaBackupObjectUrl } from '$lib/state/mediaBackup.svelte';
 
 	interface Props {
 		media: MediaItem[];
@@ -39,10 +40,27 @@
 	// instead means there's no ordering to race.
 	let loadedSrc = $state<string | null>(null);
 	let failedSrc = $state<string | null>(null);
+	// Once a remote image URL fails, checked against the locally backed-up
+	// copy (see state/mediaBackup.svelte.ts) — keyed by the original url the
+	// fallback is for, same as loadedSrc/failedSrc, so switching away and back
+	// to a slide that failed for a *different* reason doesn't keep showing a
+	// stale fallback.
+	let fallbackForUrl = $state<string | null>(null);
+	let fallbackObjectUrl = $state<string | null>(null);
 	const current = $derived(media[index] as MediaItem | undefined);
 	const currentSrc = $derived(current?.url);
-	const loaded = $derived(loadedSrc === currentSrc);
-	const failed = $derived(failedSrc === currentSrc);
+	const usingFallback = $derived(fallbackForUrl === currentSrc && fallbackObjectUrl !== null);
+	const displaySrc = $derived(usingFallback ? fallbackObjectUrl! : currentSrc);
+	const loaded = $derived(loadedSrc === currentSrc || usingFallback);
+	const failed = $derived(failedSrc === currentSrc && !usingFallback);
+
+	async function handleImageError(url: string) {
+		failedSrc = url;
+		const objectUrl = await getMediaBackupObjectUrl(url);
+		if (!objectUrl) return;
+		fallbackForUrl = url;
+		fallbackObjectUrl = objectUrl;
+	}
 
 	$effect(() => {
 		if (index >= media.length) index = 0;
@@ -141,20 +159,20 @@
 				aria-label={m.char_image_viewer_toggle_size({ name })}
 			>
 				<img
-					src={current.url}
+					src={displaySrc}
 					alt={name}
 					class={mediaClass}
 					onload={() => (loadedSrc = current.url)}
-					onerror={() => (failedSrc = current.url)}
+					onerror={() => handleImageError(current.url)}
 				/>
 			</button>
 		{:else}
 			<img
-				src={current.url}
+				src={displaySrc}
 				alt={name}
 				class={mediaClass}
 				onload={() => (loadedSrc = current.url)}
-				onerror={() => (failedSrc = current.url)}
+				onerror={() => handleImageError(current.url)}
 			/>
 		{/if}
 		{#if failed}

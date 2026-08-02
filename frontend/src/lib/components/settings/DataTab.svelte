@@ -8,6 +8,14 @@
 	} from '$lib/export/dataExport';
 	import { notify } from '$lib/state/notifications.svelte';
 	import { deleteAllChats } from '$lib/state/chats.svelte';
+	import {
+		backupAllCharacterImages,
+		clearAllMediaBackup,
+		getAllCharacterImageUrls,
+		getMediaBackupCount,
+		getMediaBackupProgress,
+		initMediaBackup
+	} from '$lib/state/mediaBackup.svelte';
 	import { confirmDialog } from '$lib/state/confirmDialog.svelte';
 	import * as encryption from '$lib/crypto/dataEncryption';
 	import { isWailsDesktop, secretServiceSet, secretServiceDelete } from '$lib/wails';
@@ -16,6 +24,24 @@
 	import { m } from '$lib/paraglide/messages.js';
 
 	const DATA_CATEGORIES = $derived(dataCategories());
+
+	$effect(() => {
+		void initMediaBackup();
+	});
+	const mediaProgress = $derived(getMediaBackupProgress());
+	const mediaTotal = $derived(getAllCharacterImageUrls().length);
+	const mediaBackedUp = $derived(getMediaBackupCount());
+
+	async function handleClearMediaBackup() {
+		const confirmed = await confirmDialog({
+			title: m.media_backup_clear_heading(),
+			message: m.media_backup_clear_confirm(),
+			danger: true
+		});
+		if (!confirmed) return;
+		await clearAllMediaBackup();
+		notify(m.media_backup_cleared_done(), { kind: 'success' });
+	}
 
 	let encryptionEnabled = $state(false);
 	$effect(() => {
@@ -357,6 +383,44 @@
 				{/each}
 			</ul>
 		{/if}
+	</div>
+
+	<div class="divider"></div>
+
+	<div class="flex flex-col gap-2">
+		<h3 class="font-semibold">{m.media_backup_heading()}</h3>
+		<p class="text-sm opacity-70">
+			{m.media_backup_body()}
+		</p>
+		<p class="text-sm opacity-70">
+			{m.media_backup_status({ backedUp: String(mediaBackedUp), total: String(mediaTotal) })}
+		</p>
+		{#if mediaProgress.running}
+			<p class="text-sm opacity-70">
+				{m.media_backup_progress({
+					done: String(mediaProgress.done),
+					total: String(mediaProgress.total)
+				})}
+			</p>
+		{/if}
+		<div class="flex flex-wrap gap-2">
+			<button
+				class="btn btn-sm"
+				type="button"
+				disabled={mediaProgress.running || mediaBackedUp >= mediaTotal}
+				onclick={() => backupAllCharacterImages()}
+			>
+				{mediaProgress.running ? m.media_backup_running_button() : m.media_backup_button()}
+			</button>
+			<button
+				class="btn btn-sm btn-ghost"
+				type="button"
+				disabled={mediaProgress.running || mediaBackedUp === 0}
+				onclick={handleClearMediaBackup}
+			>
+				{m.media_backup_clear_button()}
+			</button>
+		</div>
 	</div>
 
 	<div class="divider"></div>
