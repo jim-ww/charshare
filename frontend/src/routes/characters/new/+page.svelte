@@ -2,18 +2,28 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import type { CharacterDraft } from '$lib/types';
+	import type { MessageRole } from '$lib/types/chat';
 	import {
 		createOrEditCharacter,
 		importCharacterCardJson,
 		importCharacterCardPng,
 		importCharacterDraft
 	} from '$lib/state/characters.svelte';
+	import { addMessage, createChat } from '$lib/state/chats.svelte';
 	import CharacterForm from '$lib/components/CharacterForm.svelte';
 	import ChatSiteImportPanel from '$lib/components/ChatSiteImportPanel.svelte';
+	import { isWailsDesktop } from '$lib/wails';
 	import { m } from '$lib/paraglide/messages.js';
+
+	let chatSiteImportPanel: ReturnType<typeof ChatSiteImportPanel> | undefined;
 
 	let localOnly = $state(true);
 	let importedDraft = $state<CharacterDraft | undefined>(undefined);
+	// Conversation history recovered alongside a chat-site import (see
+	// handleChatSiteImport) — replayed into a fresh chat right after the
+	// character is created, so the imported character doesn't start with an
+	// empty chat list when a whole conversation was actually available.
+	let importedHistory = $state<{ role: MessageRole; content: string }[]>([]);
 	let formKey = $state(0);
 
 	let importDialogEl: HTMLDialogElement | undefined;
@@ -28,7 +38,15 @@
 	});
 
 	async function handleSubmit(draft: CharacterDraft) {
-		await createOrEditCharacter(draft, { localOnly });
+		const character = await createOrEditCharacter(draft, { localOnly });
+		if (importedHistory.length > 0) {
+			const chat = await createChat(character.id, character.name);
+			for (const message of importedHistory) {
+				await addMessage(chat.id, message.role, message.content);
+			}
+			await goto(resolve('/chats/[id]', { id: chat.id }));
+			return;
+		}
 		await goto(resolve('/characters'));
 	}
 
@@ -77,8 +95,12 @@
 		}
 	}
 
-	function handleChatSiteImport(draft: CharacterDraft) {
+	function handleChatSiteImport(
+		draft: CharacterDraft,
+		history: { role: MessageRole; content: string }[]
+	) {
 		importedDraft = draft;
+		importedHistory = history;
 		formKey += 1;
 	}
 </script>
@@ -87,10 +109,32 @@
 	<div class="mx-auto mb-4 flex max-w-6xl items-center justify-between">
 		<h1 class="text-xl font-semibold">{m.char_new_heading()}</h1>
 		<div class="flex items-center gap-2">
-			<ChatSiteImportPanel onimport={handleChatSiteImport} />
-			<button class="btn btn-sm" type="button" onclick={openImportModal}>
-				{m.char_import_json()}
-			</button>
+			{#if isWailsDesktop()}
+				<div class="dropdown dropdown-end">
+					<button tabindex="0" class="btn btn-sm" type="button">
+						{m.char_import_json()}
+					</button>
+					<ul
+						class="menu dropdown-content z-10 w-56 gap-0.5 rounded-box bg-base-200 p-2 shadow-lg"
+					>
+						<li>
+							<button type="button" onclick={openImportModal}>
+								{m.char_detail_import_chat_from_file()}
+							</button>
+						</li>
+						<li>
+							<button type="button" onclick={() => chatSiteImportPanel?.open()}>
+								{m.char_detail_import_chat_from_site()}
+							</button>
+						</li>
+					</ul>
+				</div>
+			{:else}
+				<button class="btn btn-sm" type="button" onclick={openImportModal}>
+					{m.char_import_json()}
+				</button>
+			{/if}
+			<ChatSiteImportPanel bind:this={chatSiteImportPanel} onimport={handleChatSiteImport} />
 		</div>
 	</div>
 	{#key formKey}

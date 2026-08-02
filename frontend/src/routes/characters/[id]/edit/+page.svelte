@@ -15,7 +15,10 @@
 	} from '$lib/state/characters.svelte';
 	import CharacterForm from '$lib/components/CharacterForm.svelte';
 	import ChatSiteImportPanel from '$lib/components/ChatSiteImportPanel.svelte';
+	import { isWailsDesktop } from '$lib/wails';
 	import { m } from '$lib/paraglide/messages.js';
+
+	let chatSiteImportPanel: ReturnType<typeof ChatSiteImportPanel> | undefined;
 
 	const id = $derived(page.params.id as string);
 
@@ -123,10 +126,32 @@
 		<h1 class="text-xl font-semibold">{m.char_edit_heading()}</h1>
 		{#if character}
 			<div class="flex items-center gap-2">
-				<ChatSiteImportPanel onimport={applyImportedDraft} />
-				<button class="btn btn-sm" type="button" onclick={openImportModal}>
-					{m.char_import_json()}
-				</button>
+				{#if isWailsDesktop()}
+					<div class="dropdown dropdown-end">
+						<button tabindex="0" class="btn btn-sm" type="button">
+							{m.char_import_json()}
+						</button>
+						<ul
+							class="menu dropdown-content z-10 w-56 gap-0.5 rounded-box bg-base-200 p-2 shadow-lg"
+						>
+							<li>
+								<button type="button" onclick={openImportModal}>
+									{m.char_detail_import_chat_from_file()}
+								</button>
+							</li>
+							<li>
+								<button type="button" onclick={() => chatSiteImportPanel?.open()}>
+									{m.char_detail_import_chat_from_site()}
+								</button>
+							</li>
+						</ul>
+					</div>
+				{:else}
+					<button class="btn btn-sm" type="button" onclick={openImportModal}>
+						{m.char_import_json()}
+					</button>
+				{/if}
+				<ChatSiteImportPanel bind:this={chatSiteImportPanel} onimport={applyImportedDraft} />
 			</div>
 		{/if}
 	</div>

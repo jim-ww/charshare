@@ -147,6 +147,8 @@
 	"char_detail_continue_latest_chat": "Continue latest chat",
 	"char_detail_start_new_chat": "Start new chat",
 	"char_detail_import_chat": "Import chat",
+	"char_detail_import_chat_from_file": "From file",
+	"char_detail_import_chat_from_site": "From another chat site",
 	"char_detail_export": "Export",
 	"char_detail_export_card": "Export as TavernAI card (PNG)",
 	"char_detail_exporting_card": "Exporting…",

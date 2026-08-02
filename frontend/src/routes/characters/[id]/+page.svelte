@@ -33,6 +33,7 @@
 		unsaveCharacter,
 	} from "$lib/state/savedCharacters.svelte";
 	import {
+		addMessage,
 		chatLastMessageAt,
 		createChat,
 		getChats,
@@ -40,6 +41,10 @@
 		initChats,
 		isChatsReady,
 	} from "$lib/state/chats.svelte";
+	import type { MessageRole } from "$lib/types/chat";
+	import type { CharacterDraft } from "$lib/types/character";
+	import ChatSiteImportPanel from "$lib/components/ChatSiteImportPanel.svelte";
+	import { isWailsDesktop } from "$lib/wails";
 	import {
 		addComment,
 		getCommentsFor,
@@ -297,6 +302,7 @@
 
 	let importInput = $state<HTMLInputElement>();
 	let importError = $state("");
+	let chatSiteImportPanel: ReturnType<typeof ChatSiteImportPanel> | undefined;
 
 	async function handleImportChat(event: Event) {
 		if (!character) return;
@@ -320,6 +326,27 @@
 		} finally {
 			if (importInput) importInput.value = "";
 		}
+	}
+
+	/** ChatSiteImportPanel hands back both a character draft (unused here — the
+	 *  character already exists) and the recovered conversation, which becomes
+	 *  a new chat for this character (see mapProxyChatRequestToHistory). */
+	async function handleChatSiteImport(
+		_draft: CharacterDraft,
+		history: { role: MessageRole; content: string }[],
+	) {
+		if (!character) return;
+		if (!alreadyLocal) void saveCharacterLocally(character, { auto: true });
+		await initPersonas();
+		const chat = await createChat(
+			character.id,
+			character.name,
+			getSelectedPersonaId(character.id) ?? null,
+		);
+		for (const message of history) {
+			await addMessage(chat.id, message.role, message.content);
+		}
+		await goto(resolve('/chats/[id]', { id: chat.id }));
 	}
 
 	async function handleFork() {
@@ -723,14 +750,33 @@
 				<div class="divider my-0"></div>
 
 				<div class="flex flex-wrap gap-2">
-					<button
-						class="btn btn-sm btn-ghost"
-						type="button"
-						onclick={() =>
-							importInput?.click()}
-					>
-						{m.char_detail_import_chat()}
-					</button>
+					<div class="dropdown dropdown-top">
+						<button tabindex="0" class="btn btn-sm btn-ghost" type="button">
+							{m.char_detail_import_chat()}
+						</button>
+						<ul
+							class="menu dropdown-content z-10 w-56 gap-0.5 rounded-box bg-base-200 p-2 shadow-lg"
+						>
+							<li>
+								<button
+									type="button"
+									onclick={() => importInput?.click()}
+								>
+									{m.char_detail_import_chat_from_file()}
+								</button>
+							</li>
+							{#if isWailsDesktop()}
+								<li>
+									<button
+										type="button"
+										onclick={() => chatSiteImportPanel?.open()}
+									>
+										{m.char_detail_import_chat_from_site()}
+									</button>
+								</li>
+							{/if}
+						</ul>
+					</div>
 					<input
 						bind:this={importInput}
 						type="file"
@@ -738,6 +784,7 @@
 						class="hidden"
 						onchange={handleImportChat}
 					/>
+					<ChatSiteImportPanel bind:this={chatSiteImportPanel} onimport={handleChatSiteImport} />
 					<button
 						class="btn btn-sm btn-ghost"
 						type="button"

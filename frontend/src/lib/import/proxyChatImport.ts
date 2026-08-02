@@ -1,4 +1,5 @@
 import type { CharacterDraft } from "$lib/types/character";
+import type { MessageRole } from "$lib/types/chat";
 
 /** Shape of the request body a chat site's custom AI/API proxy setting sends
  *  to our local server (see proxyimport.go) when the user chats with a
@@ -77,6 +78,33 @@ export function parseProxyChatRequestBody(
 	} catch {
 		return null;
 	}
+}
+
+/** Strips the `"Name: "` prefix the proxy prepends to the user's own chat
+ *  lines (see findUserName) — Charshare messages don't carry a name prefix,
+ *  so it'd otherwise show up literally as `"{{user}}: hi"`. */
+function stripUserPrefix(text: string, userName: string | null): string {
+	if (!userName) return text;
+	return text.replace(new RegExp(`^${escapeRegExp(userName)}:\\s*`), "");
+}
+
+/** Recovers the actual back-and-forth conversation (everything but the
+ *  system message) so it can be imported as chat history alongside the
+ *  character itself, instead of only the greeting mapProxyChatRequestToDraft
+ *  keeps. Order and role are preserved as sent. */
+export function mapProxyChatRequestToHistory(
+	body: ProxyChatRequest,
+): { role: MessageRole; content: string }[] {
+	const userName = findUserName(body.messages);
+	return body.messages
+		.filter((m) => m.role === "user" || m.role === "assistant")
+		.map((m) => ({
+			role: (m.role === "user" ? "user" : "character") as MessageRole,
+			content: substituteUserPlaceholder(
+				m.role === "user" ? stripUserPrefix(m.content.trim(), userName) : m.content.trim(),
+				userName,
+			),
+		}));
 }
 
 export function mapProxyChatRequestToDraft(

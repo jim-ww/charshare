@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { onDestroy } from "svelte";
 	import type { CharacterDraft } from "$lib/types/character";
+	import type { MessageRole } from "$lib/types/chat";
 	import {
 		mapProxyChatRequestToDraft,
+		mapProxyChatRequestToHistory,
 		parseProxyChatRequestBody,
 	} from "$lib/import/proxyChatImport";
 	import {
-		isWailsDesktop,
 		onProxyImportReceived,
 		startProxyImportServer,
 		stopProxyImportServer,
@@ -14,11 +15,12 @@
 	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
-		onimport: (draft: CharacterDraft) => void;
+		onimport: (
+			draft: CharacterDraft,
+			history: { role: MessageRole; content: string }[],
+		) => void;
 	}
 	let { onimport }: Props = $props();
-
-	const desktop = isWailsDesktop();
 
 	let dialogEl = $state<HTMLDialogElement>();
 	let running = $state(false);
@@ -26,7 +28,10 @@
 	let error = $state<string | null>(null);
 	let unsubscribe: (() => void) | undefined;
 
-	async function open() {
+	/** Imperative entry point — the trigger lives wherever this panel is used
+	 *  (e.g. an "Import chat" dropdown), since it's just one of several import
+	 *  options there rather than deserving its own standalone button. */
+	export async function open() {
 		error = null;
 		dialogEl?.showModal();
 		if (running) return;
@@ -40,6 +45,7 @@
 				}
 				onimport(
 					mapProxyChatRequestToDraft(request),
+					mapProxyChatRequestToHistory(request),
 				);
 				close();
 			});
@@ -65,11 +71,6 @@
 		if (running) void stopProxyImportServer();
 	});
 </script>
-
-{#if desktop}
-	<button type="button" class="btn btn-sm" onclick={open}>
-		{m.chat_site_import_button()}
-	</button>
 
 	<dialog bind:this={dialogEl} class="modal">
 		<div class="modal-box">
@@ -138,4 +139,3 @@
 			onclick={close}
 		></button>
 	</dialog>
-{/if}
