@@ -3,18 +3,31 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import type { Chat, CharacterId } from '$lib/types';
+	import type { CharacterDraft } from '$lib/types/character';
+	import type { MessageRole } from '$lib/types/chat';
 	import { firstImageUrl } from '$lib/types/media';
-	import { getChats, deleteChat, renameChat, exportChat, chatLastMessageAt } from '$lib/state/chats.svelte';
+	import {
+		getChats,
+		deleteChat,
+		renameChat,
+		exportChat,
+		chatLastMessageAt,
+		addMessage,
+		createChat,
+		importChat
+	} from '$lib/state/chats.svelte';
 	import { resolveCharacter, ensureCharacterLoaded } from '$lib/state/characterCache.svelte';
 	import { isCharactersReady } from '$lib/state/characters.svelte';
-	import { getPersona, personaDisplayName } from '$lib/state/personas.svelte';
+	import { getPersona, personaDisplayName, getSelectedPersonaId } from '$lib/state/personas.svelte';
 	import { getMyProfile } from '$lib/state/profile.svelte';
 	import { buildShareUrl, buildSharedChatData } from '$lib/share/chatShare';
 	import { notify } from '$lib/state/notifications.svelte';
+	import { isWailsDesktop } from '$lib/wails';
 	import Avatar from './Avatar.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import PromptDialog from './PromptDialog.svelte';
 	import ChatCharacterImage from './ChatCharacterImage.svelte';
+	import ChatSiteImportPanel from './ChatSiteImportPanel.svelte';
 	import { m } from '$lib/paraglide/messages.js';
 
 	const chats = $derived(getChats());
@@ -87,6 +100,57 @@
 		await renameChat(chat.id, name);
 	}
 
+	// Importing a chat (from a JSON file or a chat-site proxy capture, see
+	// characters/[id]/+page.svelte for the same two options) always creates a
+	// *new* chat for the target character rather than overwriting an existing
+	// one — importTargetCharacterId just remembers which character's "⋮" menu
+	// the user picked "Import chat" from, since the two hidden
+	// inputs/dialogs below are shared across every group in the list rather
+	// than duplicated per character.
+	let importTargetCharacterId = $state<CharacterId | null>(null);
+	let importFileInput = $state<HTMLInputElement>();
+	let chatSiteImportPanel: ReturnType<typeof ChatSiteImportPanel> | undefined;
+
+	function handleImportFromFile(characterId: CharacterId) {
+		importTargetCharacterId = characterId;
+		importFileInput?.click();
+	}
+
+	function handleImportFromSite(characterId: CharacterId) {
+		importTargetCharacterId = characterId;
+		void chatSiteImportPanel?.open();
+	}
+
+	async function handleImportFileChange(event: Event) {
+		const characterId = importTargetCharacterId;
+		const file = (event.target as HTMLInputElement).files?.[0];
+		(event.target as HTMLInputElement).value = '';
+		if (!characterId || !file) return;
+		try {
+			const chat = await importChat(characterId, await file.text(), getSelectedPersonaId(characterId) ?? null);
+			await goto(resolve('/chats/[id]', { id: chat.id }));
+		} catch (err) {
+			notify(
+				m.error_generic({ message: err instanceof Error ? err.message : String(err) }),
+				{ kind: 'error', duration: 0 }
+			);
+		}
+	}
+
+	async function handleChatSiteImport(
+		_draft: CharacterDraft,
+		history: { role: MessageRole; content: string }[]
+	) {
+		const characterId = importTargetCharacterId;
+		if (!characterId) return;
+		const character = resolveCharacter(characterId);
+		const chat = await createChat(characterId, character?.name ?? '', getSelectedPersonaId(characterId) ?? null);
+		for (const message of history) {
+			await addMessage(chat.id, message.role, message.content);
+		}
+		await goto(resolve('/chats/[id]', { id: chat.id }));
+	}
+
 	function handleExport(chat: Chat) {
 		const blob = new Blob([exportChat(chat.id)], { type: 'application/json' });
 		const url = URL.createObjectURL(blob);
@@ -133,6 +197,10 @@
 			<li>
 				<a class="rounded-lg py-2.5 text-base md:py-1 md:text-sm" href={`${resolve('/chats/[id]', { id: chat.id })}?pick-character`}>{m.chat_sidebar_choose_character()}</a>
 			</li>
+			<li><button type="button" class="rounded-lg py-2.5 text-base md:py-1 md:text-sm" onclick={() => handleImportFromFile(chat.character_id)}>{m.char_detail_import_chat_from_file()}</button></li>
+			{#if isWailsDesktop()}
+				<li><button type="button" class="rounded-lg py-2.5 text-base md:py-1 md:text-sm" onclick={() => handleImportFromSite(chat.character_id)}>{m.char_detail_import_chat_from_site()}</button></li>
+			{/if}
 			<li><button type="button" class="rounded-lg py-2.5 text-base text-error md:py-1 md:text-sm" onclick={() => handleDelete(chat)}>{m.chat_sidebar_delete()}</button></li>
 		</ul>
 	</div>
@@ -227,3 +295,12 @@
 	onconfirm={confirmRename}
 	oncancel={() => (renameTarget = null)}
 />
+
+<input
+	bind:this={importFileInput}
+	type="file"
+	accept="application/json,.json"
+	class="hidden"
+	onchange={handleImportFileChange}
+/>
+<ChatSiteImportPanel bind:this={chatSiteImportPanel} onimport={handleChatSiteImport} />
