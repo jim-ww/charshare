@@ -18,25 +18,11 @@ function extractTag(text: string, tag: string): string {
 
 /** The persona tag is named after the character, e.g. `<Aria's
  *  Persona>...</Aria's Persona>`, so it can't be matched by a fixed tag name
- *  up front. Matched in two plain-string steps rather than one regex with a
- *  `\1` backreference: backreferences force V8's regex engine into
- *  backtracking mode instead of its linear automaton, and this system
- *  message keeps growing every turn of a JanitorAI chat (it resends the
- *  whole conversation so far) — on a long enough chat that backtracking
- *  regex blew the call stack (`RangeError: Maximum call stack size
- *  exceeded`) trying to import it. */
+ *  up front. */
 function extractPersona(text: string): { name: string; personality: string } {
-	const openMatch = text.match(/<(.+?)'s Persona>/i);
-	if (!openMatch) return { name: "", personality: "" };
-	const name = openMatch[1].trim();
-	const contentStart = (openMatch.index ?? 0) + openMatch[0].length;
-	const closeTag = `</${name}'s Persona>`;
-	const closeIndex = text.indexOf(closeTag, contentStart);
-	const personality =
-		closeIndex === -1
-			? text.slice(contentStart)
-			: text.slice(contentStart, closeIndex);
-	return { name, personality: personality.trim() };
+	const match = text.match(/<(.+?)'s Persona>([\s\S]*?)<\/\1's Persona>/i);
+	if (!match) return { name: "", personality: "" };
+	return { name: match[1].trim(), personality: match[2].trim() };
 }
 
 function splitExampleDialogues(block: string): string[] {

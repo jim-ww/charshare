@@ -337,7 +337,7 @@
 		history: { role: MessageRole; content: string }[],
 	) {
 		if (!character) return;
-		if (!alreadyLocal) void saveCharacterLocally(character, { auto: true });
+		if (!alreadyLocal) await saveCharacterLocally(character, { auto: true });
 		await initPersonas();
 		const chat = await createChat(
 			character.id,

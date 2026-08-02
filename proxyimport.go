@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -17,10 +18,32 @@ import (
 // reachable without any tunnel.
 const ProxyImportPort = 8787
 
-// ProxyImportReceived is the Wails event emitted with the raw JSON request
-// body every time a chat site sends a chat completion request to the local
-// import server. The frontend parses it into a CharacterDraft.
+// ProxyImportReceived is the Wails event emitted with a chunk of the raw JSON
+// request body every time a chat site sends a chat completion request to the
+// local import server. The frontend (see wails.ts:onProxyImportReceived)
+// reassembles the chunks by requestId before parsing the full body into a
+// CharacterDraft.
+//
+// A long real conversation's request body can run past 100KB (JanitorAI
+// resends the whole growing history each turn) — emitting that as one event
+// payload reliably crashed the webview with a JS "Maximum call stack size
+// exceeded" partway through Wails' own event bridge, before any of our own
+// parsing code even ran (bisected via a smaller ~71KB request that worked
+// fine end-to-end). Splitting into small chunks keeps every individual event
+// payload well under whatever internal limit that alpha-stage bridge has.
 const ProxyImportReceived = "proxy-import:received"
+
+// proxyImportChunkSize is deliberately conservative — small enough to stay
+// clear of the payload-size ceiling above, even though we don't know its
+// exact value.
+const proxyImportChunkSize = 8 * 1024
+
+type proxyImportChunk struct {
+	RequestID string `json:"requestId"`
+	Index     int    `json:"index"`
+	Total     int    `json:"total"`
+	Data      string `json:"data"`
+}
 
 type proxyImportServer struct {
 	mu     sync.Mutex
@@ -58,7 +81,28 @@ func (s *proxyImportServer) Start(app *application.App) error {
 			return
 		}
 
-		app.Event.Emit(ProxyImportReceived, string(body))
+		requestID := fmt.Sprintf("%d", time.Now().UnixNano())
+		total := (len(body) + proxyImportChunkSize - 1) / proxyImportChunkSize
+		if total == 0 {
+			total = 1
+		}
+		for i := 0; i < total; i++ {
+			start := i * proxyImportChunkSize
+			end := start + proxyImportChunkSize
+			if end > len(body) {
+				end = len(body)
+			}
+			chunkJSON, err := json.Marshal(proxyImportChunk{
+				RequestID: requestID,
+				Index:     i,
+				Total:     total,
+				Data:      string(body[start:end]),
+			})
+			if err != nil {
+				continue
+			}
+			app.Event.Emit(ProxyImportReceived, string(chunkJSON))
+		}
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{

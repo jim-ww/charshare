@@ -59,6 +59,19 @@ describe('dataEncryption', () => {
 		expect(idbStore.get(STORE_KEY)).not.toEqual({ hello: 'world' });
 	});
 
+	it('round-trips a payload too large for a naive spread-based base64 encode', async () => {
+		// A long imported chat conversation pushed the encrypted chats blob
+		// past the argument-count limit of String.fromCharCode(...bytes) —
+		// this string is comfortably past that threshold (way more than
+		// TO_B64_CHUNK_SIZE's 32768 bytes once encrypted) to catch a
+		// regression back to the unchunked version.
+		const big = { text: 'x'.repeat(500_000) };
+		const enc = await import('./dataEncryption');
+		await enc.set(STORE_KEY, big);
+		await enc.enableEncryption('correct horse battery staple');
+		expect(await enc.get(STORE_KEY)).toEqual(big);
+	});
+
 	it('unlock fails with the wrong passphrase and succeeds with the right one', async () => {
 		const enc = await import('./dataEncryption');
 		await enc.enableEncryption('correct horse battery staple');

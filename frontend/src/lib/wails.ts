@@ -146,16 +146,51 @@ export function externalLink(node: HTMLAnchorElement) {
 	};
 }
 
+interface ProxyImportChunk {
+	requestId: string;
+	index: number;
+	total: number;
+	data: string;
+}
+
 /** Subscribes to raw chat-completion request bodies forwarded by the local
  *  import server (see proxyimport.go). Returns an unsubscribe function; since
  *  the subscription itself is async (the runtime module has to load first),
- *  this returns immediately and unsubscribes once that resolves. */
+ *  this returns immediately and unsubscribes once that resolves.
+ *
+ *  The Go side splits each request body into small chunked events rather
+ *  than emitting it as one payload — a long real conversation's body can run
+ *  well past 100KB (JanitorAI resends the whole growing history every turn),
+ *  and emitting that in one event reliably crashed the webview inside Wails'
+ *  own (alpha-stage) event bridge before any of our own code even ran. This
+ *  reassembles those chunks by requestId before handing the caller the full
+ *  original string, so callers don't need to know chunking happens at all. */
 export function onProxyImportReceived(handler: (raw: string) => void): () => void {
 	let unsubscribe: (() => void) | null = null;
 	let cancelled = false;
+	const pending = new Map<string, (string | undefined)[]>();
 	void loadRuntime().then(({ Events }) => {
 		if (cancelled) return;
-		unsubscribe = Events.On("proxy-import:received", (event) => handler(event.data as string));
+		unsubscribe = Events.On("proxy-import:received", (event) => {
+			let chunk: ProxyImportChunk;
+			try {
+				chunk = JSON.parse(event.data as string);
+			} catch {
+				return;
+			}
+			// `new Array(n)` would create a sparse array of holes rather than
+			// actual `undefined` values — every()/some() skip holes entirely,
+			// so the completion check below would trivially (and wrongly)
+			// pass after just the first chunk. `.fill(undefined)` forces real
+			// elements to exist at every index.
+			const parts = pending.get(chunk.requestId) ?? new Array(chunk.total).fill(undefined);
+			parts[chunk.index] = chunk.data;
+			pending.set(chunk.requestId, parts);
+			if (parts.every((p) => p !== undefined)) {
+				pending.delete(chunk.requestId);
+				handler(parts.join(""));
+			}
+		});
 	});
 	return () => {
 		cancelled = true;

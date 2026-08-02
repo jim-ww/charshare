@@ -64,8 +64,22 @@ interface Envelope {
 
 let dek: CryptoKey | null = null;
 
+// Spreading a whole large byte array as individual arguments to
+// String.fromCharCode blows the call stack past a few tens of thousands of
+// bytes (same trap as Math.max(...hugeArray)) — encrypting this app's full
+// chats blob (every chat, base64-encoded as one ciphertext) crossed that
+// threshold and crashed with "RangeError: Maximum call stack size exceeded"
+// on a long enough imported conversation. Chunking the spread keeps each
+// call comfortably under any engine's argument-count limit.
+const TO_B64_CHUNK_SIZE = 0x8000;
+
 function toB64(bytes: ArrayBuffer): string {
-	return btoa(String.fromCharCode(...new Uint8Array(bytes)));
+	const arr = new Uint8Array(bytes);
+	let binary = "";
+	for (let i = 0; i < arr.length; i += TO_B64_CHUNK_SIZE) {
+		binary += String.fromCharCode(...arr.subarray(i, i + TO_B64_CHUNK_SIZE));
+	}
+	return btoa(binary);
 }
 
 function fromB64(b64: string): Uint8Array<ArrayBuffer> {

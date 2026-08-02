@@ -45,6 +45,9 @@ export function installWailsConsoleForward(): void {
 		emit("error", `Uncaught: ${event.message}\n${event.error?.stack ?? ""}`);
 	});
 	window.addEventListener("unhandledrejection", (event) => {
-		emit("error", `Unhandled rejection: ${String(event.reason)}`);
+		const reason = event.reason;
+		const detail =
+			reason instanceof Error ? `${reason.message}\n${reason.stack ?? ""}` : String(reason);
+		emit("error", `Unhandled rejection: ${detail}`);
 	});
 }

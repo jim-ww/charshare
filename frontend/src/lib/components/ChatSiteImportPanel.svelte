@@ -27,22 +27,34 @@
 	let starting = $state(false);
 	let error = $state<string | null>(null);
 	let unsubscribe: (() => void) | undefined;
+	// The chat site can fire more than one request per turn (a reachability
+	// check when the custom endpoint is first configured, a retry, a
+	// double-submit) — onimport()/close() aren't synchronous, so without this
+	// guard every one of them would race its own createChat+import+goto,
+	// and whichever finished last would silently win the visible chat
+	// instead of the real one being imported. Set the instant a request is
+	// actually accepted, checked before anything else in the handler.
+	let handled = false;
 
 	/** Imperative entry point — the trigger lives wherever this panel is used
 	 *  (e.g. an "Import chat" dropdown), since it's just one of several import
 	 *  options there rather than deserving its own standalone button. */
 	export async function open() {
 		error = null;
+		handled = false;
 		dialogEl?.showModal();
 		if (running) return;
 		starting = true;
 		try {
-			unsubscribe ??= onProxyImportReceived((raw) => {
+			unsubscribe?.();
+			unsubscribe = onProxyImportReceived((raw) => {
+				if (handled) return;
 				const request = parseProxyChatRequestBody(raw);
 				if (!request) {
 					error = m.chat_site_import_no_request_error();
 					return;
 				}
+				handled = true;
 				onimport(
 					mapProxyChatRequestToDraft(request),
 					mapProxyChatRequestToHistory(request),
@@ -62,6 +74,8 @@
 
 	async function close() {
 		dialogEl?.close();
+		unsubscribe?.();
+		unsubscribe = undefined;
 		if (running) await stopProxyImportServer();
 		running = false;
 	}

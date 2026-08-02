@@ -241,17 +241,6 @@ export async function setChatTtsSpeed(id: ChatId, speed: number): Promise<void> 
 }
 
 export async function deleteChat(id: ChatId): Promise<void> {
-	// Temporary diagnostic for a reported bug where a chat with real
-	// conversation history got deleted unexpectedly — logs which chat, how
-	// many messages it had, and the call stack, so the next occurrence
-	// identifies the actual caller instead of guessing. Remove once resolved.
-	const target = chats[id];
-	if (target && target.messages.length > 1) {
-		console.warn(
-			`[chats] deleteChat called on "${target.name}" (${id}) with ${target.messages.length} messages`,
-			new Error('stack').stack
-		);
-	}
 	const { [id]: _removed, ...rest } = chats;
 	chats = rest;
 	await persist();
