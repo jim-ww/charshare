@@ -37,6 +37,7 @@
 		class="rounded-xl shadow-lg ring-2 ring-base-100"
 		aspectSquare
 		onImageClick={() => openImageViewer(chat, character)}
+		keyboardNav
 		bind:index
 	/>
 </div>

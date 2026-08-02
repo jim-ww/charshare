@@ -88,9 +88,22 @@
 		index = (index + 1) % media.length;
 	}
 
+	// keyboardNav is also used on the always-visible chat thumbnail (not just
+	// the modal), so arrow keys must not hijack cursor movement while typing
+	// in the message box or any other text field.
+	function isTypingTarget(target: EventTarget | null): boolean {
+		if (!(target instanceof HTMLElement)) return false;
+		return (
+			target instanceof HTMLInputElement ||
+			target instanceof HTMLTextAreaElement ||
+			target.isContentEditable
+		);
+	}
+
 	function handleKeydown(event: KeyboardEvent) {
 		if (media.length < 2) return;
 		if (event.altKey || event.ctrlKey || event.metaKey) return;
+		if (isTypingTarget(event.target)) return;
 		if (event.key === 'ArrowLeft') {
 			index = (index - 1 + media.length) % media.length;
 		} else if (event.key === 'ArrowRight') {

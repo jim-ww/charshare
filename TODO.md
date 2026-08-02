@@ -1,7 +1,5 @@
-- feat: show message count beside all chats in list char view page + in chat list
-- feat: allow to configure different models/providers for different tasks
-- feat(chat view): left/right arrow keys should switch between images
 - feat(image viewer): add image reload button
+- feat: allow to configure different models/providers for different tasks
 - consider: implement multi-tag search? in character definitions, always store tags sorted to allow search like tag-subtag-subsubtag?
 - consider: add some characters from other platforms
 - consider: implement lorebooks
