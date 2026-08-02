@@ -342,6 +342,7 @@
 	"chat_site_import_step2_before": "Find its setting for a custom AI/API proxy (sometimes called \"Custom API\", \"Reverse Proxy\", or \"API endpoint\"), and set the address to:",
 	"chat_site_import_step3": "Send any message in that chat (even just \"hi\").",
 	"chat_site_import_step4": "Come back to this window — it will fill in the character's info automatically and close on its own.",
+	"chat_site_import_include_messages": "Also import the chat messages",
 	"chat_site_import_getting_ready": "Getting ready…",
 	"chat_site_import_waiting": "Waiting for a message…",
 	"chat_site_import_no_request_error": "That didn't look like a character chat — try sending a message again.",

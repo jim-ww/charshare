@@ -26,6 +26,7 @@
 	let running = $state(false);
 	let starting = $state(false);
 	let error = $state<string | null>(null);
+	let importMessages = $state(true);
 	let unsubscribe: (() => void) | undefined;
 	// The chat site can fire more than one request per turn (a reachability
 	// check when the custom endpoint is first configured, a retry, a
@@ -57,7 +58,7 @@
 				handled = true;
 				onimport(
 					mapProxyChatRequestToDraft(request),
-					mapProxyChatRequestToHistory(request),
+					importMessages ? mapProxyChatRequestToHistory(request) : [],
 				);
 				close();
 			});
@@ -116,6 +117,15 @@
 					{m.chat_site_import_step4()}
 				</li>
 			</ol>
+
+			<label class="mt-4 flex items-center gap-2 text-sm">
+				<input
+					type="checkbox"
+					class="checkbox checkbox-sm"
+					bind:checked={importMessages}
+				/>
+				{m.chat_site_import_include_messages()}
+			</label>
 
 			<div class="mt-4 flex items-center gap-2">
 				{#if starting}
