@@ -109,7 +109,7 @@
 
       frontendDist = pkgs.stdenv.mkDerivation (finalAttrs: {
         pname = "charshare-frontend";
-        version = "0.1.0";
+        version = "0.3.0";
         src = ./frontend;
 
         nativeBuildInputs = [
@@ -149,7 +149,7 @@
     in {
       packages.default = pkgs.buildGoModule {
         pname = "charshare";
-        version = "0.1.0";
+        version = "0.3.0";
         src = ./.;
 
         vendorHash = "sha256-GbqPNTbAt46GGAOmYIzu7jIQomaJsNvAsHz9I9OOQ6Y=";
