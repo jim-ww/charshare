@@ -1,5 +1,8 @@
-- chat view: left/right arrow keys should switch between images
-- image viewer: add image reload button
+- feat: implement chat import from JanitorAI
+- feat: option to backup and load all image urls locally, allowing to load from it as backup
+- feat: allow to configure different models/providers for different tasks
+- feat(chat view): left/right arrow keys should switch between images
+- feat(image viewer): add image reload button
 - consider: implement multi-tag search? in character definitions, always store tags sorted to allow search like tag-subtag-subsubtag?
 - consider: add some characters from other platforms
 - consider: implement lorebooks

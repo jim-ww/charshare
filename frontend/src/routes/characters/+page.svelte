@@ -12,6 +12,7 @@
 	} from "$lib/state/characters.svelte";
 	import { getSavedCharacters } from "$lib/state/savedCharacters.svelte";
 	import { getCurrentUser } from "$lib/state/auth.svelte";
+	import { sortByPublishedAt } from "$lib/nostr/browse";
 	import CharacterCard from "$lib/components/CharacterCard.svelte";
 	import PullToRefresh from "$lib/components/PullToRefresh.svelte";
 	import TagCarousel from "$lib/components/TagCarousel.svelte";
@@ -156,6 +157,9 @@
 		}
 
 		let list = [...combined.values()];
+		if (!isAuthorQuery && !isForkQuery) {
+			list = sortByPublishedAt(list, getNetworkSortOrder());
+		}
 		if (listFilter === "mine")
 			list = list.filter((c) => c.author === me);
 		else if (listFilter === "saved")
