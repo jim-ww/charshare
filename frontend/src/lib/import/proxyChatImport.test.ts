@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
 	mapProxyChatRequestToDraft,
+	mapProxyChatRequestToHistory,
 	parseProxyChatRequestBody,
 	type ProxyChatRequest
 } from "./proxyChatImport";
@@ -111,5 +112,32 @@ describe("mapProxyChatRequestToDraft", () => {
 			'{{user}}: Long time no see.\nAria: "{{user}}! I missed you."'
 		);
 		expect(draft.personality).not.toContain("Sam");
+	});
+});
+
+describe("mapProxyChatRequestToHistory", () => {
+	it("keeps every non-system turn from the request, in order", () => {
+		const history = mapProxyChatRequestToHistory(sampleRequest);
+		expect(history).toEqual([
+			{ role: "character", content: "Aria looks up and gives a small nod." },
+			{ role: "user", content: "hi" }
+		]);
+	});
+
+	it("keeps turns whose role casing/label doesn't match the OpenAI spec exactly", () => {
+		const request: ProxyChatRequest = {
+			messages: [
+				{ role: "system", content: "<Aria's Persona>Aria.</Aria's Persona>" },
+				{ role: "assistant", content: "Hello." },
+				{ role: "User", content: "Sam: hi there" },
+				{ role: "Assistant", content: "Hi Sam!" },
+				{ role: "user", content: "Sam: how are you" }
+			]
+		};
+		const history = mapProxyChatRequestToHistory(request);
+		expect(history).toHaveLength(4);
+		expect(history.map((m) => m.role)).toEqual(["character", "user", "character", "user"]);
+		expect(history[1].content).toBe("hi there");
+		expect(history[3].content).toBe("how are you");
 	});
 });

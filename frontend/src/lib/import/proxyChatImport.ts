@@ -111,14 +111,25 @@ export function mapProxyChatRequestToHistory(
 ): { role: MessageRole; content: string }[] {
 	const userName = findUserName(body.messages);
 	return body.messages
-		.filter((m) => m.role === "user" || m.role === "assistant")
-		.map((m) => ({
-			role: (m.role === "user" ? "user" : "character") as MessageRole,
-			content: substituteUserPlaceholder(
-				m.role === "user" ? stripUserPrefix(m.content.trim(), userName) : m.content.trim(),
-				userName,
-			),
-		}));
+		// Case-sensitive `=== "user"`/`=== "assistant"` used to silently drop
+		// any turn tagged with a different casing or label (e.g. "Assistant",
+		// "AI") — those aren't part of the OpenAI chat-completions spec, but
+		// sites don't always stick to it consistently across every turn, and
+		// the effect was a long real conversation collapsing down to just
+		// whichever turns happened to match exactly. Only genuine system
+		// messages (the character definition) are excluded now; everything
+		// else is history.
+		.filter((m) => m.role.toLowerCase() !== "system")
+		.map((m) => {
+			const isUser = m.role.toLowerCase() === "user";
+			return {
+				role: (isUser ? "user" : "character") as MessageRole,
+				content: substituteUserPlaceholder(
+					isUser ? stripUserPrefix(m.content.trim(), userName) : m.content.trim(),
+					userName,
+				),
+			};
+		});
 }
 
 export function mapProxyChatRequestToDraft(
