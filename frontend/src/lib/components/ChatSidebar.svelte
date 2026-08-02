@@ -12,6 +12,7 @@
 		renameChat,
 		exportChat,
 		chatLastMessageAt,
+		getActivePath,
 		addMessage,
 		createChat,
 		importChat
@@ -231,6 +232,9 @@
 					{#if latest.name !== character?.name}
 						<div class="truncate text-sm opacity-60">{latest.name}</div>
 					{/if}
+					<div class="truncate text-xs opacity-50">
+						{m.chat_message_count({ count: String(getActivePath(latest).length) })}
+					</div>
 				</a>
 				{#if characterChats.length > 1}
 					<button
@@ -256,6 +260,9 @@
 									href={resolve('/chats/[id]', { id: chat.id })}
 								>
 									{chat.name}
+									<span class="text-xs opacity-50">
+										{m.chat_message_count({ count: String(getActivePath(chat).length) })}
+									</span>
 								</a>
 								<div class="shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100">
 									{@render chatActions(chat)}

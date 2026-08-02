@@ -36,6 +36,7 @@
 		addMessage,
 		chatLastMessageAt,
 		createChat,
+		getActivePath,
 		getChats,
 		importChat,
 		initChats,
@@ -913,6 +914,9 @@
 									>
 										{chat.name}
 									</a>
+									<span class="text-xs opacity-60">
+										{m.chat_message_count({ count: String(getActivePath(chat).length) })}
+									</span>
 									<span class="text-xs opacity-60">
 										{formatCommentTime(chatLastMessageAt(chat))}
 									</span>

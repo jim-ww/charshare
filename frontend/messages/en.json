@@ -176,6 +176,7 @@
 	"char_detail_save": "Save locally",
 	"char_detail_unsave": "Unsave",
 	"char_detail_continue_past_chat_heading": "Continue a past chat",
+	"chat_message_count": "{count} messages",
 	"char_detail_scenario_heading": "Scenario",
 	"char_detail_personality_heading": "Personality",
 	"char_detail_first_messages_heading": "First message(s)",
