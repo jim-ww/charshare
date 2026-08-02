@@ -435,6 +435,7 @@
 
 	"char_image_viewer_toggle_size": "Toggle {name} image size",
 	"char_image_viewer_load_failed": "Image failed to load",
+	"char_image_viewer_reload": "Reload",
 	"char_image_viewer_previous": "Previous image",
 	"char_image_viewer_next": "Next image",
 	"char_image_viewer_jump_to": "Go to image {n}",

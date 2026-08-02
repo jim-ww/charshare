@@ -50,7 +50,17 @@
 	const current = $derived(media[index] as MediaItem | undefined);
 	const currentSrc = $derived(current?.url);
 	const usingFallback = $derived(fallbackForUrl === currentSrc && fallbackObjectUrl !== null);
-	const displaySrc = $derived(usingFallback ? fallbackObjectUrl! : currentSrc);
+	// A cache-busting suffix appended only for the specific url currently being
+	// retried — a plain re-render wouldn't refetch a src the browser already
+	// has marked as failed/cached.
+	let retryUrl = $state<string | null>(null);
+	let retryNonce = $state(0);
+	const rawSrc = $derived(usingFallback ? fallbackObjectUrl! : currentSrc);
+	const displaySrc = $derived(
+		rawSrc && retryUrl === currentSrc
+			? `${rawSrc}${rawSrc.includes('?') ? '&' : '?'}retry=${retryNonce}`
+			: rawSrc
+	);
 	const loaded = $derived(loadedSrc === currentSrc || usingFallback);
 	const failed = $derived(failedSrc === currentSrc && !usingFallback);
 
@@ -60,6 +70,16 @@
 		if (!objectUrl) return;
 		fallbackForUrl = url;
 		fallbackObjectUrl = objectUrl;
+	}
+
+	function reload(event: MouseEvent) {
+		event.stopPropagation();
+		if (!currentSrc) return;
+		retryUrl = currentSrc;
+		retryNonce++;
+		failedSrc = null;
+		fallbackForUrl = null;
+		fallbackObjectUrl = null;
 	}
 
 	$effect(() => {
@@ -189,9 +209,12 @@
 			/>
 		{/if}
 		{#if failed}
-			<div class="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-base-300 text-center text-sm opacity-70">
+			<div class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-base-300 text-center text-sm opacity-90">
 				<span>⚠</span>
 				<span>{m.char_image_viewer_load_failed()}</span>
+				<button type="button" class="btn btn-sm" onclick={reload}>
+					{m.char_image_viewer_reload()}
+				</button>
 			</div>
 		{:else if !loaded}
 			<div class="absolute inset-0 flex items-center justify-center bg-base-300">
