@@ -1,3 +1,6 @@
+- fix macos-release gh action "Error: No pnpm version is specified."
+- sort chats/chars by message count
+- add local statistics (e.g. total message count)
 - feat: allow to configure different models/providers for different tasks
 - consider: implement multi-tag search? in character definitions, always store tags sorted to allow search like tag-subtag-subsubtag?
 - consider: add some characters from other platforms
